@@ -7,21 +7,31 @@ import { Footer } from './components/layout/Footer';
 import { ArtworkLightbox } from './components/gallery/ArtworkLightbox';
 import { ScrollToTop } from './components/common/ScrollToTop';
 
+import { lazy, Suspense } from 'react';
 import { HomePage } from './pages/HomePage';
-import { AboutPage } from './pages/AboutPage';
-import { GalleryPage } from './pages/GalleryPage';
-import { GalleryRouteHandler } from './pages/GalleryRouteHandler';
-import { EventsPage } from './pages/EventsPage';
-import { EventDetailPage } from './pages/EventDetailPage';
-import { ArtistsPage } from './pages/ArtistsPage';
-import { ArtistDetailPage } from './pages/ArtistDetailPage';
-import { AchievementsPage } from './pages/AchievementsPage';
-import { TeamPage } from './pages/TeamPage';
-import { JoinPage } from './pages/JoinPage';
-import { ContactPage } from './pages/ContactPage';
-import { AdminDashboardPage } from './pages/AdminDashboardPage';
-import { AdminLoginPage } from './pages/AdminLoginPage';
-import { NotFoundPage } from './pages/NotFoundPage';
+
+const AboutPage = lazy(() => import('./pages/AboutPage').then(m => ({ default: m.AboutPage })));
+const GalleryPage = lazy(() => import('./pages/GalleryPage').then(m => ({ default: m.GalleryPage })));
+const GalleryRouteHandler = lazy(() => import('./pages/GalleryRouteHandler').then(m => ({ default: m.GalleryRouteHandler })));
+const CampusArtPage = lazy(() => import('./pages/CampusArtPage').then(m => ({ default: m.CampusArtPage })));
+const EventsPage = lazy(() => import('./pages/EventsPage').then(m => ({ default: m.EventsPage })));
+const EventDetailPage = lazy(() => import('./pages/EventDetailPage').then(m => ({ default: m.EventDetailPage })));
+const ArtistsPage = lazy(() => import('./pages/ArtistsPage').then(m => ({ default: m.ArtistsPage })));
+const ArtistDetailPage = lazy(() => import('./pages/ArtistDetailPage').then(m => ({ default: m.ArtistDetailPage })));
+const AchievementsPage = lazy(() => import('./pages/AchievementsPage').then(m => ({ default: m.AchievementsPage })));
+const TeamPage = lazy(() => import('./pages/TeamPage').then(m => ({ default: m.TeamPage })));
+const JoinPage = lazy(() => import('./pages/JoinPage').then(m => ({ default: m.JoinPage })));
+const ContactPage = lazy(() => import('./pages/ContactPage').then(m => ({ default: m.ContactPage })));
+const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage').then(m => ({ default: m.AdminDashboardPage })));
+const AdminLoginPage = lazy(() => import('./pages/AdminLoginPage').then(m => ({ default: m.AdminLoginPage })));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
+
+const PageLoadingFallback = () => (
+  <div className="min-h-[50vh] flex flex-col items-center justify-center space-y-3">
+    <div className="w-8 h-8 rounded-full border-2 border-[var(--line)] border-t-[var(--accent)] animate-spin" />
+    <span className="text-xs font-mono text-[var(--muted)]">Accessioning gallery...</span>
+  </div>
+);
 
 export function App() {
   return (
@@ -33,47 +43,51 @@ export function App() {
             <div className="min-h-screen flex flex-col bg-[var(--paper)] text-[var(--ink)] transition-colors duration-200">
               <Navbar />
               <main className="flex-1">
-                <Routes>
-                  {/* Home */}
-                  <Route path="/" element={<HomePage />} />
+                <Suspense fallback={<PageLoadingFallback />}>
+                  <Routes>
+                    {/* Home */}
+                    <Route path="/" element={<HomePage />} />
 
-                  {/* About */}
-                  <Route path="/about" element={<AboutPage />} />
+                    {/* About */}
+                    <Route path="/about" element={<AboutPage />} />
 
-                  {/* Gallery routes */}
-                  <Route path="/gallery" element={<GalleryPage />} />
-                  <Route path="/gallery/:param" element={<GalleryRouteHandler />} />
-                  {/* Backward-compatible alias for /canvas */}
-                  <Route path="/canvas" element={<Navigate to="/gallery" replace />} />
-                  <Route path="/canvas/:param" element={<GalleryRouteHandler />} />
+                    {/* Gallery & Campus Art routes */}
+                    <Route path="/gallery" element={<GalleryPage />} />
+                    <Route path="/gallery/campus-art" element={<CampusArtPage />} />
+                    <Route path="/gallery/:param" element={<GalleryRouteHandler />} />
+                    {/* Backward-compatible alias for /canvas */}
+                    <Route path="/canvas" element={<Navigate to="/gallery" replace />} />
+                    <Route path="/canvas/campus-art" element={<CampusArtPage />} />
+                    <Route path="/canvas/:param" element={<GalleryRouteHandler />} />
 
-                  {/* Events routes */}
-                  <Route path="/events" element={<EventsPage />} />
-                  <Route path="/events/:slug" element={<EventDetailPage />} />
+                    {/* Events routes */}
+                    <Route path="/events" element={<EventsPage />} />
+                    <Route path="/events/:slug" element={<EventDetailPage />} />
 
-                  {/* Artists routes */}
-                  <Route path="/artists" element={<ArtistsPage />} />
-                  <Route path="/artists/:slug" element={<ArtistDetailPage />} />
+                    {/* Artists routes */}
+                    <Route path="/artists" element={<ArtistsPage />} />
+                    <Route path="/artists/:slug" element={<ArtistDetailPage />} />
 
-                  {/* Achievements */}
-                  <Route path="/achievements" element={<AchievementsPage />} />
+                    {/* Achievements */}
+                    <Route path="/achievements" element={<AchievementsPage />} />
 
-                  {/* Team */}
-                  <Route path="/team" element={<TeamPage />} />
+                    {/* Team */}
+                    <Route path="/team" element={<TeamPage />} />
 
-                  {/* Join */}
-                  <Route path="/join" element={<JoinPage />} />
+                    {/* Join */}
+                    <Route path="/join" element={<JoinPage />} />
 
-                  {/* Contact */}
-                  <Route path="/contact" element={<ContactPage />} />
+                    {/* Contact */}
+                    <Route path="/contact" element={<ContactPage />} />
 
-                  {/* Admin portal */}
-                  <Route path="/admin" element={<AdminDashboardPage />} />
-                  <Route path="/admin/login" element={<AdminLoginPage />} />
+                    {/* Admin portal */}
+                    <Route path="/admin" element={<AdminDashboardPage />} />
+                    <Route path="/admin/login" element={<AdminLoginPage />} />
 
-                  {/* Friendly 404 Catch-All */}
-                  <Route path="*" element={<NotFoundPage />} />
-                </Routes>
+                    {/* Friendly 404 Catch-All */}
+                    <Route path="*" element={<NotFoundPage />} />
+                  </Routes>
+                </Suspense>
               </main>
               <Footer />
               <ArtworkLightbox />

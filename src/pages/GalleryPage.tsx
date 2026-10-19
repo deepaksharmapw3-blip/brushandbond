@@ -141,6 +141,8 @@ export const GalleryPage: React.FC = () => {
   const handleCategorySelect = (slug: string) => {
     if (slug === 'all') {
       navigate('/gallery');
+    } else if (slug === 'campus-art') {
+      navigate('/gallery/campus-art');
     } else {
       navigate(`/gallery/${slug}`);
     }

@@ -1,0 +1,7 @@
+# robots.txt for Brush and Bond — GCECT Art Club
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin/login
+
+Sitemap: https://brushandbond.gcect.ac.in/sitemap.xml

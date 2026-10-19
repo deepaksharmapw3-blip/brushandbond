@@ -2,6 +2,7 @@ import React from 'react';
 import { useParams } from 'react-router-dom';
 import { GalleryPage } from './GalleryPage';
 import { ArtworkDetailPage } from './ArtworkDetailPage';
+import { CampusArtPage } from './CampusArtPage';
 
 const VALID_CATEGORIES = [
   'sketches',
@@ -10,11 +11,14 @@ const VALID_CATEGORIES = [
   'photography',
   'calligraphy',
   'doodles',
-  'campus-art',
 ];
 
 export const GalleryRouteHandler: React.FC = () => {
   const { param } = useParams<{ param: string }>();
+
+  if (param && param.toLowerCase() === 'campus-art') {
+    return <CampusArtPage />;
+  }
 
   if (param && VALID_CATEGORIES.includes(param.toLowerCase())) {
     return <GalleryPage />;

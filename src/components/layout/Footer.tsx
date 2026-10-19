@@ -1,187 +1,164 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowUpRight, CheckCircle2, ShieldCheck } from 'lucide-react';
-import { useToast } from '../../context/ToastContext';
+import { ArrowUpRight, Mail, MapPin } from 'lucide-react';
+import { InstagramIcon } from '../common/Icons';
 
 export const Footer: React.FC = () => {
-  const { showSuccess } = useToast();
-  const [emailInput, setEmailInput] = useState('');
-  const [subscribed, setSubscribed] = useState(false);
-
-  const handleSubscribe = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!emailInput || !emailInput.includes('@')) return;
-    setSubscribed(true);
-    showSuccess('Subscribed to Studio Dispatches', 'You will receive private previews and salon invitations.');
-    setEmailInput('');
-  };
-
   return (
-    <footer className="border-t border-[var(--line)] bg-[var(--surface)] transition-colors mt-24">
-      <div className="gallery-container py-16 lg:py-20">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-12 lg:gap-16">
-          {/* Identity & manifesto */}
-          <div className="md:col-span-4 space-y-4">
-            <div className="flex items-center gap-2.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-[var(--accent)] inline-block" />
-              <span className="font-display text-2xl font-bold tracking-tight text-[var(--ink)]">
+    <footer className="border-t border-[var(--line)] bg-[var(--paper)] transition-colors mt-20 sm:mt-28">
+      <div className="gallery-container py-14 sm:py-18">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-10 lg:gap-14 items-start">
+          {/* Identity: Wordmark & Short Tagline */}
+          <div className="md:col-span-5 space-y-3.5">
+            <Link to="/" className="inline-flex items-center gap-2 group">
+              <span className="w-2.5 h-2.5 rounded-full bg-[var(--accent)] inline-block transition-transform duration-300 group-hover:scale-125" />
+              <span className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-[var(--ink)]">
                 Brush and Bond
               </span>
-            </div>
-            <p className="font-display text-xl text-[var(--ink)] font-bold">
-              Creativity Connects.
-            </p>
-            <p className="text-xs font-mono text-[var(--accent)] font-semibold">
-              Creativity • Expression • Community
-            </p>
-            <p className="text-sm text-[var(--muted)] leading-relaxed max-w-[65ch]">
-              The official art club of GCECT, established in 2024. Fusing 80 years of ceramic engineering craftsmanship with modern canvas, code, and sculpture.
-            </p>
-            <div className="pt-2 text-xs font-mono text-[var(--muted)] flex flex-col gap-1">
-              <span>Instagram: <strong className="text-[var(--accent)] font-semibold">@brushandbond</strong></span>
-              <span>Studio 204 • Ceramic Engineering Block • Beliaghata Campus</span>
-            </div>
-          </div>
+            </Link>
 
-          {/* Directory: Explore */}
-          <div className="md:col-span-2 space-y-3">
-            <h4 className="font-display text-base font-bold text-[var(--ink)]">
-              Canvas & Salons
-            </h4>
-            <ul className="space-y-2 text-sm text-[var(--muted)] font-sans">
-              <li>
-                <Link to="/gallery" className="hover:text-[var(--accent)] transition-colors flex items-center justify-between group">
-                  <span>The Canvas</span>
-                  <ArrowUpRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </Link>
-              </li>
-              <li>
-                <Link to="/gallery/paintings" className="hover:text-[var(--accent)] transition-colors flex items-center justify-between group">
-                  <span>Paintings</span>
-                  <ArrowUpRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </Link>
-              </li>
-              <li>
-                <Link to="/gallery/sketches" className="hover:text-[var(--accent)] transition-colors flex items-center justify-between group">
-                  <span>Sketches</span>
-                  <ArrowUpRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </Link>
-              </li>
-              <li>
-                <Link to="/gallery/digital-art" className="hover:text-[var(--accent)] transition-colors flex items-center justify-between group">
-                  <span>Digital Art</span>
-                  <ArrowUpRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </Link>
-              </li>
-              <li>
-                <Link to="/events" className="hover:text-[var(--accent)] transition-colors flex items-center justify-between group">
-                  <span>Salons & Events</span>
-                  <ArrowUpRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Directory: Collective */}
-          <div className="md:col-span-2 space-y-3">
-            <h4 className="font-display text-base font-bold text-[var(--ink)]">
-              Collective
-            </h4>
-            <ul className="space-y-2 text-sm text-[var(--muted)] font-sans">
-              <li>
-                <Link to="/about" className="hover:text-[var(--accent)] transition-colors flex items-center justify-between group">
-                  <span>About</span>
-                  <ArrowUpRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </Link>
-              </li>
-              <li>
-                <Link to="/artists" className="hover:text-[var(--accent)] transition-colors flex items-center justify-between group">
-                  <span>Artist Spotlight</span>
-                  <ArrowUpRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </Link>
-              </li>
-              <li>
-                <Link to="/achievements" className="hover:text-[var(--accent)] transition-colors flex items-center justify-between group">
-                  <span>Achievements</span>
-                  <ArrowUpRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </Link>
-              </li>
-              <li>
-                <Link to="/team" className="hover:text-[var(--accent)] transition-colors flex items-center justify-between group">
-                  <span>Team</span>
-                  <ArrowUpRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </Link>
-              </li>
-              <li>
-                <Link to="/join" className="hover:text-[var(--accent)] transition-colors flex items-center justify-between group">
-                  <span>Join the Club</span>
-                  <ArrowUpRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </Link>
-              </li>
-              <li>
-                <Link to="/contact" className="hover:text-[var(--accent)] transition-colors flex items-center justify-between group">
-                  <span>Contact</span>
-                  <ArrowUpRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Studio dispatches newsletter */}
-          <div className="md:col-span-4 space-y-4">
-            <h4 className="font-display text-base font-bold text-[var(--ink)]">
-              Studio Dispatches
-            </h4>
-            <p className="text-xs text-[var(--muted)] leading-relaxed max-w-[65ch]">
-              Drop your email to get studio open hours, sketch walk invites, and exhibition dates. No spam, ever.
+            <p className="text-sm text-[var(--muted)] leading-relaxed font-sans max-w-[42ch]">
+              Creativity • Expression • Community. The official art club of the Government College of Engineering and Ceramic Technology, fusing technical craftsmanship with modern visual expression.
             </p>
 
-            <form onSubmit={handleSubscribe} className="space-y-3">
-              <div className="flex flex-col sm:flex-row gap-2">
-                <input
-                  type="email"
-                  value={emailInput}
-                  onChange={(e) => setEmailInput(e.target.value)}
-                  placeholder="student@gcect.ac.in"
-                  required
-                  className="flex-1 bg-[var(--paper)] border border-[var(--line)] px-4 py-2.5 rounded-[6px] text-sm text-[var(--ink)] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--accent)]"
-                />
-                <button
-                  type="submit"
-                  className="btn-primary shrink-0"
-                >
-                  Subscribe
-                </button>
-              </div>
-              {subscribed && (
-                <p className="text-xs text-[var(--accent)] flex items-center gap-1 font-mono">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>You're subscribed! See you in the studio.</span>
-                </p>
-              )}
-            </form>
-
-            <div className="pt-2">
-              <Link
-                to="/admin/login"
+            <div className="pt-1 flex items-center gap-3">
+              <a
+                href="https://instagram.com/brushandbond"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 text-xs font-mono text-[var(--muted)] hover:text-[var(--accent)] transition-colors"
+                aria-label="Instagram @brushandbond"
               >
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span>Executive Curator Login</span>
-              </Link>
+                <InstagramIcon size={14} />
+                <span>@brushandbond</span>
+              </a>
+
+              <span className="text-[var(--line)]">•</span>
+
+              <a
+                href="mailto:brushandbond.gcect@gmail.com"
+                className="inline-flex items-center gap-1.5 text-xs font-mono text-[var(--muted)] hover:text-[var(--accent)] transition-colors"
+                aria-label="Email Brush and Bond"
+              >
+                <Mail className="w-3.5 h-3.5" />
+                <span>brushandbond.gcect@gmail.com</span>
+              </a>
+            </div>
+          </div>
+
+          {/* Three Link Columns: Explore, Club, Connect */}
+          <div className="md:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-8">
+            {/* Column 1: Explore */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-mono uppercase tracking-wider text-[var(--ink)] font-semibold">
+                Explore
+              </h4>
+              <ul className="space-y-2 text-xs sm:text-sm text-[var(--muted)] font-sans">
+                <li>
+                  <Link to="/gallery" className="hover:text-[var(--accent)] transition-colors block">
+                    The Canvas
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/gallery/campus-art" className="hover:text-[var(--accent)] transition-colors block">
+                    Campus Art Archive
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/events" className="hover:text-[var(--accent)] transition-colors block">
+                    Events & Salons
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/artists" className="hover:text-[var(--accent)] transition-colors block">
+                    Artist Spotlight
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/achievements" className="hover:text-[var(--accent)] transition-colors block">
+                    Achievements
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Column 2: Club */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-mono uppercase tracking-wider text-[var(--ink)] font-semibold">
+                Club
+              </h4>
+              <ul className="space-y-2 text-xs sm:text-sm text-[var(--muted)] font-sans">
+                <li>
+                  <Link to="/about" className="hover:text-[var(--accent)] transition-colors block">
+                    About Us
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/team" className="hover:text-[var(--accent)] transition-colors block">
+                    Team & Leads
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/join" className="hover:text-[var(--accent)] transition-colors block">
+                    Join the Club
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/contact" className="hover:text-[var(--accent)] transition-colors block">
+                    Contact & Visits
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/admin/login" className="hover:text-[var(--accent)] transition-colors text-xs font-mono text-[var(--muted)]">
+                    Curator Portal
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Column 3: Connect */}
+            <div className="space-y-3 col-span-2 sm:col-span-1">
+              <h4 className="text-xs font-mono uppercase tracking-wider text-[var(--ink)] font-semibold">
+                Connect
+              </h4>
+              <ul className="space-y-2 text-xs sm:text-sm text-[var(--muted)] font-sans">
+                <li>
+                  <a
+                    href="https://instagram.com/brushandbond"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-[var(--accent)] transition-colors inline-flex items-center gap-1 group"
+                  >
+                    <span>Instagram</span>
+                    <ArrowUpRight className="w-3 h-3 opacity-60 group-hover:opacity-100" />
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="mailto:brushandbond.gcect@gmail.com"
+                    className="hover:text-[var(--accent)] transition-colors block truncate"
+                  >
+                    Email
+                  </a>
+                </li>
+                <li className="pt-1 text-xs font-mono text-[var(--muted)] flex items-start gap-1.5 leading-relaxed">
+                  <MapPin className="w-3.5 h-3.5 text-[var(--accent)] shrink-0 mt-0.5" />
+                  <span>Studio 204, GCECT, Kolkata 700010</span>
+                </li>
+              </ul>
             </div>
           </div>
         </div>
 
-        {/* Bottom bar */}
-        <div className="mt-14 pt-8 border-t border-[var(--line)] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-[var(--muted)]">
+        {/* Quiet and Minimal Bottom Bar */}
+        <div className="mt-12 sm:mt-16 pt-6 border-t border-[var(--line)]/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-mono text-[var(--muted)]">
           <div>
-            © {new Date().getFullYear()} Brush and Bond. Government College of Engineering and Ceramic Technology.
+            © Brush and Bond, est. 2024.
           </div>
-          <div className="flex items-center gap-6">
-            <span>Autonomous Institution • NAAC Accredited</span>
+          <div className="flex items-center gap-4 text-[11px]">
+            <span>Government College of Engineering and Ceramic Technology</span>
             <span className="text-[var(--accent)]">•</span>
-            <span>All Artworks Protected</span>
+            <span>All Rights Reserved</span>
           </div>
         </div>
       </div>

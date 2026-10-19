@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowUpRight, ArrowRight, Sparkles, MapPin } from 'lucide-react';
+import { ArrowUpRight, ArrowRight, Sparkles } from 'lucide-react';
 import { useGallery } from '../context/GalleryContext';
 import { ArtworkCard } from '../components/gallery/ArtworkCard';
 import { mockArtists } from '../data/mockData';
@@ -9,6 +9,7 @@ import { HeroPaintCanvas } from '../components/home/HeroPaintCanvas';
 import { ClubNumbers } from '../components/home/ClubNumbers';
 import { EventRow } from '../components/home/EventRow';
 import { InstagramStrip } from '../components/home/InstagramStrip';
+import { ArtAroundGcectSection } from '../components/home/ArtAroundGcectSection';
 
 export const HomePage: React.FC = () => {
   const { artworks, events } = useGallery();
@@ -354,49 +355,9 @@ export const HomePage: React.FC = () => {
       <ClubNumbers />
 
       {/* =========================================================
-          7. Art Around GCECT Teaser (Campus Art Collection)
+          7. Art Around GCECT (Campus Art Archive Showcase)
          ========================================================= */}
-      <section className="gallery-container">
-        <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[6px] overflow-hidden grid grid-cols-1 lg:grid-cols-12 gap-8 items-center p-6 sm:p-10 lg:p-12 shadow-sm">
-          <div className="lg:col-span-7 space-y-4">
-            <div className="flex items-center gap-2 text-xs font-mono text-[var(--accent)] font-semibold uppercase">
-              <MapPin className="w-4 h-4" />
-              <span>COLLEGE INSTALLATIONS & HERITAGE</span>
-            </div>
-
-            <h2 className="section-title text-[var(--ink)]">
-              Art around GCECT
-            </h2>
-
-            <p className="text-base text-[var(--muted)] leading-relaxed font-sans max-w-[60ch]">
-              Creativity isn't locked in galleries. From the 40-foot panoramic courtyard fresco to the historic 1941 brick kiln tunnel arches and foyer vitrines, explore permanent works integrated into our engineering campus.
-            </p>
-
-            <div className="pt-2">
-              <Link
-                to="/gallery/campus-art"
-                className="btn-primary inline-flex"
-              >
-                <span>Explore campus art collection</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-          </div>
-
-          <div className="lg:col-span-5">
-            <Link
-              to="/gallery/campus-art"
-              className="group block aspect-[16/10] rounded-[4px] overflow-hidden border border-[var(--line)] bg-[var(--paper)]"
-            >
-              <img
-                src="/artworks/courtyard-mural.jpg"
-                alt="Courtyard Mural at GCECT"
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-              />
-            </Link>
-          </div>
-        </div>
-      </section>
+      <ArtAroundGcectSection />
 
       {/* =========================================================
           8. Instagram Strip (Grid of 6 Posts)

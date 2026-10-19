@@ -2,17 +2,65 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23C84B31'/><path d='M30 70 C30 50, 45 40, 50 25 C55 40, 70 50, 70 70 C70 80, 30 80, 30 70 Z' fill='%23FAF8F5'/></svg>" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%232F3CFF'/><circle cx='50' cy='50' r='24' fill='%23FFFFFF'/><circle cx='50' cy='50' r='14' fill='%232F3CFF'/></svg>" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Brush and Bond — GCECT Art Club & The Canvas Archive</title>
-    <meta name="description" content="Official art club of the Government College of Engineering and Ceramic Technology (GCECT), established in 2024. Explore student artwork, upcoming exhibitions, and register for workshops. Creativity Connects." />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <meta name="description" content="Official art club of the Government College of Engineering and Ceramic Technology (GCECT), established in 2024. Explore student artwork, campus murals, upcoming exhibitions, and salons. Creativity Connects." />
+    <meta name="theme-color" content="#F5F1EA" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#13120F" media="(prefers-color-scheme: dark)" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://brushandbond.gcect.ac.in/" />
+    <meta property="og:site_name" content="Brush and Bond" />
+    <meta property="og:title" content="Brush and Bond — GCECT Art Club & The Canvas Archive" />
+    <meta property="og:description" content="Official art club of GCECT, est. 2024. Fusing 80 years of ceramic engineering craftsmanship with modern canvas, code, and sculpture. Creativity Connects." />
+    <meta property="og:image" content="https://brushandbond.gcect.ac.in/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@brushandbond" />
+    <meta name="twitter:creator" content="@brushandbond" />
+    <meta name="twitter:title" content="Brush and Bond — GCECT Art Club" />
+    <meta name="twitter:description" content="Official art club of GCECT. Fusing ceramic engineering craftsmanship with modern canvas, code, and sculpture." />
+    <meta name="twitter:image" content="https://brushandbond.gcect.ac.in/og-image.jpg" />
+
+    <link rel="canonical" href="https://brushandbond.gcect.ac.in/" />
+
+    <!-- Fonts: Preconnect & Preload for performance. Use font-display: swap -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Preload critical font files (Bricolage Grotesque 700/800, DM Sans 400) -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&family=Space+Mono:wght@400;700&display=swap" />
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+
+    <!-- Structured Data: Organization -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "Brush and Bond",
+      "description": "Official art club of the Government College of Engineering and Ceramic Technology (GCECT), Kolkata. Established 2024.",
+      "url": "https://brushandbond.gcect.ac.in",
+      "logo": "https://brushandbond.gcect.ac.in/og-image.jpg",
+      "foundingDate": "2024",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "Studio 204, Government College of Engineering and Ceramic Technology",
+        "addressLocality": "Kolkata",
+        "postalCode": "700010",
+        "addressCountry": "IN"
+      },
+      "sameAs": [
+        "https://instagram.com/brushandbond"
+      ]
+    }
+    </script>
   </head>
-  <body class="bg-paper text-ink antialiased selection:bg-accent selection:text-on-accent">
+  <body class="bg-paper text-ink antialiased selection:bg-accent selection:text-on-accent min-h-screen">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-
