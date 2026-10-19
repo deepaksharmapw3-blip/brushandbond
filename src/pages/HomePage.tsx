@@ -2,10 +2,12 @@ import React, { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowUpRight, ArrowRight, Sparkles } from 'lucide-react';
+import { SEO } from '../components/common/SEO';
 import { useGallery } from '../context/GalleryContext';
 import { ArtworkCard } from '../components/gallery/ArtworkCard';
 import { mockArtists } from '../data/mockData';
 import { HeroPaintCanvas } from '../components/home/HeroPaintCanvas';
+import { HeroBackdrop } from '../components/home/HeroBackdrop';
 import { ClubNumbers } from '../components/home/ClubNumbers';
 import { EventRow } from '../components/home/EventRow';
 import { InstagramStrip } from '../components/home/InstagramStrip';
@@ -30,6 +32,11 @@ export const HomePage: React.FC = () => {
 
   return (
     <div className="space-y-[clamp(64px,10vw,130px)] pb-0">
+      <SEO
+        title="Brush and Bond — GCECT Art Club & The Canvas Archive"
+        description="Official art club of the Government College of Engineering and Ceramic Technology (GCECT), est. 2024. Explore student artwork, campus murals, upcoming exhibitions, and salons. Creativity connects."
+        canonicalPath="/"
+      />
       
       {/* =========================================================
           1. Hero Section (Section 5.1)
@@ -38,8 +45,8 @@ export const HomePage: React.FC = () => {
         ref={heroRef}
         className="relative min-h-[calc(100vh-80px)] flex flex-col justify-between py-12 sm:py-16 overflow-hidden bg-[var(--paper)]"
       >
-        {/* Signature full-bleed ink canvas */}
-        <HeroPaintCanvas containerRef={heroRef} />
+        {/* Hero background image with overlays */}
+        <HeroBackdrop />
 
         {/* Main Hero Content */}
         <div className="gallery-container relative z-10 flex-1 flex flex-col justify-center my-auto space-y-8 sm:space-y-10">
@@ -51,10 +58,10 @@ export const HomePage: React.FC = () => {
               transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
               className="font-display font-black leading-[0.85] tracking-[-0.04em] text-[clamp(64px,16vw,230px)] select-none"
             >
-              <div className="text-[var(--ink)]">Brush</div>
+              <div className="text-[#F5F1EA]">Brush</div>
               <div className="flex items-baseline">
-                <span className="text-[var(--ink)] mr-3 sm:mr-6 text-[0.82em]">and</span>
-                <span className="text-[var(--accent)]">Bond</span>
+                <span className="text-[#F5F1EA] mr-3 sm:mr-6 text-[0.82em]">and</span>
+                <span className="text-[#7E88FF]">Bond</span>
               </div>
             </motion.div>
 
@@ -63,7 +70,7 @@ export const HomePage: React.FC = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="text-xs sm:text-sm font-mono text-[var(--muted)]"
+              className="text-xs sm:text-sm font-mono text-[#F5F1EA]/80"
             >
               The art club of GCECT, est. 2024
             </motion.p>
@@ -76,7 +83,7 @@ export const HomePage: React.FC = () => {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="space-y-5 max-w-xl"
           >
-            <p className="font-display font-bold text-[26px] sm:text-[30px] text-[var(--ink)] tracking-tight">
+            <p className="font-display font-bold text-[26px] sm:text-[30px] text-[#F5F1EA] tracking-tight">
               Creativity connects.
             </p>
 
@@ -87,33 +94,36 @@ export const HomePage: React.FC = () => {
                 onClick={() => {
                   document.getElementById('gallery-preview')?.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className="btn-primary"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-[#7E88FF] text-white rounded-full font-medium text-sm hover:opacity-90 transition-opacity"
               >
                 <span>Explore our art</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
 
-              <Link to="/join" className="btn-secondary">
+              <Link
+                to="/join"
+                className="inline-flex items-center gap-2 px-6 py-3 border-2 border-[#F5F1EA] text-[#F5F1EA] rounded-full font-medium text-sm hover:bg-[#F5F1EA]/10 transition-colors"
+              >
                 <span>Join the club</span>
                 <ArrowUpRight className="w-4 h-4" />
               </Link>
             </div>
 
             {/* Small support line: Creativity • Expression • Community */}
-            <p className="text-xs font-mono text-[var(--accent)] font-semibold tracking-wider pt-1">
+            <p className="text-xs font-mono text-[#F5F1EA]/70 font-semibold tracking-wider pt-1">
               Creativity • Expression • Community
             </p>
           </motion.div>
         </div>
 
         {/* Bottom Bar: Stats Ribbon + Small hint at bottom right (hidden on touch) */}
-        <div className="gallery-container relative z-10 pt-8 border-t border-[var(--line)] flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div className="gallery-container relative z-10 pt-8 border-t border-[#F5F1EA]/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="flex items-center gap-8 sm:gap-14 text-left">
             <div>
-              <span className="block font-display text-2xl sm:text-3xl font-bold text-[var(--ink)]">
+              <span className="block font-display text-2xl sm:text-3xl font-bold text-[#F5F1EA]">
                 80+
               </span>
-              <span className="text-xs font-mono text-[var(--muted)]">
+              <span className="text-xs font-mono text-[#F5F1EA]/60">
                 Archived pieces
               </span>
             </div>

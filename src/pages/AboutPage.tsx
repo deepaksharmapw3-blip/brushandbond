@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ArrowUpRight, Sparkles, Clock, Compass } from 'lucide-react';
+import { SEO } from '../components/common/SEO';
 
 export const AboutPage: React.FC = () => {
   const missionItems = [
@@ -93,6 +94,12 @@ export const AboutPage: React.FC = () => {
   ];
 
   return (
+    <>
+      <SEO
+        title="About Brush and Bond"
+        description="Learn about Brush and Bond, GCECT's official art club. Discover our mission, history, and the creative community of students and faculty united by a passion for artistic expression."
+        canonicalPath="/about"
+      />
     <div className="gallery-container py-10 sm:py-16 space-y-20 lg:space-y-24">
       {/* 1. Page Header & Intro Paragraph */}
       <section className="space-y-6 max-w-4xl">
@@ -259,5 +266,6 @@ export const AboutPage: React.FC = () => {
         </div>
       </section>
     </div>
+    </>
   );
 };

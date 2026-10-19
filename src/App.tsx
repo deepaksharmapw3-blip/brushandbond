@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { ToastProvider } from './context/ToastContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { GalleryProvider } from './context/GalleryContext';
+import { AdminAuthProvider } from './context/AdminAuthContext';
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
 import { ArtworkLightbox } from './components/gallery/ArtworkLightbox';
@@ -24,6 +25,13 @@ const JoinPage = lazy(() => import('./pages/JoinPage').then(m => ({ default: m.J
 const ContactPage = lazy(() => import('./pages/ContactPage').then(m => ({ default: m.ContactPage })));
 const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage').then(m => ({ default: m.AdminDashboardPage })));
 const AdminLoginPage = lazy(() => import('./pages/AdminLoginPage').then(m => ({ default: m.AdminLoginPage })));
+const AdminEventsPage = lazy(() => import('./pages/AdminEventsPage').then(m => ({ default: m.AdminEventsPage })));
+const AdminGalleryPage = lazy(() => import('./pages/AdminGalleryPage').then(m => ({ default: m.AdminGalleryPage })));
+const AdminArtistsPage = lazy(() => import('./pages/AdminPlaceholderPages').then(m => ({ default: m.AdminArtistsPage })));
+const AdminMembersPage = lazy(() => import('./pages/AdminPlaceholderPages').then(m => ({ default: m.AdminMembersPage })));
+const AdminAnnouncementsPage = lazy(() => import('./pages/AdminPlaceholderPages').then(m => ({ default: m.AdminAnnouncementsPage })));
+const AdminAchievementsPage = lazy(() => import('./pages/AdminPlaceholderPages').then(m => ({ default: m.AdminAchievementsPage })));
+const AdminAnalyticsPage = lazy(() => import('./pages/AdminPlaceholderPages').then(m => ({ default: m.AdminAnalyticsPage })));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
 
 const PageLoadingFallback = () => (
@@ -38,11 +46,19 @@ export function App() {
     <ThemeProvider>
       <ToastProvider>
         <GalleryProvider>
-          <Router>
+          <AdminAuthProvider>
+            <Router>
             <ScrollToTop />
             <div className="min-h-screen flex flex-col bg-[var(--paper)] text-[var(--ink)] transition-colors duration-200">
+              {/* Skip-to-main-content link for keyboard users */}
+              <a
+                href="#main-content"
+                className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-[var(--accent)] focus:text-[var(--on-accent)] focus:rounded-md focus:font-semibold"
+              >
+                Skip to main content
+              </a>
               <Navbar />
-              <main className="flex-1">
+              <main id="main-content" className="flex-1">
                 <Suspense fallback={<PageLoadingFallback />}>
                   <Routes>
                     {/* Home */}
@@ -83,6 +99,13 @@ export function App() {
                     {/* Admin portal */}
                     <Route path="/admin" element={<AdminDashboardPage />} />
                     <Route path="/admin/login" element={<AdminLoginPage />} />
+                    <Route path="/admin/events" element={<AdminEventsPage />} />
+                    <Route path="/admin/gallery" element={<AdminGalleryPage />} />
+                    <Route path="/admin/artists" element={<AdminArtistsPage />} />
+                    <Route path="/admin/members" element={<AdminMembersPage />} />
+                    <Route path="/admin/announcements" element={<AdminAnnouncementsPage />} />
+                    <Route path="/admin/achievements" element={<AdminAchievementsPage />} />
+                    <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
 
                     {/* Friendly 404 Catch-All */}
                     <Route path="*" element={<NotFoundPage />} />
@@ -93,6 +116,7 @@ export function App() {
               <ArtworkLightbox />
             </div>
           </Router>
+          </AdminAuthProvider>
         </GalleryProvider>
       </ToastProvider>
     </ThemeProvider>

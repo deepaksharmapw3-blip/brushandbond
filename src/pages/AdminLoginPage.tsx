@@ -1,113 +1,176 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { Lock, ArrowRight, Sparkles, ArrowLeft } from 'lucide-react';
-import { useToast } from '../context/ToastContext';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { AlertCircle, Lock, Mail, LogIn } from 'lucide-react';
+import { SEO } from '../components/common/SEO';
+import { useAdminAuth } from '../context/AdminAuthContext';
 
 export const AdminLoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { showSuccess } = useToast();
-  const [email, setEmail] = useState('');
-  const [passcode, setPasscode] = useState('');
+  const { login, isLoading } = useAdminAuth();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const [email, setEmail] = useState('admin@brushandbond.local');
+  const [password, setPassword] = useState('admin123');
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    localStorage.setItem('bb-admin-auth', 'true');
-    showSuccess('Access Granted', 'Welcome to the Brush and Bond Curatorial Dashboard.');
-    navigate('/admin');
+    setError('');
+    setIsSubmitting(true);
+
+    try {
+      await login(email, password);
+      navigate('/admin', { replace: true });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleDemoLogin = () => {
-    setEmail('curator@gcect.ac.in');
-    setPasscode('GCECT-STUDIO-2024');
-    localStorage.setItem('bb-admin-auth', 'true');
-    showSuccess('Demo Access Granted', 'Logged in as Curatorial Lead (Executive Access).');
-    navigate('/admin');
+  const handleDemoLogin = async (demoEmail: string, demoPassword: string) => {
+    setEmail(demoEmail);
+    setPassword(demoPassword);
+    setError('');
+    setIsSubmitting(true);
+
+    try {
+      await login(demoEmail, demoPassword);
+      navigate('/admin', { replace: true });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  return (
-    <div className="gallery-container py-16 sm:py-24 flex items-center justify-center min-h-[70vh]">
-      <div className="w-full max-w-md bg-[var(--surface)] border border-[var(--line)] rounded-[6px] p-8 sm:p-10 shadow-sm space-y-8">
-        {/* Back Link */}
-        <Link
-          to="/"
-          className="inline-flex items-center gap-1.5 text-xs font-mono text-[var(--muted)] hover:text-[var(--ink)] transition-colors"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Back to public site</span>
-        </Link>
-
-        {/* Brand Lock Header */}
-        <div className="space-y-2 text-center">
-          <div className="w-12 h-12 rounded-full bg-[var(--accent)]/10 text-[var(--accent)] flex items-center justify-center mx-auto mb-3">
-            <Lock className="w-6 h-6" />
-          </div>
-          <span className="text-xs font-mono text-[var(--accent)] font-semibold uppercase tracking-wider block">
-            Executive Portal (UI Only)
-          </span>
-          <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-[var(--ink)]">
-            Studio Admin Login
-          </h1>
-          <p className="text-xs text-[var(--muted)] font-sans">
-            Curatorial management for The GCECT Canvas archive, submissions review, and salon planning.
-          </p>
-        </div>
-
-        {/* Login Form */}
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div className="space-y-1.5">
-            <label className="text-xs font-mono text-[var(--ink)] font-semibold block">
-              Curator Email Address
-            </label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="curator@gcect.ac.in"
-              className="w-full bg-[var(--paper)] border border-[var(--line)] px-4 py-2.5 rounded-[6px] text-sm text-[var(--ink)] focus:outline-none focus:border-[var(--accent)]"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <div className="flex justify-between items-center">
-              <label className="text-xs font-mono text-[var(--ink)] font-semibold">
-                Studio Passcode
-              </label>
-              <span className="text-[11px] font-mono text-[var(--muted)]">
-                Default: GCECT-STUDIO-2024
-              </span>
-            </div>
-            <input
-              type="password"
-              required
-              value={passcode}
-              onChange={(e) => setPasscode(e.target.value)}
-              placeholder="••••••••••••"
-              className="w-full bg-[var(--paper)] border border-[var(--line)] px-4 py-2.5 rounded-[6px] text-sm text-[var(--ink)] focus:outline-none focus:border-[var(--accent)] font-mono"
-            />
-          </div>
-
-          <button type="submit" className="btn-primary w-full justify-center">
-            <span>Sign in to dashboard</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
-        </form>
-
-        {/* Quick Demo Access Button */}
-        <div className="pt-4 border-t border-[var(--line)] space-y-3">
-          <button
-            type="button"
-            onClick={handleDemoLogin}
-            className="w-full btn-secondary text-xs justify-center"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-[var(--accent)]" />
-            <span>Instant Demo Access (1-Click)</span>
-          </button>
-          <p className="text-[11px] text-center text-[var(--muted)] font-mono">
-            Demo credentials are fully simulated client-side.
-          </p>
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--paper)]">
+        <div className="space-y-3 text-center">
+          <div className="w-8 h-8 rounded-full border-2 border-[var(--line)] border-t-[var(--accent)] animate-spin mx-auto" />
+          <p className="text-sm text-[var(--muted)]">Loading...</p>
         </div>
       </div>
-    </div>
+    );
+  }
+
+  return (
+    <>
+      <SEO
+        title="Admin Login"
+        description="Brush and Bond admin panel login"
+        canonicalPath="/admin/login"
+      />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[var(--paper)] to-[var(--surface)] px-4 py-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="w-full max-w-md"
+        >
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-[var(--accent)] text-[var(--on-accent)] mb-4">
+              <Lock className="w-6 h-6" />
+            </div>
+            <h1 className="text-2xl font-bold text-[var(--ink)]">Studio Admin</h1>
+            <p className="text-sm text-[var(--muted)] mt-2">Brush and Bond Executive Portal</p>
+          </div>
+
+          {/* Error Alert */}
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex gap-3"
+            >
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
+            </motion.div>
+          )}
+
+          {/* Login Form */}
+          <form onSubmit={handleSubmit} className="space-y-4 mb-6">
+            {/* Email */}
+            <div>
+              <label className="block text-sm font-medium text-[var(--ink)] mb-2">
+                Email
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-3 w-5 h-5 text-[var(--muted)]" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={isSubmitting}
+                  className="w-full pl-10 pr-4 py-2.5 bg-[var(--surface)] border border-[var(--line)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)] disabled:opacity-50"
+                  placeholder="admin@example.com"
+                />
+              </div>
+            </div>
+
+            {/* Password */}
+            <div>
+              <label className="block text-sm font-medium text-[var(--ink)] mb-2">
+                Password
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-3 w-5 h-5 text-[var(--muted)]" />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={isSubmitting}
+                  className="w-full pl-10 pr-4 py-2.5 bg-[var(--surface)] border border-[var(--line)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)] disabled:opacity-50"
+                  placeholder="••••••••"
+                />
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full bg-[var(--accent)] text-[var(--on-accent)] py-2.5 rounded-lg font-medium text-sm hover:opacity-90 disabled:opacity-50 transition-opacity flex items-center justify-center gap-2"
+            >
+              <LogIn className="w-4 h-4" />
+              {isSubmitting ? 'Signing in...' : 'Sign in'}
+            </button>
+          </form>
+
+          {/* Demo Credentials */}
+          <div className="border-t border-[var(--line)] pt-6">
+            <p className="text-xs text-[var(--muted)] mb-3 text-center font-medium">DEMO ACCOUNTS</p>
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => handleDemoLogin('admin@brushandbond.local', 'admin123')}
+                disabled={isSubmitting}
+                className="w-full text-left p-3 bg-[var(--surface)] border border-[var(--line)] rounded-lg hover:border-[var(--accent)] transition-colors disabled:opacity-50 text-sm"
+              >
+                <p className="font-medium text-[var(--ink)]">Admin Account</p>
+                <p className="text-[var(--muted)] text-xs">admin@brushandbond.local</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDemoLogin('editor@brushandbond.local', 'editor123')}
+                disabled={isSubmitting}
+                className="w-full text-left p-3 bg-[var(--surface)] border border-[var(--line)] rounded-lg hover:border-[var(--accent)] transition-colors disabled:opacity-50 text-sm"
+              >
+                <p className="font-medium text-[var(--ink)]">Editor Account</p>
+                <p className="text-[var(--muted)] text-xs">editor@brushandbond.local</p>
+              </button>
+            </div>
+          </div>
+
+          {/* Help Text */}
+          <p className="text-xs text-[var(--muted)] text-center mt-6">
+            This is a development login interface. Real authentication will use Supabase Auth.
+          </p>
+        </motion.div>
+      </div>
+    </>
   );
 };

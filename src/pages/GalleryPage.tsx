@@ -13,6 +13,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import type { GalleryCategory, Artwork } from '../types';
+import { SEO } from '../components/common/SEO';
 import { useGallery } from '../context/GalleryContext';
 import { ArtworkCard } from '../components/gallery/ArtworkCard';
 
@@ -168,6 +169,12 @@ export const GalleryPage: React.FC = () => {
     : false;
 
   return (
+    <>
+      <SEO
+        title="Gallery"
+        description="Explore the Brush and Bond art gallery. View student artwork spanning sketches, paintings, digital art, photography, calligraphy, and more."
+        canonicalPath="/gallery"
+      />
     <div className="py-8 sm:py-12 space-y-10 sm:space-y-12">
       {/* 1. Page Title & Intro Text */}
       <section className="gallery-container space-y-4">
@@ -517,5 +524,6 @@ export const GalleryPage: React.FC = () => {
         </div>
       </section>
     </div>
+    </>
   );
 };

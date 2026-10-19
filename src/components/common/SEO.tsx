@@ -6,6 +6,7 @@ export interface SEOProps {
   image?: string;
   canonicalPath?: string;
   type?: 'website' | 'article';
+  structuredData?: Record<string, unknown>;
 }
 
 const DEFAULT_TITLE = 'Brush and Bond — GCECT Art Club & The Canvas Archive';
@@ -14,12 +15,18 @@ const DEFAULT_DESCRIPTION =
 const DEFAULT_IMAGE = 'https://brushandbond.gcect.ac.in/og-image.jpg';
 const BASE_URL = 'https://brushandbond.gcect.ac.in';
 
+/**
+ * SEO Component
+ * Dynamically updates per-page meta tags, Open Graph, Twitter, canonical URL, and structured data.
+ * Place this component at the top level of each page to ensure proper SEO.
+ */
 export const SEO: React.FC<SEOProps> = ({
   title,
   description = DEFAULT_DESCRIPTION,
   image = DEFAULT_IMAGE,
   canonicalPath,
   type = 'website',
+  structuredData,
 }) => {
   useEffect(() => {
     // 1. Document title
@@ -35,24 +42,31 @@ export const SEO: React.FC<SEOProps> = ({
     }
     metaDesc.setAttribute('content', description);
 
-    // 3. Open Graph
-    const setMetaTag = (property: string, content: string) => {
-      let tag = document.querySelector(`meta[property="${property}"]`);
+    // 3. Open Graph & Twitter Cards
+    const setMetaTag = (property: string, content: string, isProperty = true) => {
+      const attr = isProperty ? 'property' : 'name';
+      let tag = document.querySelector(`meta[${attr}="${property}"]`);
       if (!tag) {
         tag = document.createElement('meta');
-        tag.setAttribute('property', property);
+        tag.setAttribute(attr, property);
         document.head.appendChild(tag);
       }
       tag.setAttribute('content', content);
     };
 
-    setMetaTag('og:title', fullTitle);
-    setMetaTag('og:description', description);
-    setMetaTag('og:image', image.startsWith('http') ? image : `${BASE_URL}${image}`);
-    setMetaTag('og:type', type);
+    const ogImage = image.startsWith('http') ? image : `${BASE_URL}${image}`;
+    setMetaTag('og:title', fullTitle, true);
+    setMetaTag('og:description', description, true);
+    setMetaTag('og:image', ogImage, true);
+    setMetaTag('og:type', type, true);
 
     const canonicalUrl = canonicalPath ? `${BASE_URL}${canonicalPath}` : window.location.href;
-    setMetaTag('og:url', canonicalUrl);
+    setMetaTag('og:url', canonicalUrl, true);
+
+    // Twitter Card tags
+    setMetaTag('twitter:title', fullTitle, false);
+    setMetaTag('twitter:description', description, false);
+    setMetaTag('twitter:image', ogImage, false);
 
     // 4. Canonical link
     let canonicalTag = document.querySelector('link[rel="canonical"]');
@@ -62,7 +76,19 @@ export const SEO: React.FC<SEOProps> = ({
       document.head.appendChild(canonicalTag);
     }
     canonicalTag.setAttribute('href', canonicalUrl);
-  }, [title, description, image, canonicalPath, type]);
+
+    // 5. Structured Data (JSON-LD)
+    if (structuredData) {
+      let structuredDataScript = document.querySelector('script[data-type="structured-data"]');
+      if (!structuredDataScript) {
+        structuredDataScript = document.createElement('script');
+        structuredDataScript.setAttribute('type', 'application/ld+json');
+        structuredDataScript.setAttribute('data-type', 'structured-data');
+        document.head.appendChild(structuredDataScript);
+      }
+      structuredDataScript.textContent = JSON.stringify(structuredData);
+    }
+  }, [title, description, image, canonicalPath, type, structuredData]);
 
   return null;
 };

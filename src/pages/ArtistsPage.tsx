@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Clock } from 'lucide-react';
+import { SEO } from '../components/common/SEO';
 import { mockArtists, mockMilestones } from '../data/mockData';
 import { useGallery } from '../context/GalleryContext';
 
@@ -20,6 +21,12 @@ export const ArtistsPage: React.FC = () => {
   );
 
   return (
+    <>
+      <SEO
+        title="Artists"
+        description="Meet the talented student artists behind Brush and Bond. Explore their portfolios, specialties, and artistic journeys at GCECT."
+        canonicalPath="/artists"
+      />
     <div className="gallery-container py-10 sm:py-16 space-y-16">
       
       {/* Page Header */}
@@ -239,5 +246,6 @@ export const ArtistsPage: React.FC = () => {
       </section>
 
     </div>
+    </>
   );
 };

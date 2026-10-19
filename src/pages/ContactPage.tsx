@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Mail, MapPin, Clock, Send, CheckCircle2, ExternalLink } from 'lucide-react';
+import { SEO } from '../components/common/SEO';
 import { useToast } from '../context/ToastContext';
 
 // ── Inline SVG brand icons ──
@@ -38,6 +39,12 @@ export const ContactPage: React.FC = () => {
   };
 
   return (
+    <>
+      <SEO
+        title="Contact"
+        description="Get in touch with Brush and Bond. Reach out with questions, collaboration inquiries, or feedback about our art club at GCECT."
+        canonicalPath="/contact"
+      />
     <div className="gallery-container py-10 sm:py-16 space-y-16">
       {/* ────────────────────────────────────────────────── */}
       {/* Page Header */}
@@ -280,5 +287,6 @@ export const ContactPage: React.FC = () => {
         </p>
       </section>
     </div>
+    </>
   );
 };

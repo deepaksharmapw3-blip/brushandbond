@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { SEO } from '../components/common/SEO';
 import {
   GraduationCap,
   Sparkles,
@@ -286,6 +287,12 @@ export const JoinPage: React.FC = () => {
   };
 
   return (
+    <>
+      <SEO
+        title="Join Brush and Bond"
+        description="Apply to become a member of the Brush and Bond art club at GCECT. Share your passion for art, portfolio, and join our creative community."
+        canonicalPath="/join"
+      />
     <div className="min-h-screen py-10 sm:py-16">
       <div className="gallery-container">
         
@@ -856,5 +863,6 @@ export const JoinPage: React.FC = () => {
 
       </div>
     </div>
+    </>
   );
 };

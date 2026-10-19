@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Clock, MapPin, ArrowRight, History, Image, Palette, Sparkles, CheckCircle2, Ticket } from 'lucide-react';
+import { SEO } from '../components/common/SEO';
 import { useGallery } from '../context/GalleryContext';
 import { RegistrationModal } from '../components/events/RegistrationModal';
 import type { EventItem } from '../types';
@@ -92,6 +93,12 @@ export const EventsPage: React.FC = () => {
   }, [events, selectedFilter]);
 
   return (
+    <>
+      <SEO
+        title="Events"
+        description="Discover upcoming art exhibitions, workshops, plein air sessions, and collaborative events hosted by Brush and Bond at GCECT."
+        canonicalPath="/events"
+      />
     <div className="gallery-container py-10 sm:py-16 space-y-10">
       {/* Page Header */}
       <div className="space-y-4 max-w-3xl">
@@ -409,5 +416,6 @@ export const EventsPage: React.FC = () => {
         onClose={() => setRegisteringEvent(null)}
       />
     </div>
+    </>
   );
 };

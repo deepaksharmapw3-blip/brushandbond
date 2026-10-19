@@ -185,7 +185,8 @@ export const HeroPaintCanvas: React.FC<HeroPaintCanvasProps> = ({ containerRef }
   return (
     <canvas
       ref={canvasRef}
-      className="absolute inset-0 pointer-events-none z-0"
+      className="absolute inset-0 pointer-events-none z-0 opacity-35"
+      style={{ mixBlendMode: 'screen' }}
       aria-hidden="true"
     />
   );

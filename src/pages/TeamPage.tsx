@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { SEO } from '../components/common/SEO';
 import {
   ArrowRight,
   Users,
@@ -126,6 +127,12 @@ export const TeamPage: React.FC = () => {
   };
 
   return (
+    <>
+      <SEO
+        title="Team"
+        description="Meet the leadership and executive team behind Brush and Bond. Learn about the students and faculty driving the art club's mission at GCECT."
+        canonicalPath="/team"
+      />
     <div className="gallery-container py-10 sm:py-16 space-y-20">
 
       {/* ────────────────────────────────────────────────── */}
@@ -508,5 +515,6 @@ export const TeamPage: React.FC = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
