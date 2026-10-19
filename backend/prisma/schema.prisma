@@ -1,0 +1,178 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Admin {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique @db.VarChar(150)
+  password  String   @db.VarChar(255)
+  name      String   @db.VarChar(100)
+  role      String   @default("ADMIN") @db.VarChar(50)
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  updatedAt DateTime @updatedAt @db.Timestamp(6)
+}
+
+model Artist {
+  id           Int       @id @default(autoincrement())
+  name         String    @db.VarChar(100)
+  department   String?   @db.VarChar(100)
+  year         String?   @db.VarChar(20)
+  bio          String?   @db.Text
+  avatarUrl    String?   @db.VarChar(500)
+  instagram    String?   @db.VarChar(200)
+  linkedin     String?   @db.VarChar(200)
+  portfolioUrl String?   @db.VarChar(500)
+  isSpotlight  Boolean   @default(false)
+  createdAt    DateTime  @default(now()) @db.Timestamp(6)
+  updatedAt    DateTime  @updatedAt @db.Timestamp(6)
+  artworks     Artwork[]
+}
+
+enum ArtworkCategory {
+  SKETCHES
+  PAINTINGS
+  DIGITAL_ART
+  PHOTOGRAPHY
+}
+
+model Artwork {
+  id          Int             @id @default(autoincrement())
+  title       String          @db.VarChar(200)
+  category    ArtworkCategory @default(SKETCHES)
+  description String?         @db.Text
+  imageUrl    String          @db.VarChar(500)
+  tags        String?         @db.VarChar(200)
+  featured    Boolean         @default(false)
+  likes       Int             @default(0)
+  artistId    Int?
+  artist      Artist?         @relation(fields: [artistId], references: [id], onDelete: SetNull)
+  createdAt   DateTime        @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime        @updatedAt @db.Timestamp(6)
+}
+
+model events {
+  event_id              Int             @id @default(autoincrement())
+  event_name            String          @db.VarChar(150)
+  event_date            DateTime?       @db.Date
+  event_time            String?         @db.VarChar(50)
+  venue                 String?         @db.VarChar(200)
+  description           String?         @db.Text
+  banner_url            String?         @db.VarChar(500)
+  category              String?         @default("Workshop") @db.VarChar(50)
+  is_past               Boolean         @default(false)
+  registration_deadline DateTime?       @db.Timestamp(6)
+  max_capacity          Int?            @default(100)
+  created_at            DateTime?       @default(now()) @db.Timestamp(6)
+  registrations         registrations[]
+}
+
+model members {
+  member_id     Int             @id @default(autoincrement())
+  name          String          @db.VarChar(100)
+  email         String          @unique @db.VarChar(150)
+  phone         String?         @db.VarChar(20)
+  department    String?         @db.VarChar(100)
+  roll_number   String?         @db.VarChar(50)
+  role          String?         @default("MEMBER") @db.VarChar(50)
+  joined_at     DateTime?       @default(now()) @db.Timestamp(6)
+  registrations registrations[]
+}
+
+model registrations {
+  registration_id Int       @id @default(autoincrement())
+  member_id       Int?
+  event_id        Int?
+  applicant_name  String?   @db.VarChar(100)
+  applicant_email String?   @db.VarChar(150)
+  applicant_phone String?   @db.VarChar(20)
+  department      String?   @db.VarChar(100)
+  registered_at   DateTime? @default(now()) @db.Timestamp(6)
+  events          events?   @relation(fields: [event_id], references: [event_id], onDelete: Cascade)
+  members         members?  @relation(fields: [member_id], references: [member_id], onDelete: Cascade)
+
+  @@unique([member_id, event_id])
+}
+
+model ClubApplication {
+  id           Int       @id @default(autoincrement())
+  fullName     String    @db.VarChar(100)
+  email        String    @db.VarChar(150)
+  phone        String    @db.VarChar(20)
+  department   String    @db.VarChar(100)
+  rollNumber   String    @db.VarChar(50)
+  academicYear String    @db.VarChar(20)
+  artInterests String    @db.VarChar(255)
+  portfolioUrl String?   @db.VarChar(500)
+  whyJoin      String    @db.Text
+  status       String    @default("PENDING") @db.VarChar(20)
+  adminNotes   String?   @db.Text
+  reviewedAt   DateTime? @db.Timestamp(6)
+  createdAt    DateTime  @default(now()) @db.Timestamp(6)
+}
+
+model Achievement {
+  id              Int       @id @default(autoincrement())
+  title           String    @db.VarChar(200)
+  recipientName   String    @db.VarChar(150)
+  competitionName String    @db.VarChar(200)
+  awardTitle      String    @db.VarChar(100)
+  description     String?   @db.Text
+  awardDate       DateTime? @db.Date
+  imageUrl        String?   @db.VarChar(500)
+  createdAt       DateTime  @default(now()) @db.Timestamp(6)
+}
+
+model TeamMember {
+  id               Int      @id @default(autoincrement())
+  name             String   @db.VarChar(100)
+  role             String   @db.VarChar(100)
+  department       String?  @db.VarChar(100)
+  year             String?  @db.VarChar(50)
+  tier             String?  @default("executive") @db.VarChar(50)
+  bio              String?  @db.Text
+  quote            String?  @db.Text
+  specialty        String?  @db.VarChar(200)
+  responsibilities String?  @db.Text
+  avatarUrl        String?  @db.VarChar(500)
+  instagramUrl     String?  @db.VarChar(200)
+  linkedinUrl      String?  @db.VarChar(200)
+  displayOrder     Int      @default(0)
+  isLead           Boolean  @default(false)
+  createdAt        DateTime @default(now()) @db.Timestamp(6)
+}
+
+model CampusArt {
+  id            Int      @id @default(autoincrement())
+  title         String   @db.VarChar(200)
+  location      String   @db.VarChar(200)
+  description   String?  @db.Text
+  imageUrl      String   @db.VarChar(500)
+  artistCredits String?  @db.VarChar(250)
+  dateCompleted String?  @db.VarChar(50)
+  createdAt     DateTime @default(now()) @db.Timestamp(6)
+}
+
+model Announcement {
+  id        Int      @id @default(autoincrement())
+  title     String   @db.VarChar(250)
+  content   String   @db.Text
+  category  String   @default("General") @db.VarChar(50)
+  isPinned  Boolean  @default(false)
+  author    String   @default("GCECT Art Club Admin") @db.VarChar(100)
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  updatedAt DateTime @updatedAt @db.Timestamp(6)
+}
+
+model ContactMessage {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(100)
+  email     String   @db.VarChar(150)
+  subject   String   @db.VarChar(200)
+  message   String   @db.Text
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+}

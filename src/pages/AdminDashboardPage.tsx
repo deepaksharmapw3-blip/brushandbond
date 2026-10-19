@@ -6,6 +6,7 @@ import {
   Calendar,
   Users,
   UserCheck,
+  Palette,
   TrendingUp,
   ArrowUpRight,
   ArrowDownRight,
@@ -17,7 +18,7 @@ import {
 import { SEO } from '../components/common/SEO';
 import { ProtectedAdminRoute } from '../components/admin/ProtectedAdminRoute';
 import { AdminLayout } from '../components/admin/AdminLayout';
-import { backendApi, DashboardStats, ActivityLog } from '../services/backendApi';
+import { backendApi, type DashboardStats, type ActivityLog } from '../services/backendApi';
 
 interface StatCard {
   label: string;
@@ -161,6 +162,57 @@ export const AdminDashboardPage: React.FC = () => {
               'Real-time analytics powered by PostgreSQL'
             )}
           </p>
+        </div>
+
+        {/* ── CORE ADMIN ACTION BUTTONS (from user tree) ── */}
+        <div className="mb-8 p-4 sm:p-5 bg-[var(--surface)] border border-[var(--line)] rounded-xl shadow-sm">
+          <h2 className="text-xs font-mono uppercase tracking-wider text-[var(--accent)] font-bold mb-3">
+            Quick Management Actions
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <button
+              onClick={() => navigate('/admin/gallery')}
+              className="flex items-center gap-2.5 p-3 rounded-lg bg-[var(--paper)] border border-[var(--line)] hover:border-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--on-accent)] transition-all text-xs font-semibold text-[var(--ink)] shadow-xs group"
+            >
+              <Image className="w-4 h-4 text-[var(--accent)] group-hover:text-[var(--on-accent)] shrink-0" />
+              <span>Upload Artwork</span>
+            </button>
+            <button
+              onClick={() => navigate('/admin/events')}
+              className="flex items-center gap-2.5 p-3 rounded-lg bg-[var(--paper)] border border-[var(--line)] hover:border-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--on-accent)] transition-all text-xs font-semibold text-[var(--ink)] shadow-xs group"
+            >
+              <Calendar className="w-4 h-4 text-[var(--accent)] group-hover:text-[var(--on-accent)] shrink-0" />
+              <span>Manage Events</span>
+            </button>
+            <button
+              onClick={() => navigate('/admin/artists')}
+              className="flex items-center gap-2.5 p-3 rounded-lg bg-[var(--paper)] border border-[var(--line)] hover:border-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--on-accent)] transition-all text-xs font-semibold text-[var(--ink)] shadow-xs group"
+            >
+              <Palette className="w-4 h-4 text-[var(--accent)] group-hover:text-[var(--on-accent)] shrink-0" />
+              <span>Manage Artists</span>
+            </button>
+            <button
+              onClick={() => navigate('/admin/team')}
+              className="flex items-center gap-2.5 p-3 rounded-lg bg-[var(--paper)] border border-[var(--line)] hover:border-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--on-accent)] transition-all text-xs font-semibold text-[var(--ink)] shadow-xs group"
+            >
+              <Users className="w-4 h-4 text-[var(--accent)] group-hover:text-[var(--on-accent)] shrink-0" />
+              <span>Manage Team</span>
+            </button>
+            <button
+              onClick={() => navigate('/admin/members')}
+              className="flex items-center gap-2.5 p-3 rounded-lg bg-[var(--paper)] border border-[var(--line)] hover:border-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--on-accent)] transition-all text-xs font-semibold text-[var(--ink)] shadow-xs group"
+            >
+              <UserCheck className="w-4 h-4 text-[var(--accent)] group-hover:text-[var(--on-accent)] shrink-0" />
+              <span>Applications</span>
+            </button>
+            <button
+              onClick={() => navigate('/admin/announcements')}
+              className="flex items-center gap-2.5 p-3 rounded-lg bg-[var(--paper)] border border-[var(--line)] hover:border-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--on-accent)] transition-all text-xs font-semibold text-[var(--ink)] shadow-xs group"
+            >
+              <Activity className="w-4 h-4 text-[var(--accent)] group-hover:text-[var(--on-accent)] shrink-0" />
+              <span>Announcements</span>
+            </button>
+          </div>
         </div>
 
         {/* Loading State */}

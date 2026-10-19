@@ -3,7 +3,7 @@
  * Connects to the agent-shield backend API with PostgreSQL
  */
 
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3002/api';
+const API_BASE = (import.meta as any).env?.VITE_API_URL || '/api';
 
 export interface DashboardStats {
   totalArtworks: number;

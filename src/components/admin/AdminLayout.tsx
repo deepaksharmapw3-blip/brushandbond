@@ -6,6 +6,7 @@ import {
   Calendar,
   Image,
   Users,
+  UserCheck,
   Bell,
   Palette,
   Menu,
@@ -34,7 +35,8 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Upload / Gallery', icon: Image, path: '/admin/gallery', section: 'gallery' },
   { label: 'Manage Events', icon: Calendar, path: '/admin/events', section: 'events' },
   { label: 'Manage Artists', icon: Palette, path: '/admin/artists', section: 'artists' },
-  { label: 'Manage Applications', icon: Users, path: '/admin/members', section: 'members' },
+  { label: 'Manage Team', icon: Users, path: '/admin/team', section: 'team' },
+  { label: 'Manage Applications', icon: UserCheck, path: '/admin/members', section: 'members' },
   { label: 'Announcements', icon: Bell, path: '/admin/announcements', section: 'announcements' },
 ];
 

@@ -23,10 +23,20 @@ const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefin
  * In production, this will be replaced with real Supabase Auth
  */
 const MOCK_ADMIN_USERS: Record<string, { password: string; user: AdminUser }> = {
+  'admin@gcectart.club': {
+    password: 'Admin@ArtClub2026',
+    user: {
+      id: 'admin-001',
+      email: 'admin@gcectart.club',
+      name: 'GCECT Art Club Admin',
+      role: 'admin',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=gcectadmin',
+    },
+  },
   'admin@brushandbond.local': {
     password: 'admin123',
     user: {
-      id: 'admin-001',
+      id: 'admin-002',
       email: 'admin@brushandbond.local',
       name: 'Admin User',
       role: 'admin',
