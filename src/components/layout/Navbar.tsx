@@ -115,6 +115,15 @@ export const Navbar: React.FC = () => {
                 Join
               </Button>
 
+              {/* Admin Portal Link */}
+              <Link
+                to="/admin"
+                className="text-xs font-semibold px-2.5 py-1.5 rounded-md border border-[var(--line)] text-[var(--muted)] hover:text-[var(--accent)] hover:border-[var(--accent)] transition-colors"
+                title="Go to Admin Dashboard"
+              >
+                Admin
+              </Link>
+
               {/* Theme toggle */}
               <ThemeToggle size="md" />
             </div>

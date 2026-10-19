@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { authApi } from '../services/api';
 
 export interface AdminUser {
-  id: string;
+  id: string | number;
   email: string;
   name: string;
-  role: 'admin' | 'editor' | 'viewer';
+  role: 'admin' | 'editor' | 'viewer' | string;
   avatar?: string;
 }
 
@@ -18,50 +19,24 @@ interface AdminAuthContextType {
 
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
 
-/**
- * Mock admin users for development
- * In production, this will be replaced with Supabase Auth
- */
-const MOCK_ADMIN_USERS: Record<string, { password: string; user: AdminUser }> = {
-  'admin@brushandbond.local': {
-    password: 'admin123',
-    user: {
-      id: 'admin-001',
-      email: 'admin@brushandbond.local',
-      name: 'Admin User',
-      role: 'admin',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=admin',
-    },
-  },
-  'editor@brushandbond.local': {
-    password: 'editor123',
-    user: {
-      id: 'editor-001',
-      email: 'editor@brushandbond.local',
-      name: 'Editor User',
-      role: 'editor',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=editor',
-    },
-  },
-};
-
 export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<AdminUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Simulate loading on mount
+  // Check stored session on mount
   useEffect(() => {
     const checkSession = async () => {
-      await new Promise((resolve) => setTimeout(resolve, 500));
       const stored = localStorage.getItem('bb-admin-session');
-      if (stored) {
+      const token = localStorage.getItem('bb-admin-token');
+      if (stored && token) {
         try {
           const session = JSON.parse(stored);
           setUser(session);
           setIsAuthenticated(true);
         } catch {
           localStorage.removeItem('bb-admin-session');
+          localStorage.removeItem('bb-admin-token');
         }
       }
       setIsLoading(false);
@@ -73,27 +48,29 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Simulate network delay
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
-      const adminRecord = MOCK_ADMIN_USERS[email.toLowerCase()];
-
-      if (!adminRecord) {
-        throw new Error('Admin account not found. Try admin@brushandbond.local / admin123');
+      // 1. Try real backend login
+      const res = await authApi.login(email, password);
+      if (res.success && res.token) {
+        localStorage.setItem('bb-admin-token', res.token);
+        const adminUser: AdminUser = {
+          id: res.admin.id,
+          email: res.admin.email,
+          name: res.admin.name,
+          role: res.admin.role.toLowerCase(),
+          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${res.admin.email}`,
+        };
+        setUser(adminUser);
+        setIsAuthenticated(true);
+        localStorage.setItem('bb-admin-session', JSON.stringify(adminUser));
+        return;
       }
-
-      if (adminRecord.password !== password) {
-        throw new Error('Invalid password. Try admin123');
-      }
-
-      const authenticatedUser = adminRecord.user;
-      setUser(authenticatedUser);
-      setIsAuthenticated(true);
-      localStorage.setItem('bb-admin-session', JSON.stringify(authenticatedUser));
-    } catch (error) {
+      throw new Error('Authentication failed');
+    } catch (error: any) {
       setIsAuthenticated(false);
       setUser(null);
-      throw error;
+      localStorage.removeItem('bb-admin-token');
+      localStorage.removeItem('bb-admin-session');
+      throw new Error(error.message || 'Invalid credentials. Use admin@gcectart.club / Admin@ArtClub2026');
     } finally {
       setIsLoading(false);
     }
@@ -103,6 +80,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setUser(null);
     setIsAuthenticated(false);
     localStorage.removeItem('bb-admin-session');
+    localStorage.removeItem('bb-admin-token');
   };
 
   return (

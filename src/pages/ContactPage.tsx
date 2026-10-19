@@ -29,8 +29,19 @@ export const ContactPage: React.FC = () => {
   });
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    try {
+      const { contactApi } = await import('../services/api');
+      await contactApi.submit({
+        name: formData.name,
+        email: formData.email,
+        subject: 'Website Inquiry',
+        message: formData.message,
+      });
+    } catch (err) {
+      console.warn('Contact API notice:', err);
+    }
     setSubmitted(true);
     showSuccess(
       'Message dispatched to Studio 204',

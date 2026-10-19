@@ -9,8 +9,8 @@ export const AdminLoginPage: React.FC = () => {
   const navigate = useNavigate();
   const { login, isLoading } = useAdminAuth();
 
-  const [email, setEmail] = useState('admin@brushandbond.local');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('admin@gcectart.club');
+  const [password, setPassword] = useState('Admin@ArtClub2026');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -142,25 +142,16 @@ export const AdminLoginPage: React.FC = () => {
 
           {/* Demo Credentials */}
           <div className="border-t border-[var(--line)] pt-6">
-            <p className="text-xs text-[var(--muted)] mb-3 text-center font-medium">DEMO ACCOUNTS</p>
+            <p className="text-xs text-[var(--muted)] mb-3 text-center font-medium">GCECT ART CLUB ADMIN</p>
             <div className="space-y-2">
               <button
                 type="button"
-                onClick={() => handleDemoLogin('admin@brushandbond.local', 'admin123')}
+                onClick={() => handleDemoLogin('admin@gcectart.club', 'Admin@ArtClub2026')}
                 disabled={isSubmitting}
                 className="w-full text-left p-3 bg-[var(--surface)] border border-[var(--line)] rounded-lg hover:border-[var(--accent)] transition-colors disabled:opacity-50 text-sm"
               >
-                <p className="font-medium text-[var(--ink)]">Admin Account</p>
-                <p className="text-[var(--muted)] text-xs">admin@brushandbond.local</p>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDemoLogin('editor@brushandbond.local', 'editor123')}
-                disabled={isSubmitting}
-                className="w-full text-left p-3 bg-[var(--surface)] border border-[var(--line)] rounded-lg hover:border-[var(--accent)] transition-colors disabled:opacity-50 text-sm"
-              >
-                <p className="font-medium text-[var(--ink)]">Editor Account</p>
-                <p className="text-[var(--muted)] text-xs">editor@brushandbond.local</p>
+                <p className="font-medium text-[var(--ink)]">GCECT Art Club Admin</p>
+                <p className="text-[var(--muted)] text-xs">admin@gcectart.club (Click to autofill & sign in)</p>
               </button>
             </div>
           </div>

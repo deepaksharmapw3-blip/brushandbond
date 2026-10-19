@@ -1,101 +1,249 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Image, Plus, Edit, Trash2, Upload, Grid3X3, Search } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Image,
+  Plus,
+  Trash2,
+  Upload,
+  Grid3X3,
+  Search,
+  X,
+  CheckCircle2,
+  AlertCircle,
+  ExternalLink,
+} from 'lucide-react';
 import { SEO } from '../components/common/SEO';
 import { ProtectedAdminRoute } from '../components/admin/ProtectedAdminRoute';
 import { AdminLayout } from '../components/admin/AdminLayout';
 import { AdminToast, ConfirmDialog, AdminEmptyState } from '../components/admin/AdminUtils';
-import { useGallery } from '../context/GalleryContext';
+import { artworkApi, artistApi } from '../services/api';
 
 export const AdminGalleryPage: React.FC = () => {
-  const { artworks } = useGallery();
+  const [artworks, setArtworks] = useState<any[]>([]);
+  const [artists, setArtists] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('All');
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [selectedArtwork, setSelectedArtwork] = useState<string | null>(null);
+  const [selectedArtwork, setSelectedArtwork] = useState<any | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
-  const filteredArtworks = artworks.filter((art) =>
-    art.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    art.artistName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Form state
+  const [title, setTitle] = useState('');
+  const [category, setCategory] = useState('SKETCHES');
+  const [artistId, setArtistId] = useState('');
+  const [description, setDescription] = useState('');
+  const [tags, setTags] = useState('');
+  const [featured, setFeatured] = useState(false);
+  const [imageUrl, setImageUrl] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const fetchArtworks = async () => {
+    setIsLoading(true);
+    try {
+      const res = await artworkApi.getAll();
+      if (res.success && Array.isArray(res.artworks)) {
+        setArtworks(res.artworks);
+      }
+    } catch (err: any) {
+      console.warn('Failed to load artworks:', err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchArtists = async () => {
+    try {
+      const res = await artistApi.getAll();
+      if (res.success && Array.isArray(res.artists)) {
+        setArtists(res.artists);
+      }
+    } catch {}
+  };
+
+  useEffect(() => {
+    fetchArtworks();
+    fetchArtists();
+  }, []);
+
+  const resetForm = () => {
+    setTitle('');
+    setCategory('SKETCHES');
+    setArtistId('');
+    setDescription('');
+    setTags('');
+    setFeatured(false);
+    setImageUrl('');
+    setImageFile(null);
+  };
+
+  const handleUploadSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim()) {
+      setToast({ message: 'Title is required', type: 'error' });
+      return;
+    }
+    if (!imageFile && !imageUrl.trim()) {
+      setToast({ message: 'Please upload an image file or provide an Image URL', type: 'error' });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      if (imageFile) {
+        const formData = new FormData();
+        formData.append('title', title.trim());
+        formData.append('category', category);
+        formData.append('image', imageFile);
+        if (artistId) formData.append('artistId', artistId);
+        if (description) formData.append('description', description);
+        if (tags) formData.append('tags', tags);
+        formData.append('featured', String(featured));
+        await artworkApi.create(formData);
+      } else {
+        await artworkApi.create({
+          title: title.trim(),
+          category,
+          imageUrl: imageUrl.trim(),
+          artistId: artistId ? parseInt(artistId, 10) : undefined,
+          description: description ? description.trim() : undefined,
+          tags: tags ? tags.trim() : undefined,
+          featured,
+        });
+      }
+
+      setToast({ message: 'Artwork uploaded successfully to Gallery!', type: 'success' });
+      setIsUploadOpen(false);
+      resetForm();
+      fetchArtworks();
+    } catch (err: any) {
+      setToast({ message: err.message || 'Failed to upload artwork', type: 'error' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleDelete = async () => {
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    setIsDeleteOpen(false);
-    setToast({ message: 'Artwork deleted successfully', type: 'success' });
+    if (!selectedArtwork) return;
+    try {
+      await artworkApi.delete(selectedArtwork.id);
+      setToast({ message: `Artwork "${selectedArtwork.title}" deleted`, type: 'success' });
+      setIsDeleteOpen(false);
+      setSelectedArtwork(null);
+      fetchArtworks();
+    } catch (err: any) {
+      setToast({ message: err.message || 'Failed to delete artwork', type: 'error' });
+    }
   };
+
+  const filteredArtworks = artworks.filter((art) => {
+    const matchesSearch =
+      art.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (art.artist && art.artist.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (art.tags && art.tags.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesCategory =
+      categoryFilter === 'All' || art.category === categoryFilter;
+    return matchesSearch && matchesCategory;
+  });
 
   return (
     <ProtectedAdminRoute>
       <SEO title="Admin Gallery" description="Manage gallery" canonicalPath="/admin/gallery" />
       <AdminLayout activeSection="gallery">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-[var(--ink)]">Gallery</h1>
+            <h1 className="text-2xl font-bold text-[var(--ink)]">Manage Artwork & Gallery</h1>
             <p className="text-sm text-[var(--muted)] mt-1">
-              Manage artwork submissions ({filteredArtworks.length})
+              Upload, edit, and organize artworks across all categories ({filteredArtworks.length} items)
             </p>
           </div>
           <button
-            onClick={() => setIsUploadOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--accent)] text-[var(--on-accent)] rounded-lg text-sm font-medium hover:opacity-90"
+            onClick={() => {
+              resetForm();
+              setIsUploadOpen(true);
+            }}
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[var(--accent)] text-[var(--on-accent)] rounded-lg text-sm font-semibold hover:opacity-95 shadow-xs transition-all shrink-0 cursor-pointer"
           >
             <Upload className="w-4 h-4" />
             Upload Artwork
           </button>
         </div>
 
-        {/* Search */}
-        <div className="mb-6 relative">
-          <Search className="absolute left-3 top-3 w-4 h-4 text-[var(--muted)]" />
-          <input
-            type="text"
-            placeholder="Search artworks..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-[var(--surface)] border border-[var(--line)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
-          />
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-3 mb-6">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-3 w-4 h-4 text-[var(--muted)]" />
+            <input
+              type="text"
+              placeholder="Search by title, artist, or tag..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-[var(--surface)] border border-[var(--line)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)] text-[var(--ink)]"
+            />
+          </div>
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="px-4 py-2 bg-[var(--surface)] border border-[var(--line)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)] text-[var(--ink)]"
+          >
+            <option value="All">All Categories</option>
+            <option value="SKETCHES">Sketches</option>
+            <option value="PAINTINGS">Paintings</option>
+            <option value="DIGITAL_ART">Digital Art</option>
+            <option value="PHOTOGRAPHY">Photography</option>
+          </select>
         </div>
 
         {/* Gallery Grid */}
         {filteredArtworks.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {filteredArtworks.slice(0, 12).map((artwork) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {filteredArtworks.map((artwork) => (
               <motion.div
                 key={artwork.id}
-                initial={{ opacity: 0, scale: 0.95 }}
+                initial={{ opacity: 0, scale: 0.97 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="group relative bg-[var(--surface)] border border-[var(--line)] rounded-lg overflow-hidden hover:border-[var(--accent)]/50 transition-colors"
+                className="group relative bg-[var(--surface)] border border-[var(--line)] rounded-xl overflow-hidden hover:border-[var(--accent)] transition-all shadow-xs flex flex-col"
               >
-                <div className="aspect-square bg-[var(--paper)] overflow-hidden">
+                <div className="aspect-square bg-[var(--paper)] overflow-hidden relative">
                   <img
                     src={artwork.imageUrl}
                     alt={artwork.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
+                  {artwork.featured && (
+                    <span className="absolute top-2 left-2 px-2 py-0.5 bg-[var(--accent)] text-[var(--on-accent)] text-[10px] font-bold rounded-md uppercase">
+                      Featured
+                    </span>
+                  )}
+                  <span className="absolute top-2 right-2 px-2 py-0.5 bg-black/70 text-white text-[10px] font-mono rounded-md">
+                    {artwork.category}
+                  </span>
                 </div>
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
-                  <button
-                    onClick={() => setSelectedArtwork(artwork.id)}
-                    className="p-2 bg-white text-black rounded-full hover:scale-110 transition-transform"
-                  >
-                    <Edit className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      setSelectedArtwork(artwork.id);
-                      setIsDeleteOpen(true);
-                    }}
-                    className="p-2 bg-red-600 text-white rounded-full hover:scale-110 transition-transform"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-                <div className="p-3">
-                  <p className="text-xs font-medium text-[var(--ink)] line-clamp-1">{artwork.title}</p>
-                  <p className="text-xs text-[var(--muted)]">{artwork.artistName}</p>
+                <div className="p-3.5 flex-1 flex flex-col justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold text-[var(--ink)] line-clamp-1">{artwork.title}</h3>
+                    <p className="text-xs text-[var(--muted)] mt-0.5">
+                      {artwork.artist ? artwork.artist.name : 'Unknown Artist'}
+                    </p>
+                  </div>
+                  <div className="mt-3 pt-2 border-t border-[var(--line)] flex items-center justify-between">
+                    <span className="text-[11px] text-[var(--muted)] font-mono">
+                      ❤️ {artwork.likes || 0} likes
+                    </span>
+                    <button
+                      onClick={() => {
+                        setSelectedArtwork(artwork);
+                        setIsDeleteOpen(true);
+                      }}
+                      className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+                      title="Delete Artwork"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             ))}
@@ -103,17 +251,193 @@ export const AdminGalleryPage: React.FC = () => {
         ) : (
           <AdminEmptyState
             icon={Grid3X3}
-            title="No artworks found"
-            description={searchQuery ? 'Try adjusting your search' : 'Upload your first artwork'}
+            title={isLoading ? 'Loading artworks...' : 'No artworks found'}
+            description={searchQuery ? 'Try adjusting your search filters' : 'Upload your first artwork to the gallery'}
             actionLabel="Upload Artwork"
-            onAction={() => setIsUploadOpen(true)}
+            onAction={() => {
+              resetForm();
+              setIsUploadOpen(true);
+            }}
           />
         )}
+
+        {/* ── UPLOAD ARTWORK MODAL ── */}
+        <AnimatePresence>
+          {isUploadOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs overflow-y-auto">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-[var(--surface)] border border-[var(--line)] rounded-xl w-full max-w-lg shadow-2xl overflow-hidden my-8"
+              >
+                <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--line)]">
+                  <h3 className="font-bold text-base text-[var(--ink)] flex items-center gap-2">
+                    <Upload className="w-4 h-4 text-[var(--accent)]" />
+                    Upload New Artwork
+                  </h3>
+                  <button
+                    onClick={() => setIsUploadOpen(false)}
+                    className="text-[var(--muted)] hover:text-[var(--ink)] p-1 rounded-md"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleUploadSubmit} className="p-6 space-y-4">
+                  {/* Title */}
+                  <div>
+                    <label className="block text-xs font-semibold text-[var(--ink)] mb-1">
+                      Artwork Title *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Charcoal Silhouette of Heritage Kiln"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      className="w-full px-3 py-2 bg-[var(--paper)] border border-[var(--line)] rounded-lg text-sm text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                    />
+                  </div>
+
+                  {/* Category & Artist */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-[var(--ink)] mb-1">
+                        Category *
+                      </label>
+                      <select
+                        value={category}
+                        onChange={(e) => setCategory(e.target.value)}
+                        className="w-full px-3 py-2 bg-[var(--paper)] border border-[var(--line)] rounded-lg text-sm text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                      >
+                        <option value="SKETCHES">Sketches</option>
+                        <option value="PAINTINGS">Paintings</option>
+                        <option value="DIGITAL_ART">Digital Art</option>
+                        <option value="PHOTOGRAPHY">Photography</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-[var(--ink)] mb-1">
+                        Artist
+                      </label>
+                      <select
+                        value={artistId}
+                        onChange={(e) => setArtistId(e.target.value)}
+                        className="w-full px-3 py-2 bg-[var(--paper)] border border-[var(--line)] rounded-lg text-sm text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                      >
+                        <option value="">Select Artist (Optional)</option>
+                        {artists.map((a) => (
+                          <option key={a.id} value={a.id}>
+                            {a.name} ({a.department || 'GCECT'})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Image: File Upload OR Image URL */}
+                  <div>
+                    <label className="block text-xs font-semibold text-[var(--ink)] mb-1">
+                      Artwork Image *
+                    </label>
+                    <div className="space-y-2">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            setImageFile(e.target.files[0]);
+                          }
+                        }}
+                        className="w-full text-xs text-[var(--muted)] file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-[var(--accent)] file:text-[var(--on-accent)] hover:file:opacity-90"
+                      />
+                      <div className="text-center text-[11px] text-[var(--muted)] font-mono">— OR ENTER IMAGE URL —</div>
+                      <input
+                        type="url"
+                        placeholder="https://images.unsplash.com/photo-..."
+                        value={imageUrl}
+                        onChange={(e) => setImageUrl(e.target.value)}
+                        className="w-full px-3 py-2 bg-[var(--paper)] border border-[var(--line)] rounded-lg text-sm text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  <div>
+                    <label className="block text-xs font-semibold text-[var(--ink)] mb-1">
+                      Description / Medium
+                    </label>
+                    <textarea
+                      rows={2}
+                      placeholder="Brief note about inspiration, medium used, or dimension..."
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      className="w-full px-3 py-2 bg-[var(--paper)] border border-[var(--line)] rounded-lg text-sm text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                    />
+                  </div>
+
+                  {/* Tags & Featured */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+                    <div>
+                      <label className="block text-xs font-semibold text-[var(--ink)] mb-1">
+                        Tags (comma separated)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="charcoal, landscape, campus"
+                        value={tags}
+                        onChange={(e) => setTags(e.target.value)}
+                        className="w-full px-3 py-2 bg-[var(--paper)] border border-[var(--line)] rounded-lg text-sm text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-2 sm:pt-4">
+                      <input
+                        type="checkbox"
+                        id="featured-check"
+                        checked={featured}
+                        onChange={(e) => setFeatured(e.target.checked)}
+                        className="w-4 h-4 rounded text-[var(--accent)] focus:ring-[var(--accent)]"
+                      />
+                      <label htmlFor="featured-check" className="text-xs font-medium text-[var(--ink)] cursor-pointer">
+                        Feature on Home page
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="pt-4 border-t border-[var(--line)] flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsUploadOpen(false)}
+                      className="px-4 py-2 text-sm text-[var(--muted)] hover:text-[var(--ink)] font-medium rounded-lg"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="px-5 py-2 bg-[var(--accent)] text-[var(--on-accent)] text-sm font-semibold rounded-lg hover:opacity-90 disabled:opacity-50"
+                    >
+                      {isSubmitting ? 'Uploading...' : 'Publish Artwork'}
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
 
         {/* Delete Confirm */}
         <ConfirmDialog
           title="Delete Artwork"
-          description="Are you sure? This action cannot be undone."
+          description={
+            selectedArtwork
+              ? `Are you sure you want to delete "${selectedArtwork.title}"? This cannot be undone.`
+              : 'Are you sure?'
+          }
           isOpen={isDeleteOpen}
           isDangerous
           confirmText="Delete"
