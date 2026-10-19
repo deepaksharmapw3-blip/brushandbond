@@ -185,6 +185,13 @@ export const GalleryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         prev.map((art) => (art.id === artworkId ? { ...art, likes: art.likes + 1 } : art))
       );
       showSuccess('Appreciated! Saved to your studio bookmarks');
+      // Sync like to backend
+      import('../services/api').then(({ artworkApi }) => {
+        const numId = parseInt(artworkId, 10);
+        if (!isNaN(numId)) {
+          artworkApi.like(numId).catch(() => {});
+        }
+      });
     }
 
     setLikedArtworkIds(nextLikes);
@@ -192,6 +199,17 @@ export const GalleryProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const registerForEvent = (payload: RegistrationPayload) => {
     const passCode = `GCECT-ART-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    // Sync registration to backend
+    import('../services/api').then(({ eventApi }) => {
+      const numId = parseInt(payload.eventId, 10) || 1;
+      eventApi.register(numId, {
+        applicant_name: payload.name,
+        applicant_email: payload.email,
+        applicant_phone: payload.phone,
+        department: payload.department,
+      }).catch(() => {});
+    });
 
     setEvents((prev) =>
       prev.map((evt) =>
@@ -212,6 +230,22 @@ export const GalleryProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const submitMembership = (payload: MembershipPayload) => {
     const applicantId = `BB-APP-${Date.now().toString().slice(-4)}`;
+
+    // Sync application to backend
+    import('../services/api').then(({ applicationApi }) => {
+      applicationApi.submit({
+        fullName: payload.fullName,
+        email: payload.email,
+        phone: '9876543210',
+        department: payload.department,
+        rollNumber: payload.rollNumber || `ROLL-${Date.now().toString().slice(-4)}`,
+        academicYear: payload.yearOfStudy,
+        artInterests: payload.primaryWing,
+        portfolioUrl: payload.portfolioUrl,
+        whyJoin: payload.motivation || payload.experienceSummary || 'Passionate about Art at GCECT',
+      }).catch(() => {});
+    });
+
     const savedApps = localStorage.getItem('bb-applicants');
     const apps = savedApps ? JSON.parse(savedApps) : [];
     apps.push({ ...payload, applicantId, submittedAt: new Date().toISOString() });

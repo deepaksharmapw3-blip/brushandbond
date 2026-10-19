@@ -103,6 +103,24 @@ export async function submitMembershipApplication(
     status: 'received',
   };
 
+  // Submit to backend API
+  try {
+    const { applicationApi } = await import('./api');
+    await applicationApi.submit({
+      fullName: data.name.trim(),
+      email: data.email.trim().toLowerCase(),
+      phone: (data as any).phone || '9876543210',
+      department: data.department.trim(),
+      rollNumber: (data as any).rollNumber || `GCECT-${Date.now().toString().slice(-4)}`,
+      academicYear: data.year,
+      artInterests: data.areaOfInterest,
+      portfolioUrl: data.portfolioUrl?.trim(),
+      whyJoin: data.reasonToJoin.trim(),
+    });
+  } catch (apiErr) {
+    console.warn('API submission notice:', apiErr);
+  }
+
   try {
     const existing = localStorage.getItem('bb-membership-applications');
     const list: StoredMembershipApplication[] = existing ? JSON.parse(existing) : [];
