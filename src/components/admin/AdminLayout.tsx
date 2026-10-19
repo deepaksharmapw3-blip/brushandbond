@@ -58,7 +58,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeSectio
   };
 
   return (
-    <div className="min-h-screen flex bg-[var(--paper)] text-[var(--ink)]">
+    <div className="min-h-screen flex bg-white dark:bg-slate-950 text-slate-900 dark:text-white">
       {/* Mobile Backdrop */}
       {sidebarOpen && (
         <div
@@ -69,21 +69,21 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeSectio
 
       {/* Sidebar - Always visible on desktop (lg:translate-x-0), toggled on mobile */}
       <aside
-        className={`fixed lg:sticky top-0 left-0 h-screen w-64 bg-[var(--surface)] border-r border-[var(--line)] flex flex-col z-50 transition-transform duration-200 ease-in-out shrink-0 ${
+        className={`fixed lg:sticky top-0 left-0 h-screen w-64 bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col z-50 transition-transform duration-200 ease-in-out shrink-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
         {/* Sidebar Header */}
-        <div className="h-16 flex items-center justify-between px-6 border-b border-[var(--line)]">
+        <div className="h-16 flex items-center justify-between px-6 border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-[var(--accent)]" />
-            <span className="font-display font-bold text-sm text-[var(--ink)] tracking-wide">
+            <ShieldCheck className="w-5 h-5 text-blue-500" />
+            <span className="font-display font-bold text-sm text-slate-900 dark:text-white tracking-wide">
               ADMIN PANEL
             </span>
           </div>
           <button
             onClick={() => setSidebarOpen(false)}
-            className="lg:hidden text-[var(--muted)] hover:text-[var(--ink)] p-1"
+            className="lg:hidden text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white p-1"
             aria-label="Close Sidebar"
           >
             <X className="w-5 h-5" />
@@ -104,8 +104,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeSectio
                 }}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   active
-                    ? 'bg-[var(--accent)] text-[var(--on-accent)] font-semibold shadow-sm'
-                    : 'text-[var(--muted)] hover:text-[var(--ink)] hover:bg-[var(--paper)]'
+                    ? 'bg-blue-500 text-white font-semibold shadow-sm'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
               >
                 <Icon className="w-4 h-4 shrink-0" />
@@ -116,18 +116,18 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeSectio
         </nav>
 
         {/* Sidebar Footer */}
-        <div className="border-t border-[var(--line)] p-4 space-y-2">
+        <div className="border-t border-slate-200 dark:border-slate-800 p-4 space-y-2">
           <Link
             to="/"
             target="_blank"
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium text-[var(--muted)] hover:text-[var(--ink)] hover:bg-[var(--paper)] transition-colors"
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
             <ExternalLink className="w-3.5 h-3.5" />
             <span>View Public Website</span>
           </Link>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
           >
             <LogOut className="w-3.5 h-3.5" />
             <span>Sign Out</span>
@@ -138,16 +138,16 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeSectio
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Navbar */}
-        <header className="h-16 bg-[var(--surface)] border-b border-[var(--line)] flex items-center justify-between px-4 sm:px-6 sticky top-0 z-30">
+        <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 sm:px-6 sticky top-0 z-30">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden text-[var(--ink)] p-1.5 rounded-md hover:bg-[var(--paper)]"
+              className="lg:hidden text-slate-900 dark:text-white p-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"
               aria-label="Open Sidebar"
             >
               <Menu className="w-6 h-6" />
             </button>
-            <h2 className="text-sm font-semibold text-[var(--ink)] hidden sm:block">
+            <h2 className="text-sm font-semibold text-slate-900 dark:text-white hidden sm:block">
               GCECT Art Club — Executive Management
             </h2>
           </div>
@@ -156,16 +156,16 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeSectio
           <div className="relative">
             <button
               onClick={() => setUserMenuOpen(!userMenuOpen)}
-              className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-[var(--paper)] transition-colors border border-transparent hover:border-[var(--line)]"
+              className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
             >
-              <div className="w-7 h-7 rounded-full bg-[var(--accent)] text-[var(--on-accent)] flex items-center justify-center font-bold text-xs uppercase">
+              <div className="w-7 h-7 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold text-xs uppercase">
                 {user?.name ? user.name.charAt(0) : 'A'}
               </div>
               <div className="hidden sm:block text-left">
-                <p className="text-xs font-semibold text-[var(--ink)] leading-none">{user?.name || 'Administrator'}</p>
-                <p className="text-[10px] text-[var(--muted)] leading-none mt-1">{user?.email || 'admin@gcectart.club'}</p>
+                <p className="text-xs font-semibold text-slate-900 dark:text-white leading-none">{user?.name || 'Administrator'}</p>
+                <p className="text-[10px] text-slate-600 dark:text-slate-400 leading-none mt-1">{user?.email || 'admin@brushandbond.local'}</p>
               </div>
-              <ChevronDown className="w-3.5 h-3.5 text-[var(--muted)]" />
+              <ChevronDown className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
             </button>
 
             {/* User Dropdown */}
@@ -175,22 +175,22 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeSectio
                   initial={{ opacity: 0, y: -6 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -6 }}
-                  className="absolute right-0 top-full mt-1.5 w-48 bg-[var(--surface)] border border-[var(--line)] rounded-lg shadow-lg overflow-hidden py-1 z-50"
+                  className="absolute right-0 top-full mt-1.5 w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-lg overflow-hidden py-1 z-50"
                 >
-                  <div className="px-3 py-2 border-b border-[var(--line)]">
-                    <p className="text-[11px] text-[var(--muted)]">Signed in as</p>
-                    <p className="text-xs font-semibold text-[var(--ink)] truncate">{user?.email}</p>
+                  <div className="px-3 py-2 border-b border-slate-200 dark:border-slate-800">
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400">Signed in as</p>
+                    <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">{user?.email}</p>
                   </div>
                   <Link
                     to="/"
-                    className="w-full text-left px-3 py-2 text-xs text-[var(--ink)] hover:bg-[var(--paper)] flex items-center gap-2"
+                    className="w-full text-left px-3 py-2 text-xs text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
                     Public Site
                   </Link>
                   <button
                     onClick={handleLogout}
-                    className="w-full text-left px-3 py-2 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 flex items-center gap-2"
+                    className="w-full text-left px-3 py-2 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 flex items-center gap-2"
                   >
                     <LogOut className="w-3.5 h-3.5" />
                     Sign Out
@@ -202,7 +202,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeSectio
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto bg-white dark:bg-slate-950">
           {children}
         </main>
       </div>

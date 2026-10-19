@@ -17,7 +17,8 @@ import {
 import { SEO } from '../components/common/SEO';
 import { ProtectedAdminRoute } from '../components/admin/ProtectedAdminRoute';
 import { AdminLayout } from '../components/admin/AdminLayout';
-import { backendApi, DashboardStats, ActivityLog } from '../services/backendApi';
+import { backendApi } from '../services/backendApi';
+import type { DashboardStats, ActivityLog } from '../services/backendApi';
 
 interface StatCard {
   label: string;
@@ -153,13 +154,9 @@ export const AdminDashboardPage: React.FC = () => {
       <AdminLayout activeSection="dashboard">
         {/* Page Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[var(--ink)]">Dashboard</h1>
-          <p className="text-sm text-[var(--muted)] mt-1">
-            {error ? (
-              <span className="text-orange-600 dark:text-orange-400">⚠ {error}</span>
-            ) : (
-              'Real-time analytics powered by PostgreSQL'
-            )}
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Dashboard</h1>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+            Real-time analytics powered by localStorage
           </p>
         </div>
 
@@ -167,8 +164,8 @@ export const AdminDashboardPage: React.FC = () => {
         {loading && (
           <div className="flex items-center justify-center py-12">
             <div className="space-y-3 text-center">
-              <div className="w-8 h-8 rounded-full border-2 border-[var(--line)] border-t-[var(--accent)] animate-spin mx-auto" />
-              <p className="text-sm text-[var(--muted)]">Loading dashboard...</p>
+              <div className="w-8 h-8 rounded-full border-2 border-slate-200 dark:border-slate-800 border-t-blue-500 animate-spin mx-auto" />
+              <p className="text-sm text-slate-600 dark:text-slate-400">Loading dashboard...</p>
             </div>
           </div>
         )}
@@ -185,7 +182,7 @@ export const AdminDashboardPage: React.FC = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, delay: index * 0.1 }}
-                    className="bg-[var(--surface)] border border-[var(--line)] rounded-lg p-6 hover:border-[var(--accent)]/30 transition-colors cursor-pointer"
+                    className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-6 hover:border-blue-400/30 dark:hover:border-blue-500/30 transition-colors cursor-pointer"
                     onClick={() => {
                       if (stat.label === 'Total Artworks') navigate('/admin/gallery');
                       else if (stat.label === 'Upcoming Events') navigate('/admin/events');
@@ -214,8 +211,8 @@ export const AdminDashboardPage: React.FC = () => {
                         </div>
                       )}
                     </div>
-                    <p className="text-2xl font-bold text-[var(--ink)]">{stat.value.toLocaleString()}</p>
-                    <p className="text-xs text-[var(--muted)] mt-2">{stat.label}</p>
+                    <p className="text-2xl font-bold text-slate-900 dark:text-white">{stat.value.toLocaleString()}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">{stat.label}</p>
                   </motion.div>
                 );
               })}
@@ -228,25 +225,25 @@ export const AdminDashboardPage: React.FC = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: 0.4 }}
-                className="lg:col-span-2 bg-[var(--surface)] border border-[var(--line)] rounded-lg p-6"
+                className="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-6"
               >
-                <h2 className="text-sm font-bold text-[var(--ink)] mb-4 flex items-center gap-2">
-                  <Activity className="w-4 h-4 text-[var(--accent)]" />
+                <h2 className="text-sm font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-blue-500" />
                   Recent Activity
                 </h2>
                 <div className="space-y-4">
                   {stats?.recentActivity.map((item) => (
-                    <div key={item.id} className="flex gap-3 pb-4 border-b border-[var(--line)] last:border-0 last:pb-0">
-                      <div className="w-8 h-8 rounded-full bg-[var(--paper)] flex items-center justify-center flex-shrink-0">
+                    <div key={item.id} className="flex gap-3 pb-4 border-b border-slate-200 dark:border-slate-800 last:border-0 last:pb-0">
+                      <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0">
                         {item.type === 'artwork' && <Image className="w-4 h-4 text-blue-600" />}
                         {item.type === 'event' && <Calendar className="w-4 h-4 text-purple-600" />}
                         {item.type === 'member' && <Users className="w-4 h-4 text-green-600" />}
                         {item.type === 'comment' && <MessageSquare className="w-4 h-4 text-orange-600" />}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-[var(--ink)]">{item.title}</p>
-                        <p className="text-xs text-[var(--muted)] mt-0.5 line-clamp-2">{item.description}</p>
-                        <p className="text-xs text-[var(--muted)] mt-1">{item.timestamp}</p>
+                        <p className="text-sm font-medium text-slate-900 dark:text-white">{item.title}</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 line-clamp-2">{item.description}</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{item.timestamp}</p>
                       </div>
                     </div>
                   ))}
@@ -258,38 +255,38 @@ export const AdminDashboardPage: React.FC = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: 0.5 }}
-                className="bg-[var(--surface)] border border-[var(--line)] rounded-lg p-6"
+                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-6"
               >
-                <h2 className="text-sm font-bold text-[var(--ink)] mb-4 flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-[var(--accent)]" />
+                <h2 className="text-sm font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-blue-500" />
                   This Week
                 </h2>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Eye className="w-4 h-4 text-[var(--muted)]" />
-                      <span className="text-xs text-[var(--muted)]">Gallery Views</span>
+                      <Eye className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                      <span className="text-xs text-slate-600 dark:text-slate-400">Gallery Views</span>
                     </div>
-                    <span className="text-sm font-bold text-[var(--ink)]">{stats?.weekStats.views.toLocaleString()}</span>
+                    <span className="text-sm font-bold text-slate-900 dark:text-white">{stats?.weekStats.views.toLocaleString()}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Heart className="w-4 h-4 text-[var(--muted)]" />
-                      <span className="text-xs text-[var(--muted)]">Likes</span>
+                      <Heart className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                      <span className="text-xs text-slate-600 dark:text-slate-400">Likes</span>
                     </div>
-                    <span className="text-sm font-bold text-[var(--ink)]">{stats?.weekStats.likes.toLocaleString()}</span>
+                    <span className="text-sm font-bold text-slate-900 dark:text-white">{stats?.weekStats.likes.toLocaleString()}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <MessageSquare className="w-4 h-4 text-[var(--muted)]" />
-                      <span className="text-xs text-[var(--muted)]">Comments</span>
+                      <MessageSquare className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                      <span className="text-xs text-slate-600 dark:text-slate-400">Comments</span>
                     </div>
-                    <span className="text-sm font-bold text-[var(--ink)]">{stats?.weekStats.comments.toLocaleString()}</span>
+                    <span className="text-sm font-bold text-slate-900 dark:text-white">{stats?.weekStats.comments.toLocaleString()}</span>
                   </div>
                 </div>
 
                 {/* Period Selector */}
-                <div className="mt-6 pt-4 border-t border-[var(--line)]">
+                <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800">
                   <div className="flex gap-2">
                     {(['week', 'month', 'year'] as const).map((period) => (
                       <button
@@ -297,8 +294,8 @@ export const AdminDashboardPage: React.FC = () => {
                         onClick={() => setSelectedPeriod(period)}
                         className={`flex-1 text-xs py-1.5 rounded-md transition-colors ${
                           selectedPeriod === period
-                            ? 'bg-[var(--accent)] text-[var(--on-accent)]'
-                            : 'bg-[var(--paper)] text-[var(--muted)] hover:text-[var(--ink)]'
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                         }`}
                       >
                         {period.charAt(0).toUpperCase() + period.slice(1)}
