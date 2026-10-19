@@ -9,8 +9,8 @@ export const AdminLoginPage: React.FC = () => {
   const navigate = useNavigate();
   const { login, isLoading } = useAdminAuth();
 
-  const [email, setEmail] = useState('admin@gcectart.club');
-  const [password, setPassword] = useState('Admin@ArtClub2026');
+  const [email, setEmail] = useState('admin@brushandbond.local');
+  const [password, setPassword] = useState('admin123');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -47,10 +47,10 @@ export const AdminLoginPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--paper)]">
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-950">
         <div className="space-y-3 text-center">
-          <div className="w-8 h-8 rounded-full border-2 border-[var(--line)] border-t-[var(--accent)] animate-spin mx-auto" />
-          <p className="text-sm text-[var(--muted)]">Loading...</p>
+          <div className="w-8 h-8 rounded-full border-2 border-slate-200 dark:border-slate-700 border-t-blue-500 animate-spin mx-auto" />
+          <p className="text-sm text-slate-500 dark:text-slate-400">Loading...</p>
         </div>
       </div>
     );
@@ -63,7 +63,7 @@ export const AdminLoginPage: React.FC = () => {
         description="Brush and Bond admin panel login"
         canonicalPath="/admin/login"
       />
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[var(--paper)] to-[var(--surface)] px-4 py-8">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white to-slate-50 dark:from-slate-950 dark:to-slate-900 px-4 py-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -72,11 +72,11 @@ export const AdminLoginPage: React.FC = () => {
         >
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-[var(--accent)] text-[var(--on-accent)] mb-4">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-blue-500 text-white mb-4">
               <Lock className="w-6 h-6" />
             </div>
-            <h1 className="text-2xl font-bold text-[var(--ink)]">Studio Admin</h1>
-            <p className="text-sm text-[var(--muted)] mt-2">Brush and Bond Executive Portal</p>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Studio Admin</h1>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">Brush and Bond Executive Portal</p>
           </div>
 
           {/* Error Alert */}
@@ -86,7 +86,7 @@ export const AdminLoginPage: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex gap-3"
             >
-              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
               <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
             </motion.div>
           )}
@@ -95,17 +95,17 @@ export const AdminLoginPage: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-4 mb-6">
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-[var(--ink)] mb-2">
+              <label className="block text-sm font-medium text-slate-900 dark:text-white mb-2">
                 Email
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-3 w-5 h-5 text-[var(--muted)]" />
+                <Mail className="absolute left-3 top-3 w-5 h-5 text-slate-400 dark:text-slate-500" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={isSubmitting}
-                  className="w-full pl-10 pr-4 py-2.5 bg-[var(--surface)] border border-[var(--line)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)] disabled:opacity-50"
+                  className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                   placeholder="admin@example.com"
                 />
               </div>
@@ -113,17 +113,17 @@ export const AdminLoginPage: React.FC = () => {
 
             {/* Password */}
             <div>
-              <label className="block text-sm font-medium text-[var(--ink)] mb-2">
+              <label className="block text-sm font-medium text-slate-900 dark:text-white mb-2">
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-3 w-5 h-5 text-[var(--muted)]" />
+                <Lock className="absolute left-3 top-3 w-5 h-5 text-slate-400 dark:text-slate-500" />
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isSubmitting}
-                  className="w-full pl-10 pr-4 py-2.5 bg-[var(--surface)] border border-[var(--line)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)] disabled:opacity-50"
+                  className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                   placeholder="••••••••"
                 />
               </div>
@@ -133,7 +133,7 @@ export const AdminLoginPage: React.FC = () => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-[var(--accent)] text-[var(--on-accent)] py-2.5 rounded-lg font-medium text-sm hover:opacity-90 disabled:opacity-50 transition-opacity flex items-center justify-center gap-2"
+              className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2.5 rounded-lg font-medium text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
             >
               <LogIn className="w-4 h-4" />
               {isSubmitting ? 'Signing in...' : 'Sign in'}
@@ -141,23 +141,32 @@ export const AdminLoginPage: React.FC = () => {
           </form>
 
           {/* Demo Credentials */}
-          <div className="border-t border-[var(--line)] pt-6">
-            <p className="text-xs text-[var(--muted)] mb-3 text-center font-medium">GCECT ART CLUB ADMIN</p>
+          <div className="border-t border-slate-200 dark:border-slate-700 pt-6">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 text-center font-medium">DEMO ACCOUNTS</p>
             <div className="space-y-2">
               <button
                 type="button"
-                onClick={() => handleDemoLogin('admin@gcectart.club', 'Admin@ArtClub2026')}
+                onClick={() => handleDemoLogin('admin@brushandbond.local', 'admin123')}
                 disabled={isSubmitting}
-                className="w-full text-left p-3 bg-[var(--surface)] border border-[var(--line)] rounded-lg hover:border-[var(--accent)] transition-colors disabled:opacity-50 text-sm"
+                className="w-full text-left p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 transition-colors disabled:opacity-50 text-sm"
               >
-                <p className="font-medium text-[var(--ink)]">GCECT Art Club Admin</p>
-                <p className="text-[var(--muted)] text-xs">admin@gcectart.club (Click to autofill & sign in)</p>
+                <p className="font-medium text-slate-900 dark:text-white">Admin Account</p>
+                <p className="text-slate-600 dark:text-slate-400 text-xs">admin@brushandbond.local</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDemoLogin('editor@brushandbond.local', 'editor123')}
+                disabled={isSubmitting}
+                className="w-full text-left p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 transition-colors disabled:opacity-50 text-sm"
+              >
+                <p className="font-medium text-slate-900 dark:text-white">Editor Account</p>
+                <p className="text-slate-600 dark:text-slate-400 text-xs">editor@brushandbond.local</p>
               </button>
             </div>
           </div>
 
           {/* Help Text */}
-          <p className="text-xs text-[var(--muted)] text-center mt-6">
+          <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-6">
             This is a development login interface. Real authentication will use Supabase Auth.
           </p>
         </motion.div>
@@ -165,3 +174,4 @@ export const AdminLoginPage: React.FC = () => {
     </>
   );
 };
+
