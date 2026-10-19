@@ -105,6 +105,15 @@ export const Navbar: React.FC = () => {
             </nav>
 
             <div className="flex items-center gap-3 pl-2 border-l border-[var(--line)]">
+              {/* Admin Portal Link */}
+              <Link
+                to="/admin/login"
+                className="text-xs font-mono text-[var(--muted)] hover:text-[var(--accent)] transition-colors"
+                title="Admin Portal"
+              >
+                Admin
+              </Link>
+
               {/* Join as small primary button */}
               <Button
                 to="/join"
@@ -213,7 +222,14 @@ export const Navbar: React.FC = () => {
 
             {/* Bottom Controls: Join Button, Tagline & Details */}
             <div className="pt-6 border-t border-[var(--line)] space-y-5 shrink-0">
-              <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <Link
+                  to="/admin/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex-1 text-xs font-mono text-[var(--muted)] hover:text-[var(--accent)] transition-colors px-4 py-2 border border-[var(--line)] rounded-full text-center"
+                >
+                  Admin Portal
+                </Link>
                 <Button
                   to="/join"
                   variant="primary"
