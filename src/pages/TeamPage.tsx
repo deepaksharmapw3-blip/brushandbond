@@ -130,9 +130,11 @@ export const TeamPage: React.FC = () => {
                 linkedinUrl: m.linkedinUrl || undefined,
               });
             } else {
-              const respArray = m.responsibilities
-                ? m.responsibilities.split(',').map((s: string) => s.trim()).filter(Boolean)
-                : [];
+              const respArray = Array.isArray(m.responsibilities)
+                ? m.responsibilities.map((s: unknown) => String(s).trim()).filter(Boolean)
+                : typeof m.responsibilities === 'string'
+                  ? m.responsibilities.split(',').map((s: string) => s.trim()).filter(Boolean)
+                  : [];
               liveMembers.push({
                 id: `tm-${m.id}`,
                 name: m.name,
