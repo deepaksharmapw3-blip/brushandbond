@@ -465,24 +465,35 @@ export const AdminEventsPage: React.FC = () => {
                 <div className="p-6 max-h-96 overflow-y-auto">
                   {eventAttendees.length > 0 ? (
                     <div className="space-y-3">
-                      {eventAttendees.map((att) => (
-                        <div
-                          key={att.registration_id || att.id}
-                          className="p-3 bg-[var(--paper)] border border-[var(--line)] rounded-lg text-xs flex justify-between items-center"
-                        >
-                          <div>
-                            <p className="font-semibold text-[var(--ink)]">
-                              {att.applicant_name || (att.members ? att.members.name : 'Club Member')}
-                            </p>
-                            <p className="text-[var(--muted)]">
-                              {att.applicant_email || (att.members ? att.members.email : '')} | {att.department || 'GCECT'}
-                            </p>
+                      {eventAttendees.map((att) => {
+                        const attendeeName = att.name || att.applicant_name || att.members?.name || 'Unknown attendee';
+                        const attendeeEmail = att.email || att.applicant_email || att.members?.email;
+                        const registeredAt = att.submittedAt || att.registered_at || att.createdAt;
+                        const registeredDate = registeredAt ? new Date(registeredAt) : null;
+                        return (
+                          <div
+                            key={att.registration_id || att.id}
+                            className="p-3 bg-[var(--paper)] border border-[var(--line)] rounded-lg text-xs"
+                          >
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="min-w-0">
+                                <p className="font-semibold text-[var(--ink)]">{attendeeName}</p>
+                                {attendeeEmail && <a href={`mailto:${attendeeEmail}`} className="mt-1 block break-all text-[var(--accent)] hover:underline">{attendeeEmail}</a>}
+                              </div>
+                              <span className="shrink-0 text-[10px] text-[var(--muted)] font-mono">
+                                {registeredDate && !Number.isNaN(registeredDate.getTime()) ? registeredDate.toLocaleDateString() : 'Date unavailable'}
+                              </span>
+                            </div>
+                            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[var(--muted)]">
+                              <span>{att.department || 'Department not provided'}</span>
+                              {att.yearOfStudy && <span>{att.yearOfStudy}</span>}
+                              {att.rollNumber && <span>Roll: {att.rollNumber}</span>}
+                              {att.phone && <span>Phone: {att.phone}</span>}
+                              {att.passCode && <span>Pass: {att.passCode}</span>}
+                            </div>
                           </div>
-                          <span className="text-[10px] text-[var(--muted)] font-mono">
-                            {new Date(att.registered_at).toLocaleDateString()}
-                          </span>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   ) : (
                     <p className="text-xs text-[var(--muted)] text-center py-6">No registrations recorded yet.</p>
