@@ -21,6 +21,12 @@ import { teamApi } from '../services/api';
 
 type TierFilter = 'all' | 'faculty' | 'executive' | 'lead' | 'member';
 
+const toResponsibilities = (value: unknown): string[] => {
+  if (Array.isArray(value)) return value.map(String).map((item) => item.trim()).filter(Boolean);
+  if (typeof value === 'string') return value.split(',').map((item) => item.trim()).filter(Boolean);
+  return [];
+};
+
 export const AdminTeamPage: React.FC = () => {
   const [members, setMembers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -95,7 +101,7 @@ export const AdminTeamPage: React.FC = () => {
     setBio(member.bio || '');
     setQuote(member.quote || '');
     setSpecialty(member.specialty || '');
-    setResponsibilities(member.responsibilities || '');
+    setResponsibilities(toResponsibilities(member.responsibilities).join(', '));
     setAvatarUrl(member.avatarUrl || '');
     setInstagramUrl(member.instagramUrl || '');
     setLinkedinUrl(member.linkedinUrl || '');
@@ -381,17 +387,16 @@ export const AdminTeamPage: React.FC = () => {
                       </div>
                     )}
 
-                    {member.responsibilities && (
+                    {toResponsibilities(member.responsibilities).length > 0 && (
                       <div className="flex flex-wrap gap-1 mb-3">
-                        {member.responsibilities
-                          .split(',')
+                        {toResponsibilities(member.responsibilities)
                           .slice(0, 3)
                           .map((r: string, idx: number) => (
                             <span
                               key={idx}
                               className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[var(--paper)] border border-[var(--line)] text-[var(--muted)]"
                             >
-                              ✓ {r.trim()}
+                              ✓ {r}
                             </span>
                           ))}
                       </div>

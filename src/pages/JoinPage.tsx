@@ -465,6 +465,7 @@ export const JoinPage: React.FC = () => {
                     <input
                       id="join-name"
                       type="text"
+                      maxLength={120}
                       value={form.name}
                       onChange={(e) => handleChange('name', e.target.value)}
                       onBlur={() => handleBlur('name')}
@@ -574,6 +575,7 @@ export const JoinPage: React.FC = () => {
                       <input
                         id="join-email"
                         type="email"
+                        maxLength={254}
                         value={form.email}
                         onChange={(e) => handleChange('email', e.target.value)}
                         onBlur={() => handleBlur('email')}
@@ -645,6 +647,7 @@ export const JoinPage: React.FC = () => {
                     <input
                       id="join-portfolio"
                       type="text"
+                      maxLength={2048}
                       value={form.portfolioUrl}
                       onChange={(e) => handleChange('portfolioUrl', e.target.value)}
                       onBlur={() => handleBlur('portfolioUrl')}
@@ -674,6 +677,7 @@ export const JoinPage: React.FC = () => {
                     <textarea
                       id="join-reason"
                       rows={3}
+                      maxLength={3000}
                       value={form.reasonToJoin}
                       onChange={(e) => handleChange('reasonToJoin', e.target.value)}
                       onBlur={() => handleBlur('reasonToJoin')}

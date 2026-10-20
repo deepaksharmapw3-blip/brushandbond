@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Clock } from 'lucide-react';
 import { SEO } from '../components/common/SEO';
-import { mockArtists, mockMilestones } from '../data/mockData';
+import { mockMilestones } from '../data/mockData';
 import { useGallery } from '../context/GalleryContext';
 
 export const ArtistsPage: React.FC = () => {
-  const { artworks, openArtworkModal } = useGallery();
+  const { artists, artworks, openArtworkModal } = useGallery();
   const [selectedDept, setSelectedDept] = useState<string>('All');
 
   const departments = [
@@ -16,7 +16,7 @@ export const ArtistsPage: React.FC = () => {
     'Information Technology',
   ];
 
-  const filteredArtists = mockArtists.filter(
+  const filteredArtists = artists.filter(
     (artist) => selectedDept === 'All' || artist.department === selectedDept
   );
 

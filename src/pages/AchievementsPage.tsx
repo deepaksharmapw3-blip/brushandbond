@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Trophy,
   Plus,
@@ -13,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useGallery } from '../context/GalleryContext';
 import { useToast } from '../context/ToastContext';
+import { useAdminAuth } from '../context/AdminAuthContext';
 import type { AchievementItem, HeadlineNumber } from '../types';
 
 export const AchievementsPage: React.FC = () => {
@@ -25,11 +27,12 @@ export const AchievementsPage: React.FC = () => {
     updateHeadlineNumber,
   } = useGallery();
   const { showSuccess, showInfo } = useToast();
+  const { isAuthenticated } = useAdminAuth();
+  const navigate = useNavigate();
 
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [isAdminMode, setIsAdminMode] = useState<boolean>(() => {
-    return localStorage.getItem('bb-admin-auth') === 'true';
-  });
+  const [isEditing, setIsEditing] = useState(false);
+  const isAdminMode = isAuthenticated && isEditing;
 
   // Modal States
   const [achievementModalOpen, setAchievementModalOpen] = useState(false);
@@ -60,13 +63,16 @@ export const AchievementsPage: React.FC = () => {
   );
 
   const toggleAdminMode = () => {
-    if (!isAdminMode) {
-      localStorage.setItem('bb-admin-auth', 'true');
-      setIsAdminMode(true);
-      showSuccess('Admin Edit Mode Enabled', 'You can now create, edit, and delete milestones.');
-    } else {
-      setIsAdminMode(false);
+    if (!isAuthenticated) {
+      navigate('/admin/login');
+      return;
+    }
+    if (isEditing) {
+      setIsEditing(false);
       showInfo('Admin Edit Mode Disabled', 'Returned to public view.');
+    } else {
+      setIsEditing(true);
+      showSuccess('Admin Edit Mode Enabled', 'You can now create, edit, and delete milestones.');
     }
   };
 

@@ -6,8 +6,11 @@ async function seed() {
   console.log("Seeding GCECT Art Club database...");
 
   // 1. Seed Admin
-  const adminEmail = (process.env.ADMIN_DEFAULT_EMAIL || "admin@gcectart.club").toLowerCase();
-  const rawPassword = process.env.ADMIN_DEFAULT_PASSWORD || "Admin@ArtClub2026";
+  const adminEmail = process.env.ADMIN_DEFAULT_EMAIL?.trim().toLowerCase();
+  const rawPassword = process.env.ADMIN_DEFAULT_PASSWORD;
+  if (!adminEmail || !rawPassword || rawPassword.length < 16) {
+    throw new Error("Set ADMIN_DEFAULT_EMAIL and an ADMIN_DEFAULT_PASSWORD of at least 16 characters before seeding.");
+  }
   const hashedPassword = await bcrypt.hash(rawPassword, 10);
 
   const admin = await prisma.admin.upsert({

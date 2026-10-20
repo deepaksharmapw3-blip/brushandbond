@@ -22,7 +22,7 @@ export const HomePage: React.FC = () => {
 
   // Featured artwork of the week
   const featuredWeekArt = artworks.find((a) => a.id === 'art-002') || artworks[0];
-  const featuredWeekEvent = events.find((e) => e.slug === 'the-canvas-2026') || events[1];
+  const featuredWeekEvent = events.find((e) => e.slug === 'the-canvas-2026') || events[1] || events[0];
 
   // Next 3 events for upcoming events strip
   const nextThreeEvents = events.filter((e) => e.status !== 'concluded').slice(0, 3);
@@ -187,7 +187,7 @@ export const HomePage: React.FC = () => {
       {/* =========================================================
           3. Featured Artwork of the Week (Two-Column)
          ========================================================= */}
-      <section className="gallery-container">
+      {featuredWeekArt && <section className="gallery-container">
         <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[6px] p-6 sm:p-10 lg:p-14 shadow-sm">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-center">
             {/* Left: Large artwork image */}
@@ -230,10 +230,10 @@ export const HomePage: React.FC = () => {
               </div>
 
               {/* Event Badge */}
-              <div className="flex items-center gap-2 text-xs font-mono text-[var(--ink)] bg-[var(--paper)] px-3 py-1.5 rounded-[4px] border border-[var(--line)] w-fit">
+              {featuredWeekEvent && <div className="flex items-center gap-2 text-xs font-mono text-[var(--ink)] bg-[var(--paper)] px-3 py-1.5 rounded-[4px] border border-[var(--line)] w-fit">
                 <Sparkles className="w-3.5 h-3.5 text-[var(--accent)]" />
                 <span>Exhibited at: {featuredWeekEvent.title}</span>
-              </div>
+              </div>}
 
               {/* Short Note */}
               <p className="text-sm text-[var(--muted)] leading-relaxed font-sans max-w-[55ch]">
@@ -241,13 +241,13 @@ export const HomePage: React.FC = () => {
               </p>
 
               <div className="pt-2 flex flex-wrap gap-4">
-                <Link
+                {featuredWeekEvent && <Link
                   to={`/events/${featuredWeekEvent.slug}`}
                   className="btn-primary"
                 >
                   <span>See the event</span>
                   <ArrowRight className="w-4 h-4" />
-                </Link>
+                </Link>}
 
                 <Link
                   to={`/gallery/${featuredWeekArt.id}`}
@@ -260,7 +260,7 @@ export const HomePage: React.FC = () => {
             </div>
           </div>
         </div>
-      </section>
+      </section>}
 
       {/* =========================================================
           4. Upcoming Events Strip (Horizontal List with Accent Dates)

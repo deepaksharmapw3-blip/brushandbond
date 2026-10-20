@@ -105,7 +105,7 @@ export const AdminGalleryPage: React.FC = () => {
       } else {
         await artworkApi.create({
           title: title.trim(),
-          category,
+      category: category.toLowerCase(),
           imageUrl: imageUrl.trim(),
           artistId: artistId ? parseInt(artistId, 10) : undefined,
           description: description ? description.trim() : undefined,
@@ -142,9 +142,9 @@ export const AdminGalleryPage: React.FC = () => {
     const matchesSearch =
       art.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (art.artist && art.artist.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (art.tags && art.tags.toLowerCase().includes(searchQuery.toLowerCase()));
+          (Array.isArray(art.tags) ? art.tags.join(', ') : art.tags || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory =
-      categoryFilter === 'All' || art.category === categoryFilter;
+      categoryFilter === 'All' || String(art.category).toUpperCase() === categoryFilter.toUpperCase();
     return matchesSearch && matchesCategory;
   });
 

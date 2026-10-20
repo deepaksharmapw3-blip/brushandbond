@@ -32,7 +32,13 @@ const login = async (req, res, next) => {
       });
     }
 
-    const secret = process.env.JWT_SECRET || "gcect_art_club_super_secret_jwt_key_2026";
+    const secret = process.env.JWT_SECRET;
+    if (!secret || secret.length < 32) {
+      return res.status(503).json({
+        success: false,
+        message: "Admin authentication is not configured securely",
+      });
+    }
     const token = jwt.sign(
       {
         id: admin.id,

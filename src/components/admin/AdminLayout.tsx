@@ -8,6 +8,7 @@ import {
   Users,
   UserCheck,
   Bell,
+  Mail,
   Palette,
   Menu,
   X,
@@ -37,6 +38,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Manage Artists', icon: Palette, path: '/admin/artists', section: 'artists' },
   { label: 'Manage Team', icon: Users, path: '/admin/team', section: 'team' },
   { label: 'Manage Applications', icon: UserCheck, path: '/admin/members', section: 'members' },
+  { label: 'Contact Messages', icon: Mail, path: '/admin/messages', section: 'messages' },
   { label: 'Announcements', icon: Bell, path: '/admin/announcements', section: 'announcements' },
 ];
 
