@@ -195,8 +195,8 @@ export const AdminDashboardPage: React.FC = () => {
                     onClick={() => {
                       if (stat.label === 'Total Artworks') navigate('/admin/gallery');
                       else if (stat.label === 'Upcoming Events') navigate('/admin/events');
-                      else if (stat.label === 'Active Members' || stat.label === 'Registrations')
-                        navigate('/admin/members');
+                      else if (stat.label === 'Active Members') navigate('/admin/members');
+                      else if (stat.label === 'Registrations') navigate('/admin/events');
                     }}
                   >
                     <div className="flex items-start justify-between mb-4">
