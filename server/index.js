@@ -1,6 +1,5 @@
 import { createServer } from 'node:http';
-import { createReadStream, mkdirSync, writeFileSync } from 'node:fs';
-import { existsSync } from 'node:fs';
+import { createReadStream, existsSync, mkdirSync, readFileSync, readdirSync, statSync, statfsSync, writeFileSync } from 'node:fs';
 import { dirname, extname, isAbsolute, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash, randomBytes, scryptSync, timingSafeEqual, randomUUID } from 'node:crypto';
@@ -12,6 +11,7 @@ const dataDir = resolve(root, 'data');
 const isProduction = process.env.NODE_ENV === 'production';
 const configuredDatabasePath = process.env.DATABASE_PATH?.trim();
 const configuredUploadsDir = process.env.UPLOADS_DIR?.trim();
+const configuredBackupDir = process.env.BACKUP_DIR?.trim();
 const configuredAdminEmail = process.env.ADMIN_EMAIL?.trim();
 const configuredAdminPassword = process.env.ADMIN_PASSWORD;
 
@@ -104,6 +104,19 @@ const MAX_RATE_LIMIT_BUCKETS = 20_000;
 const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
 const MAX_IMAGE_PIXELS = 40_000_000;
 let rateLimitChecks = 0;
+const apiErrorEvents = [];
+const API_ERROR_RETENTION_MS = 60 * 60 * 1000;
+const MAX_API_ERROR_EVENTS = 500;
+const percentSetting = (value, fallback) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 1 && parsed <= 100 ? parsed : fallback;
+};
+const diskWarningPercent = percentSetting(process.env.DISK_WARNING_PERCENT, 80);
+const diskCriticalPercent = Math.max(diskWarningPercent + 1, percentSetting(process.env.DISK_CRITICAL_PERCENT, 90));
+const configuredBackupMaxAgeHours = Number(process.env.BACKUP_MAX_AGE_HOURS);
+const backupMaxAgeHours = Number.isFinite(configuredBackupMaxAgeHours) && configuredBackupMaxAgeHours > 0 && configuredBackupMaxAgeHours <= 8760 ? configuredBackupMaxAgeHours : 26;
+let monitoringSnapshot = null;
+let monitoringSnapshotAt = 0;
 const queries = {
   list: db.prepare('SELECT data FROM records WHERE collection = ? ORDER BY created_at DESC'),
   get: db.prepare('SELECT data FROM records WHERE collection = ? AND id = ?'),
@@ -130,6 +143,73 @@ const remove = (collection, id) => queries.delete.run(collection, String(id)).ch
 function send(res, status, value, extraHeaders = {}) {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', ...extraHeaders });
   res.end(JSON.stringify(value));
+}
+
+function directoryBytes(directory) {
+  let bytes = 0;
+  const visit = (path) => {
+    for (const entry of readdirSync(path, { withFileTypes: true })) {
+      const child = resolve(path, entry.name);
+      if (entry.isDirectory()) visit(child);
+      else if (entry.isFile()) bytes += statSync(child).size;
+    }
+  };
+  visit(directory);
+  return bytes;
+}
+
+function diskUsage(path, storedBytes) {
+  const fs = statfsSync(path);
+  const totalBytes = Number(fs.blocks) * Number(fs.bsize);
+  const availableBytes = Number(fs.bavail) * Number(fs.bsize);
+  const usedPercent = totalBytes ? Math.round(((totalBytes - availableBytes) / totalBytes) * 1000) / 10 : 0;
+  return {
+    storedBytes,
+    totalBytes,
+    availableBytes,
+    usedPercent,
+    status: usedPercent >= diskCriticalPercent ? 'critical' : usedPercent >= diskWarningPercent ? 'warning' : 'ok',
+  };
+}
+
+function getMonitoringSnapshot() {
+  const now = Date.now();
+  if (monitoringSnapshot && now - monitoringSnapshotAt < 60_000) return monitoringSnapshot;
+  const cutoff = now - API_ERROR_RETENTION_MS;
+  while (apiErrorEvents.length && apiErrorEvents[0].timestampMs < cutoff) apiErrorEvents.shift();
+  const databaseBytes = ['','-wal','-shm'].reduce((total, suffix) => {
+    const path = `${dbPath}${suffix}`;
+    return total + (existsSync(path) ? statSync(path).size : 0);
+  }, 0);
+  const backupStatusPath = configuredBackupDir ? resolve(configuredBackupDir, 'backup-status.json') : null;
+  let backup = { configured: Boolean(backupStatusPath), status: 'not-configured' };
+  if (backupStatusPath && existsSync(backupStatusPath)) {
+    try {
+      const status = JSON.parse(readFileSync(backupStatusPath, 'utf8'));
+      backup = { configured: true, status: status.status, completedAt: status.completedAt, failedAt: status.failedAt, backupPath: status.backupPath, error: status.error };
+      if (!['success', 'failed'].includes(backup.status)) backup.status = 'status-file-invalid';
+      if (backup.status === 'success') {
+        const completedAt = Date.parse(backup.completedAt || '');
+        if (!Number.isFinite(completedAt) || completedAt > now || now - completedAt > backupMaxAgeHours * 60 * 60 * 1000) backup.status = 'stale';
+      }
+    } catch {
+      backup = { configured: true, status: 'status-file-invalid' };
+    }
+  } else if (backupStatusPath) {
+    backup = { configured: true, status: 'no-backup-recorded' };
+  }
+  const databaseDisk = diskUsage(dirname(dbPath), databaseBytes);
+  const uploadsDisk = diskUsage(uploadsDir, directoryBytes(uploadsDir));
+  const diskStatus = databaseDisk.status === 'critical' || uploadsDisk.status === 'critical' ? 'critical'
+    : databaseDisk.status === 'warning' || uploadsDisk.status === 'warning' ? 'warning' : 'ok';
+  monitoringSnapshot = {
+    checkedAt: new Date(now).toISOString(),
+    disk: { status: diskStatus, database: databaseDisk, uploads: uploadsDisk, warningPercent: diskWarningPercent, criticalPercent: diskCriticalPercent },
+    apiErrors: { lastHour: apiErrorEvents.length, recent: apiErrorEvents.slice(-20).map((event) => ({ timestamp: event.timestamp, method: event.method, path: event.path, status: event.status, durationMs: event.durationMs })) },
+    backup: { ...backup, maxAgeHours: backupMaxAgeHours },
+  };
+  monitoringSnapshotAt = now;
+  return monitoringSnapshot;
 }
 
 async function readBody(req) {
@@ -486,7 +566,22 @@ function applyFilter(collection, items, url) {
 
 async function handler(req, res) {
   const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
-  if ((url.pathname === '/api' || url.pathname === '/api/health') && req.method === 'GET') return send(res, 200, { success: true, service: 'Brush and Bond API', storage: 'sqlite', health: '/api/health' });
+  if ((url.pathname === '/api' || url.pathname === '/api/health') && req.method === 'GET') {
+    const monitoring = getMonitoringSnapshot();
+    const unhealthyBackupStates = ['failed', 'stale', 'no-backup-recorded', 'status-file-invalid'];
+    const healthy = monitoring.disk.status !== 'critical'
+      && !unhealthyBackupStates.includes(monitoring.backup.status)
+      && !(isProduction && !monitoring.backup.configured);
+    return send(res, healthy ? 200 : 503, {
+      success: healthy,
+      status: healthy ? 'ok' : 'degraded',
+      service: 'Brush and Bond API',
+      storage: 'sqlite',
+      health: '/api/health',
+      disk: { status: monitoring.disk.status, database: monitoring.disk.database.status, uploads: monitoring.disk.uploads.status },
+      backup: { status: monitoring.backup.status, completedAt: monitoring.backup.completedAt || null },
+    });
+  }
   if (url.pathname.startsWith('/uploads/')) {
     const name = url.pathname.slice('/uploads/'.length);
     if (!/^[a-f0-9-]+\.(png|jpg|webp|gif)$/.test(name)) return send(res, 404, { error: 'Not found.' });
@@ -499,6 +594,10 @@ async function handler(req, res) {
 
   const path = url.pathname.slice(5).split('/').filter(Boolean).map(decodeURIComponent);
   const [resource, id, action] = path;
+  if (resource === 'admin' && id === 'monitoring' && req.method === 'GET') {
+    if (!adminOnly(req, res)) return;
+    return send(res, 200, { success: true, monitoring: getMonitoringSnapshot() });
+  }
   if (req.method === 'POST' && resource === 'auth' && id === 'login' && !allowRateLimitedRequest(req, res, 'admin-login', 8, 60_000)) return;
   if (req.method === 'POST' && resource === 'contact' && !id && !allowRateLimitedRequest(req, res, 'contact-form', 5, 15 * 60_000)) return;
   if (req.method === 'POST' && resource === 'applications' && !id && !allowRateLimitedRequest(req, res, 'membership-form', 3, 60 * 60_000)) return;
@@ -696,6 +795,21 @@ async function handler(req, res) {
 }
 
 const server = createServer((req, res) => {
+  const startedAt = Date.now();
+  res.once('finish', () => {
+    if (!req.url?.startsWith('/api/') || res.statusCode < 400) return;
+    const event = {
+      timestamp: new Date().toISOString(),
+      method: req.method || 'UNKNOWN',
+      path: req.url.split('?')[0],
+      status: res.statusCode,
+      durationMs: Date.now() - startedAt,
+    };
+    apiErrorEvents.push({ ...event, timestampMs: Date.now() });
+    if (apiErrorEvents.length > MAX_API_ERROR_EVENTS) apiErrorEvents.splice(0, apiErrorEvents.length - MAX_API_ERROR_EVENTS);
+    monitoringSnapshot = null;
+    if (res.statusCode >= 500) console.error(JSON.stringify({ level: 'error', type: 'api_error', ...event }));
+  });
   handler(req, res).catch((error) => {
     console.error('API request failed:', error);
     send(res, error.status || 500, { error: error.status ? error.message : 'The server could not complete this request.' });
