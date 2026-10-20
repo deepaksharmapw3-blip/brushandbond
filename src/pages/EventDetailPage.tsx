@@ -492,6 +492,7 @@ export const EventDetailPage: React.FC = () => {
                     </label>
                     <input
                       type="text"
+                      maxLength={120}
                       value={regName}
                       onChange={(e) => {
                         setRegName(e.target.value);
@@ -548,6 +549,7 @@ export const EventDetailPage: React.FC = () => {
                     </label>
                     <input
                       type="email"
+                      maxLength={254}
                       value={regEmail}
                       onChange={(e) => {
                         setRegEmail(e.target.value);
@@ -570,6 +572,7 @@ export const EventDetailPage: React.FC = () => {
                     </label>
                     <input
                       type="tel"
+                      maxLength={30}
                       value={regPhone}
                       onChange={(e) => {
                         setRegPhone(e.target.value);

@@ -124,6 +124,7 @@ export const ContactPage: React.FC = () => {
                   <input
                     id="contact-name"
                     type="text"
+                    maxLength={100}
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -139,6 +140,7 @@ export const ContactPage: React.FC = () => {
                   <input
                     id="contact-email"
                     type="email"
+                    maxLength={254}
                     required
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -155,6 +157,7 @@ export const ContactPage: React.FC = () => {
                 </label>
                 <textarea
                   id="contact-message"
+                  maxLength={5000}
                   required
                   rows={6}
                   value={formData.message}

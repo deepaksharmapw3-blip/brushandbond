@@ -11,19 +11,22 @@ const authMiddleware = (req, res, next) => {
   }
 
   const token = authHeader.split(" ")[1];
+  const secret = process.env.JWT_SECRET;
+  if (!secret || secret.length < 32) {
+    return res.status(503).json({
+      success: false,
+      message: "Admin authentication is not configured securely",
+    });
+  }
 
   try {
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || "gcect_art_club_super_secret_jwt_key_2026"
-    );
+    const decoded = jwt.verify(token, secret);
     req.admin = decoded;
     next();
-  } catch (err) {
+  } catch {
     return res.status(401).json({
       success: false,
       message: "Invalid, expired, or corrupted token",
-      error: err.message,
     });
   }
 };

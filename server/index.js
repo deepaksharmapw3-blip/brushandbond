@@ -1,7 +1,7 @@
 import { createServer } from 'node:http';
 import { createReadStream, mkdirSync, writeFileSync } from 'node:fs';
 import { existsSync } from 'node:fs';
-import { dirname, extname, resolve } from 'node:path';
+import { dirname, extname, isAbsolute, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash, randomBytes, scryptSync, timingSafeEqual, randomUUID } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
@@ -9,10 +9,28 @@ import { mockArtworks, mockEvents, mockArtists, mockAchievements, mockTeamMember
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const dataDir = resolve(root, 'data');
-const uploadsDir = resolve(process.env.UPLOADS_DIR || resolve(root, 'uploads'));
-mkdirSync(dataDir, { recursive: true });
+const isProduction = process.env.NODE_ENV === 'production';
+const configuredDatabasePath = process.env.DATABASE_PATH?.trim();
+const configuredUploadsDir = process.env.UPLOADS_DIR?.trim();
+const configuredAdminEmail = process.env.ADMIN_EMAIL?.trim();
+const configuredAdminPassword = process.env.ADMIN_PASSWORD;
+
+if (isProduction) {
+  const missingStoragePaths = [
+    ['DATABASE_PATH', configuredDatabasePath],
+    ['UPLOADS_DIR', configuredUploadsDir],
+  ].filter(([, value]) => !value || !isAbsolute(value)).map(([name]) => name);
+  if (missingStoragePaths.length) {
+    throw new Error(`Production requires absolute persistent-storage paths for: ${missingStoragePaths.join(', ')}.`);
+  }
+  if (!configuredAdminEmail || !configuredAdminPassword || configuredAdminPassword.length < 16) {
+    throw new Error('Production requires ADMIN_EMAIL and an ADMIN_PASSWORD of at least 16 characters.');
+  }
+}
+
+const uploadsDir = resolve(configuredUploadsDir || resolve(root, 'uploads'));
 mkdirSync(uploadsDir, { recursive: true });
-const dbPath = resolve(process.env.DATABASE_PATH || resolve(dataDir, 'brushandbond.sqlite'));
+const dbPath = resolve(configuredDatabasePath || resolve(dataDir, 'brushandbond.sqlite'));
 mkdirSync(dirname(dbPath), { recursive: true });
 const db = new DatabaseSync(dbPath);
 db.exec(`
@@ -76,7 +94,11 @@ for (const [collection, rows] of Object.entries(seedCollections)) {
   }
 }
 
-const loginAttempts = new Map();
+const rateLimitBuckets = new Map();
+const MAX_RATE_LIMIT_BUCKETS = 20_000;
+const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
+const MAX_IMAGE_PIXELS = 40_000_000;
+let rateLimitChecks = 0;
 const queries = {
   list: db.prepare('SELECT data FROM records WHERE collection = ? ORDER BY created_at DESC'),
   get: db.prepare('SELECT data FROM records WHERE collection = ? AND id = ?'),
@@ -105,25 +127,221 @@ function send(res, status, value, extraHeaders = {}) {
 }
 
 async function readBody(req) {
+  const contentLength = Number(req.headers['content-length'] || 0);
+  if (contentLength > 6 * 1024 * 1024) throw Object.assign(new Error('Request body is too large (6 MB limit).'), { status: 413 });
   const chunks = [];
   let size = 0;
   for await (const chunk of req) {
     size += chunk.length;
-    if (size > 10 * 1024 * 1024) throw Object.assign(new Error('Request body is too large (10 MB limit).'), { status: 413 });
+    if (size > 6 * 1024 * 1024) throw Object.assign(new Error('Request body is too large (6 MB limit).'), { status: 413 });
     chunks.push(chunk);
   }
   if (!size) return {};
-  try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); }
+  let body;
+  try { body = JSON.parse(Buffer.concat(chunks).toString('utf8')); }
   catch { throw Object.assign(new Error('Request body must be valid JSON.'), { status: 400 }); }
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    throw Object.assign(new Error('JSON body must be an object.'), { status: 400 });
+  }
+  return body;
+}
+
+function allowRateLimitedRequest(req, res, scope, limit, windowMs) {
+  const now = Date.now();
+  const ip = req.socket.remoteAddress || 'unknown';
+  const key = `${scope}:${ip}`;
+  let bucket = rateLimitBuckets.get(key);
+
+  if ((++rateLimitChecks & 127) === 0) {
+    for (const [bucketKey, value] of rateLimitBuckets) {
+      if (value.resetAt <= now) rateLimitBuckets.delete(bucketKey);
+    }
+  }
+
+  if (!bucket || bucket.resetAt <= now) {
+    if (!bucket && rateLimitBuckets.size >= MAX_RATE_LIMIT_BUCKETS) {
+      send(res, 429, { error: 'The service is busy. Please try again shortly.' });
+      return false;
+    }
+    bucket = { count: 0, resetAt: now + windowMs };
+    rateLimitBuckets.set(key, bucket);
+  }
+
+  if (bucket.count >= limit) {
+    const retryAfter = Math.max(1, Math.ceil((bucket.resetAt - now) / 1000));
+    send(res, 429, { error: 'Too many requests. Please try again later.' }, { 'Retry-After': String(retryAfter) });
+    return false;
+  }
+
+  bucket.count += 1;
+  return true;
+}
+
+function textField(value, label, maxLength, { required = true } = {}) {
+  if (value === undefined && !required) return '';
+  if (typeof value !== 'string') throw Object.assign(new Error(`${label} must be text.`), { status: 400 });
+  const normalized = value.trim();
+  if (required && !normalized) throw Object.assign(new Error(`${label} is required.`), { status: 400 });
+  if (normalized.length > maxLength) throw Object.assign(new Error(`${label} must be ${maxLength} characters or fewer.`), { status: 400 });
+  return normalized;
+}
+
+function validEmail(value) {
+  return value.length <= 254 && /^\S+@\S+\.\S+$/.test(value);
+}
+
+function validateGifFrames(buffer) {
+  let offset = 13;
+  let frameCount = 0;
+  let totalPixels = 0;
+  const globalColorTable = buffer[10] & 0x80;
+  if (globalColorTable) offset += 3 * (2 ** ((buffer[10] & 0x07) + 1));
+
+  const skipSubBlocks = (start) => {
+    let cursor = start;
+    while (cursor < buffer.length) {
+      const length = buffer[cursor++];
+      if (length === 0) return cursor;
+      if (cursor + length > buffer.length) return -1;
+      cursor += length;
+    }
+    return -1;
+  };
+
+  while (offset < buffer.length) {
+    const marker = buffer[offset++];
+    if (marker === 0x3b) return frameCount > 0 && offset === buffer.length && totalPixels <= MAX_IMAGE_PIXELS;
+    if (marker === 0x21) {
+      if (offset >= buffer.length) return false;
+      offset = skipSubBlocks(offset + 1);
+      if (offset < 0) return false;
+      continue;
+    }
+    if (marker !== 0x2c || offset + 9 > buffer.length) return false;
+
+    const frameWidth = buffer.readUInt16LE(offset + 4);
+    const frameHeight = buffer.readUInt16LE(offset + 6);
+    const packed = buffer[offset + 8];
+    offset += 9;
+    if (!frameWidth || !frameHeight || frameWidth > 10_000 || frameHeight > 10_000) return false;
+    totalPixels += frameWidth * frameHeight;
+    frameCount += 1;
+    if (frameCount > 100 || totalPixels > MAX_IMAGE_PIXELS) return false;
+
+    if (packed & 0x80) offset += 3 * (2 ** ((packed & 0x07) + 1));
+    if (offset >= buffer.length) return false;
+    offset = skipSubBlocks(offset + 1);
+    if (offset < 0) return false;
+  }
+  return false;
+}
+
+function validateImage(buffer, mimeType) {
+  let width = 0;
+  let height = 0;
+  let matchesMime = false;
+
+  if (mimeType === 'png') {
+    matchesMime = buffer.length >= 45 && buffer.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])) && buffer.toString('ascii', 12, 16) === 'IHDR';
+    if (matchesMime) {
+      width = buffer.readUInt32BE(16);
+      height = buffer.readUInt32BE(20);
+      let offset = 8;
+      let hasImageData = false;
+      let hasEnd = false;
+      while (offset + 12 <= buffer.length) {
+        const chunkLength = buffer.readUInt32BE(offset);
+        if (chunkLength > buffer.length - offset - 12) break;
+        const chunkType = buffer.toString('ascii', offset + 4, offset + 8);
+        if (offset === 8 && (chunkType !== 'IHDR' || chunkLength !== 13)) break;
+        if (chunkType === 'IDAT') hasImageData = true;
+        offset += chunkLength + 12;
+        if (chunkType === 'IEND' && chunkLength === 0) {
+          hasEnd = true;
+          break;
+        }
+      }
+      matchesMime = matchesMime && hasImageData && hasEnd && offset === buffer.length;
+    }
+  } else if (mimeType === 'gif') {
+    matchesMime = buffer.length >= 14 && ['GIF87a', 'GIF89a'].includes(buffer.toString('ascii', 0, 6)) && validateGifFrames(buffer);
+    if (matchesMime) {
+      width = buffer.readUInt16LE(6);
+      height = buffer.readUInt16LE(8);
+    }
+  } else if (mimeType === 'webp') {
+    matchesMime = buffer.length >= 25 && buffer.toString('ascii', 0, 4) === 'RIFF' && buffer.toString('ascii', 8, 12) === 'WEBP' && buffer.readUInt32LE(4) + 8 <= buffer.length;
+    if (matchesMime) {
+      const chunk = buffer.toString('ascii', 12, 16);
+      const chunkLength = buffer.readUInt32LE(16);
+      if (chunkLength > buffer.length - 20) matchesMime = false;
+      else if (chunk === 'VP8X' && chunkLength >= 10 && buffer.length >= 30) {
+        width = 1 + buffer.readUIntLE(24, 3);
+        height = 1 + buffer.readUIntLE(27, 3);
+      } else if (chunk === 'VP8L' && chunkLength >= 5 && buffer[20] === 0x2f) {
+        width = 1 + buffer[21] + ((buffer[22] & 0x3f) << 8);
+        height = 1 + ((buffer[22] >> 6) & 0x03) + (buffer[23] << 2) + ((buffer[24] & 0x0f) << 10);
+      } else if (chunk === 'VP8 ' && chunkLength >= 10 && buffer.length >= 30 && buffer[23] === 0x9d && buffer[24] === 0x01 && buffer[25] === 0x2a) {
+        width = buffer.readUInt16LE(26) & 0x3fff;
+        height = buffer.readUInt16LE(28) & 0x3fff;
+      } else {
+        matchesMime = false;
+      }
+    }
+  } else if (mimeType === 'jpeg') {
+    matchesMime = buffer.length >= 4 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer.lastIndexOf(Buffer.from([0xff, 0xd9])) > 1;
+    if (matchesMime) {
+      const frameMarkers = new Set([0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7, 0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf]);
+      let offset = 2;
+      while (offset + 8 < buffer.length) {
+        if (buffer[offset] !== 0xff) { offset += 1; continue; }
+        while (buffer[offset] === 0xff) offset += 1;
+        const marker = buffer[offset++];
+        if (marker === 0xd9 || marker === 0xda) break;
+        if (marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) continue;
+        if (offset + 2 > buffer.length) break;
+        const segmentLength = buffer.readUInt16BE(offset);
+        if (segmentLength < 2 || offset + segmentLength > buffer.length) break;
+        if (frameMarkers.has(marker) && segmentLength >= 7) {
+          height = buffer.readUInt16BE(offset + 3);
+          width = buffer.readUInt16BE(offset + 5);
+          break;
+        }
+        offset += segmentLength;
+      }
+      if (!width || !height) matchesMime = false;
+    }
+  }
+
+  if (!matchesMime || !width || !height) {
+    throw Object.assign(new Error('The uploaded file is not a valid image matching its declared type.'), { status: 400 });
+  }
+  if (width > 10_000 || height > 10_000 || width * height > MAX_IMAGE_PIXELS) {
+    throw Object.assign(new Error('Image dimensions exceed the 40-megapixel limit.'), { status: 413 });
+  }
 }
 
 function storeImage(data) {
-  if (typeof data !== 'string' || !data.startsWith('data:image/')) return data;
+  if (typeof data !== 'string') throw Object.assign(new Error('Image must be a URL or an uploaded image.'), { status: 400 });
+  if (!data.startsWith('data:image/')) {
+    if (data.length > 2048) throw Object.assign(new Error('Image URL must be 2048 characters or fewer.'), { status: 400 });
+    if (data && !/^https?:\/\//i.test(data) && (!data.startsWith('/') || data.startsWith('//') || data.includes('\\'))) {
+      throw Object.assign(new Error('Image URL must use HTTP(S) or a same-site path.'), { status: 400 });
+    }
+    return data;
+  }
   const match = data.match(/^data:image\/(png|jpeg|webp|gif);base64,([A-Za-z0-9+/=]+)$/);
   if (!match) throw Object.assign(new Error('Image must be PNG, JPEG, WebP, or GIF.'), { status: 400 });
+  const encoded = match[2];
+  if (encoded.length > Math.ceil(MAX_IMAGE_BYTES / 3) * 4) throw Object.assign(new Error('Uploaded images are limited to 4 MB.'), { status: 413 });
+  const buffer = Buffer.from(encoded, 'base64');
+  if (buffer.length > MAX_IMAGE_BYTES || buffer.toString('base64') !== encoded) {
+    throw Object.assign(new Error('Uploaded images must be valid base64 files no larger than 4 MB.'), { status: 400 });
+  }
+  validateImage(buffer, match[1]);
   const extension = match[1] === 'jpeg' ? 'jpg' : match[1];
   const filename = `${randomUUID()}.${extension}`;
-  writeFileSync(resolve(uploadsDir, filename), Buffer.from(match[2], 'base64'), { flag: 'wx' });
+  writeFileSync(resolve(uploadsDir, filename), buffer, { flag: 'wx' });
   return `/uploads/${filename}`;
 }
 
@@ -161,6 +379,7 @@ function cleanRecord(collection, input, existing = {}) {
     record.guidelines ||= [];
   }
   if (collection === 'artists') {
+    record.avatarUrl = storeImage(record.avatarUrl || '');
     record.slug ||= String(record.name || 'artist').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     record.year ||= record.batch || '';
     record.batch ||= String(record.year);
@@ -176,6 +395,9 @@ function cleanRecord(collection, input, existing = {}) {
     record.isPinned = Boolean(record.isPinned);
     record.createdAt ||= new Date().toISOString();
   }
+  if (collection === 'achievements') record.imageUrl = storeImage(record.imageUrl || '');
+  if (collection === 'team') record.avatarUrl = storeImage(record.avatarUrl || '');
+  if (collection === 'campusArt') record.imageUrl = storeImage(record.imageUrl || '');
   return record;
 }
 
@@ -270,15 +492,20 @@ async function handler(req, res) {
 
   const path = url.pathname.slice(5).split('/').filter(Boolean).map(decodeURIComponent);
   const [resource, id, action] = path;
+  if (req.method === 'POST' && resource === 'auth' && id === 'login' && !allowRateLimitedRequest(req, res, 'admin-login', 8, 60_000)) return;
+  if (req.method === 'POST' && resource === 'contact' && !id && !allowRateLimitedRequest(req, res, 'contact-form', 5, 15 * 60_000)) return;
+  if (req.method === 'POST' && resource === 'applications' && !id && !allowRateLimitedRequest(req, res, 'membership-form', 3, 60 * 60_000)) return;
+  if (req.method === 'POST' && resource === 'events' && id && action === 'register' && !allowRateLimitedRequest(req, res, 'event-registration', 8, 15 * 60_000)) return;
+  if (req.method === 'POST' && resource === 'artworks' && id && action === 'like' && !allowRateLimitedRequest(req, res, 'artwork-like', 120, 60_000)) return;
+  const isPublicForm = (resource === 'events' && id && action === 'register') || (resource === 'artworks' && id && action === 'like');
+  const isAdminContentWrite = ['POST', 'PUT'].includes(req.method || '') && ['artworks', 'events', 'artists', 'achievements', 'team', 'campus-art'].includes(resource) && !isPublicForm;
+  if (isAdminContentWrite) {
+    if (!adminOnly(req, res)) return;
+    if (!allowRateLimitedRequest(req, res, 'admin-content-write', 40, 10 * 60_000)) return;
+  }
   const body = ['POST', 'PUT', 'PATCH'].includes(req.method || '') ? await readBody(req) : {};
 
   if (resource === 'auth' && id === 'login' && req.method === 'POST') {
-    const ip = req.socket.remoteAddress || 'unknown';
-    const attempts = loginAttempts.get(ip) || [];
-    const recentAttempts = attempts.filter((at) => Date.now() - at < 60_000);
-    if (recentAttempts.length >= 8) return send(res, 429, { error: 'Too many sign-in attempts. Try again in a minute.' });
-    recentAttempts.push(Date.now());
-    loginAttempts.set(ip, recentAttempts);
     const email = process.env.ADMIN_EMAIL?.trim().toLowerCase();
     const password = process.env.ADMIN_PASSWORD;
     if (!email || !password) return send(res, 503, { error: 'Admin sign-in is not configured. Set ADMIN_EMAIL and ADMIN_PASSWORD on the server.' });
@@ -303,21 +530,41 @@ async function handler(req, res) {
   }
 
   if (resource === 'contact' && !id && req.method === 'POST') {
-    if (!body.name?.trim() || !/^\S+@\S+\.\S+$/.test(body.email || '') || !body.message?.trim()) return send(res, 400, { error: 'Name, valid email, and message are required.' });
-    const contact = save('contacts', { id: randomUUID(), name: body.name.trim(), email: body.email.trim().toLowerCase(), subject: String(body.subject || 'Website inquiry').trim(), message: body.message.trim(), isRead: false, submittedAt: new Date().toISOString() });
+    const name = textField(body.name, 'Name', 100);
+    const email = textField(body.email, 'Email', 254).toLowerCase();
+    const subject = textField(body.subject ?? 'Website inquiry', 'Subject', 120);
+    const message = textField(body.message, 'Message', 5000);
+    if (!validEmail(email)) return send(res, 400, { error: 'Enter a valid email address.' });
+    const contact = save('contacts', { id: randomUUID(), name, email, subject, message, isRead: false, submittedAt: new Date().toISOString() });
     return send(res, 201, { success: true, message: 'Your message has been saved.', contact });
   }
   if (resource === 'applications' && !id && req.method === 'POST') {
-    if (!body.fullName?.trim() || !/^\S+@\S+\.\S+$/.test(body.email || '') || !body.department?.trim()) return send(res, 400, { error: 'Name, valid email, and department are required.' });
-    const application = save('applications', { ...body, id: randomUUID(), fullName: body.fullName.trim(), email: body.email.trim().toLowerCase(), phone: String(body.phone || ''), rollNumber: String(body.rollNumber || ''), status: 'PENDING', submittedAt: new Date().toISOString() });
+    const fullName = textField(body.fullName, 'Name', 120);
+    const email = textField(body.email, 'Email', 254).toLowerCase();
+    const department = textField(body.department, 'Department', 120);
+    const academicYear = textField(body.academicYear, 'Academic year', 40);
+    const artInterests = textField(body.artInterests, 'Art interests', 300);
+    const portfolioUrl = textField(body.portfolioUrl, 'Portfolio URL', 2048, { required: false });
+    const whyJoin = textField(body.whyJoin, 'Reason for joining', 3000);
+    const phone = textField(body.phone, 'Phone', 30, { required: false });
+    const rollNumber = textField(body.rollNumber, 'Roll number', 40, { required: false });
+    if (!validEmail(email)) return send(res, 400, { error: 'Enter a valid email address.' });
+    if (portfolioUrl && !/^https?:\/\//i.test(portfolioUrl) && !/^@?[\w.-]{3,}$/.test(portfolioUrl)) return send(res, 400, { error: 'Portfolio URL must be an HTTP(S) URL or a valid handle.' });
+    const application = save('applications', { id: randomUUID(), fullName, email, department, academicYear, artInterests, portfolioUrl, whyJoin, phone, rollNumber, status: 'PENDING', submittedAt: new Date().toISOString() });
     return send(res, 201, { success: true, message: 'Application received.', application });
   }
   if (resource === 'events' && id && action === 'register' && req.method === 'POST') {
     const event = get('events', id);
     if (!event) return send(res, 404, { error: 'Event not found.' });
-    if (!body.name?.trim() || !/^\S+@\S+\.\S+$/.test(body.email || '')) return send(res, 400, { error: 'Name and valid email are required.' });
+    const name = textField(body.name, 'Name', 120);
+    const email = textField(body.email, 'Email', 254).toLowerCase();
+    const phone = textField(body.phone, 'Phone', 30, { required: false });
+    const department = textField(body.department, 'Department', 120, { required: false });
+    const yearOfStudy = textField(body.yearOfStudy, 'Year of study', 40, { required: false });
+    const rollNumber = textField(body.rollNumber, 'Roll number', 40, { required: false });
+    if (!validEmail(email)) return send(res, 400, { error: 'Enter a valid email address.' });
     const visitor = visitorSession(req);
-    const registration = { id: randomUUID(), eventId: id, name: body.name.trim(), email: body.email.trim().toLowerCase(), phone: body.phone || '', department: body.department || '', yearOfStudy: body.yearOfStudy || '', rollNumber: body.rollNumber || '', passCode: `GCECT-ART-${randomBytes(3).toString('hex').toUpperCase()}`, submittedAt: new Date().toISOString() };
+    const registration = { id: randomUUID(), eventId: id, name, email, phone, department, yearOfStudy, rollNumber, passCode: `GCECT-ART-${randomBytes(3).toString('hex').toUpperCase()}`, submittedAt: new Date().toISOString() };
     const prior = db.prepare('SELECT data FROM registrations WHERE event_id = ? AND email = ?').get(id, registration.email);
     if (prior) {
       db.prepare('UPDATE registrations SET visitor_id = ? WHERE event_id = ? AND email = ?').run(visitor.id, id, registration.email);
@@ -449,8 +696,9 @@ const server = createServer((req, res) => {
 });
 
 const port = Number(process.env.PORT || 3002);
-server.listen(port, process.env.HOST || '127.0.0.1', () => {
-  console.log(`Brush and Bond API listening on http://${process.env.HOST || '127.0.0.1'}:${port}/api`);
+const host = process.env.HOST || (isProduction ? '0.0.0.0' : '127.0.0.1');
+server.listen(port, host, () => {
+  console.log(`Brush and Bond API listening on http://${host}:${port}/api`);
   if (!process.env.ADMIN_EMAIL || !process.env.ADMIN_PASSWORD) console.warn('Admin sign-in is disabled until ADMIN_EMAIL and ADMIN_PASSWORD are configured.');
 });
 

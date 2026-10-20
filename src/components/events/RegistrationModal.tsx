@@ -164,6 +164,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ event, onC
                   </label>
                   <input
                     type="text"
+                    maxLength={120}
                     value={name}
                     onChange={(e) => {
                       setName(e.target.value);
@@ -227,6 +228,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ event, onC
                   </label>
                   <input
                     type="email"
+                    maxLength={254}
                     value={email}
                     onChange={(e) => {
                       setEmail(e.target.value);
@@ -254,6 +256,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ event, onC
                   </label>
                   <input
                     type="tel"
+                    maxLength={30}
                     value={phone}
                     onChange={(e) => {
                       setPhone(e.target.value);

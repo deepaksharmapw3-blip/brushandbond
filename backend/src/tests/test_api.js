@@ -58,8 +58,8 @@ async function testApi() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: "admin@gcectart.club",
-          password: "Admin@ArtClub2026",
+          email: process.env.TEST_ADMIN_EMAIL,
+          password: process.env.TEST_ADMIN_PASSWORD,
         }),
       }).then((r) => r.json());
 

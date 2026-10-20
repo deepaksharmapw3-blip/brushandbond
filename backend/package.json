@@ -1,13 +1,11 @@
 {
-  "name": "backend",
+  "name": "brushandbond-retired-postgres-backend",
+  "private": true,
   "version": "1.0.0",
-  "description": "",
+  "description": "Retired PostgreSQL backend retained for historical reference; do not deploy.",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js",
-    "seed": "node src/seeds/seed.js",
-    "test-db": "node test_db.js"
+    "start": "node index.js"
   },
   "keywords": [],
   "author": "",

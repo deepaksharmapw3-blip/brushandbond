@@ -1,6 +1,6 @@
 # Brush and Bond
 
-Brush and Bond is the art club site and artwork archive for the Government College of Engineering and Ceramic Technology (GCECT). The frontend is a React, TypeScript, and Vite app. The API is a small Node.js service with SQLite persistence.
+Brush and Bond is the art club site and artwork archive for the Government College of Engineering and Ceramic Technology (GCECT). The frontend is a React, TypeScript, and Vite app. The supported API is the Node.js service in `server/index.js` with SQLite persistence. The old PostgreSQL backend in `backend/` is retired and must not be deployed.
 
 ## Run locally
 
@@ -19,7 +19,11 @@ The server creates `data/brushandbond.sqlite` on first start and seeds the exist
 
 Admin sessions use an HttpOnly, SameSite=Strict cookie and expire after 12 hours. Set `NODE_ENV=production` when serving over HTTPS so the cookie is marked Secure. The admin API is disabled until server credentials are configured. No demo account or client-side password is shipped.
 
-For deployment, host the API and frontend on the same site origin or configure a reverse proxy for `/api` and `/uploads`. Use persistent disk storage for `DATABASE_PATH` and the uploads directory. Back up both. Do not expose the development Vite server to the public internet.
+Public contact submissions are limited to 5 per IP per 15 minutes, membership applications to 3 per IP per hour, and event registrations to 8 per IP per 15 minutes. Form fields have server-side length limits. Uploaded images are capped at 4 MB and 40 megapixels, with file-signature and dimension checks; JSON request bodies are capped at 6 MB. Rate limits are process-local, so keep the SQLite API to one instance; use a shared limiter store if the service is later scaled horizontally.
+
+For production deployment, build the frontend with `npm run build` and run the API with `npm run api`. Set `NODE_ENV=production`, `HOST=0.0.0.0` (the production default), `ADMIN_EMAIL`, and a unique `ADMIN_PASSWORD` of at least 16 characters. Production startup requires absolute `DATABASE_PATH` and `UPLOADS_DIR` values; mount a persistent disk at those paths or startup will stop with a configuration error. Set the host-provided `PORT` when required.
+
+Run exactly one API instance while using SQLite, and back up the database and uploads together. Put the API behind an HTTPS reverse proxy and route `/api` and `/uploads` to it on the same site origin as the frontend. The proxy/host must terminate TLS; `NODE_ENV=production` marks admin cookies Secure. Do not expose the Vite development server to the public internet.
 
 ## Commands
 
