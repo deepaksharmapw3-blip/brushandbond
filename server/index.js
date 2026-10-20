@@ -76,23 +76,26 @@ const seedCollections = { artworks: mockArtworks, events: mockEvents, artists: m
 const wasSeeded = db.prepare('SELECT value FROM metadata WHERE key = ?');
 const rowCount = db.prepare('SELECT count(*) AS count FROM records WHERE collection = ?');
 const addSeed = db.prepare('INSERT INTO records (id, collection, data, created_at, updated_at) VALUES (?, ?, ?, ?, ?)');
-for (const [collection, rows] of Object.entries(seedCollections)) {
-  const seedKey = `seeded:${collection}`;
-  if (wasSeeded.get(seedKey)) continue;
-  // Migrate the previous one-flag seed marker without restoring records an administrator removed.
-  if (wasSeeded.get('seeded') && rowCount.get(collection).count > 0) {
-    db.prepare('INSERT INTO metadata (key, value) VALUES (?, ?)').run(seedKey, '1');
-    continue;
-  }
-  const now = new Date().toISOString();
-  db.exec('BEGIN IMMEDIATE');
-  try {
-    for (const row of rows) addSeed.run(row.id, collection, JSON.stringify(collection === 'artworks' ? { ...row, _likesBaseline: Number(row.likes || 0) } : row), now, now);
-    db.prepare('INSERT INTO metadata (key, value) VALUES (?, ?)').run(seedKey, '1');
-    db.exec('COMMIT');
-  } catch (error) {
-    db.exec('ROLLBACK');
-    throw error;
+const allowSampleContent = process.env.SEED_DEMO_DATA === 'true';
+if (allowSampleContent) {
+  for (const [collection, rows] of Object.entries(seedCollections)) {
+    const seedKey = `seeded:${collection}`;
+    if (wasSeeded.get(seedKey)) continue;
+    // Migrate the previous one-flag seed marker without restoring records an administrator removed.
+    if (wasSeeded.get('seeded') && rowCount.get(collection).count > 0) {
+      db.prepare('INSERT INTO metadata (key, value) VALUES (?, ?)').run(seedKey, '1');
+      continue;
+    }
+    const now = new Date().toISOString();
+    db.exec('BEGIN IMMEDIATE');
+    try {
+      for (const row of rows) addSeed.run(row.id, collection, JSON.stringify(collection === 'artworks' ? { ...row, _likesBaseline: Number(row.likes || 0) } : row), now, now);
+      db.prepare('INSERT INTO metadata (key, value) VALUES (?, ?)').run(seedKey, '1');
+      db.exec('COMMIT');
+    } catch (error) {
+      db.exec('ROLLBACK');
+      throw error;
+    }
   }
 }
 
@@ -107,6 +110,7 @@ const queries = {
   insert: db.prepare('INSERT INTO records (id, collection, data, created_at, updated_at) VALUES (?, ?, ?, ?, ?)'),
   update: db.prepare('UPDATE records SET data = ?, updated_at = ? WHERE collection = ? AND id = ?'),
   delete: db.prepare('DELETE FROM records WHERE collection = ? AND id = ?'),
+  registrationCount: db.prepare('SELECT count(*) AS count FROM registrations WHERE event_id = ?'),
 };
 const parse = (value) => JSON.parse(value);
 const list = (collection) => queries.list.all(collection).map((row) => decorateRecord(collection, parse(row.data)));
@@ -405,7 +409,8 @@ function cleanRecord(collection, input, existing = {}) {
 
 function decorateRecord(collection, record) {
   if (collection === 'events') {
-    return { ...record, event_name: record.event_name || record.title, event_date: record.event_date || record.date, event_time: record.event_time || record.time, max_capacity: record.max_capacity ?? record.capacity, is_past: record.is_past ?? record.status === 'concluded' };
+    const registeredCount = Number(queries.registrationCount.get(record.id).count);
+    return { ...record, registeredCount, event_name: record.event_name || record.title, event_date: record.event_date || record.date, event_time: record.event_time || record.time, max_capacity: record.max_capacity ?? record.capacity, is_past: record.is_past ?? record.status === 'concluded' };
   }
   if (collection === 'artworks') {
     const artist = record.artist || (record.artistId ? get('artists', record.artistId) : null);

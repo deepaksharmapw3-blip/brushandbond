@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Clock } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { SEO } from '../components/common/SEO';
-import { mockMilestones } from '../data/mockData';
 import { useGallery } from '../context/GalleryContext';
 
 export const ArtistsPage: React.FC = () => {
@@ -166,51 +165,7 @@ export const ArtistsPage: React.FC = () => {
         </div>
       </section>
 
-      {/* Part 2: Campus History Timeline */}
-      <section className="space-y-8 pt-8">
-        <div className="pb-4 border-b border-[var(--line)]">
-          <div className="flex items-center gap-2 text-xs font-mono text-[var(--accent)] font-semibold mb-1">
-            <Clock className="w-3.5 h-3.5" />
-            <span>Chronology of the collective</span>
-          </div>
-          <h2 className="section-title text-[var(--ink)]">
-            Artistic history of GCECT
-          </h2>
-          <p className="text-xs font-mono text-[var(--muted)] mt-1">
-            From the historic kilns of 1941 to the founding of Brush and Bond in 2024
-          </p>
-        </div>
-
-        <div className="relative border-l border-[var(--line)] ml-4 sm:ml-6 pl-6 sm:pl-8 space-y-12">
-          {mockMilestones.map((milestone, idx) => (
-            <div key={idx} className="relative group">
-              {/* Dot in accent color */}
-              <div className="absolute -left-[31px] sm:-left-[39px] top-1.5 w-3.5 h-3.5 rounded-full bg-[var(--surface)] border-2 border-[var(--accent)] group-hover:scale-125 transition-transform" />
-
-              <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[6px] p-6 sm:p-8 space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-xs font-mono text-[var(--accent)] font-semibold">
-                    {milestone.dateLabel}
-                  </span>
-                  <span className="text-[11px] font-mono bg-[var(--paper)] px-3 py-1 rounded-full border border-[var(--line)] text-[var(--muted)]">
-                    {milestone.significance}
-                  </span>
-                </div>
-
-                <h3 className="font-display text-2xl font-bold text-[var(--ink)]">
-                  {milestone.title}
-                </h3>
-
-                <p className="text-sm text-[var(--muted)] leading-relaxed font-sans max-w-[65ch]">
-                  {milestone.description}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Part 3: Studio Space & Location Visit */}
+      {/* Part 2: Studio Space & Location Visit */}
       <section className="bg-[var(--surface)] border border-[var(--line)] rounded-[6px] p-6 sm:p-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           <div className="lg:col-span-8 space-y-4">

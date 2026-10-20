@@ -15,7 +15,7 @@ The Vite development server forwards `/api` and `/uploads` to the API on port 30
 
 ## Persistence and security
 
-The server creates `data/brushandbond.sqlite` on first start and seeds the existing artworks, events, artists, achievements, and team records. Contact messages, membership applications, event registrations, likes, announcements, and admin edits are stored server-side. SQLite is configured for WAL journaling, full synchronous commits, and a 5-second lock wait. Uploaded artwork images are written to `uploads/`, separately from the database. Both directories must be on persistent storage and included in backups; both are ignored by Git.
+The server creates `data/brushandbond.sqlite` on first start and does not seed sample records by default. Set `SEED_DEMO_DATA=true` only when you intentionally want sample artworks, events, artists, achievements, headline numbers, and team records (including in development). Review any database created by an earlier version before launch; sample records already stored there are preserved to avoid deleting administrator edits. Contact messages, membership applications, event registrations, likes, announcements, and admin edits are stored server-side. SQLite is configured for WAL journaling, full synchronous commits, and a 5-second lock wait. Uploaded artwork images are written to `uploads/`, separately from the database. Both directories must be on persistent storage and included in backups; both are ignored by Git.
 
 Admin sessions use an HttpOnly, SameSite=Strict cookie and expire after 12 hours. Set `NODE_ENV=production` when serving over HTTPS so the cookie is marked Secure. The admin API is disabled until server credentials are configured. No demo account or client-side password is shipped.
 

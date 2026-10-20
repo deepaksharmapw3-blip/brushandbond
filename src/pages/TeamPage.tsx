@@ -7,7 +7,6 @@ import {
   Users,
   ShieldCheck,
 } from 'lucide-react';
-import { mockTeamMembers, mockActiveMembers } from '../data/mockData';
 import type { TeamMember, ActiveMember } from '../types';
 import type { Easing } from 'framer-motion';
 import { teamApi } from '../services/api';
@@ -105,18 +104,23 @@ type YearFilter = 'All' | '1st Year' | '2nd Year' | '3rd Year' | '4th Year';
 
 export const TeamPage: React.FC = () => {
   const { isAuthenticated } = useAdminAuth();
-  const [teamList, setTeamList] = useState<TeamMember[]>(mockTeamMembers);
-  const [activeList, setActiveList] = useState<ActiveMember[]>(mockActiveMembers);
+  const [teamList, setTeamList] = useState<TeamMember[]>([]);
+  const [activeList, setActiveList] = useState<ActiveMember[]>([]);
+  const [isLoadingTeam, setIsLoadingTeam] = useState(true);
+  const [teamLoadError, setTeamLoadError] = useState<string | null>(null);
+  const [teamReloadVersion, setTeamReloadVersion] = useState(0);
 
   useEffect(() => {
+    let active = true;
     const fetchLiveTeam = async () => {
+      setIsLoadingTeam(true);
       try {
         const res = await teamApi.getAll();
-        if (res.success && Array.isArray(res.team) && res.team.length > 0) {
-          const liveMembers: TeamMember[] = [];
-          const liveActives: ActiveMember[] = [];
+        if (!res.success || !Array.isArray(res.team)) throw new Error('Team data is unavailable.');
+        const liveMembers: TeamMember[] = [];
+        const liveActives: ActiveMember[] = [];
 
-          res.team.forEach((m: any) => {
+        res.team.forEach((m: any) => {
             const tier = (m.tier || 'executive').toLowerCase();
             if (tier === 'member') {
               liveActives.push({
@@ -151,18 +155,28 @@ export const TeamPage: React.FC = () => {
                 responsibilities: respArray,
               });
             }
-          });
+        });
 
-          if (liveMembers.length > 0) setTeamList(liveMembers);
-          if (liveActives.length > 0) setActiveList(liveActives);
+        if (active) {
+          setTeamList(liveMembers);
+          setActiveList(liveActives);
+          setTeamLoadError(null);
         }
       } catch (e) {
-        console.warn('Using default team data:', e);
+        console.error('Could not load team data:', e);
+        if (active) {
+          setTeamList([]);
+          setActiveList([]);
+          setTeamLoadError('Team information is temporarily unavailable. Please retry in a moment.');
+        }
+      } finally {
+        if (active) setIsLoadingTeam(false);
       }
     };
 
-    fetchLiveTeam();
-  }, []);
+    void fetchLiveTeam();
+    return () => { active = false; };
+  }, [teamReloadVersion]);
 
   const faculty = teamList.filter((m) => m.tier === 'faculty');
   const executives = teamList.filter((m) => m.tier === 'executive');
@@ -230,6 +244,20 @@ export const TeamPage: React.FC = () => {
           The students and faculty mentors who keep Studio 204 alive — curating gallery walls, coordinating weekly sketch crawls, managing kiln schedules, and welcoming new members.
         </p>
       </header>
+
+      {teamLoadError && (
+        <div role="alert" className="flex flex-wrap items-center gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+          <span>{teamLoadError}</span>
+          <button type="button" onClick={() => setTeamReloadVersion((version) => version + 1)} className="font-semibold underline underline-offset-2">
+            Retry
+          </button>
+        </div>
+      )}
+      {!isLoadingTeam && !teamLoadError && teamList.length === 0 && activeList.length === 0 && (
+        <p className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4 text-sm text-[var(--muted)]">
+          No team profiles have been published yet.
+        </p>
+      )}
 
       {/* ────────────────────────────────────────────────── */}
       {/* Faculty Patron — full-width highlight */}

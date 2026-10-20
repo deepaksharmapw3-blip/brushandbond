@@ -5,7 +5,6 @@ import { ArrowUpRight, ArrowRight, Sparkles } from 'lucide-react';
 import { SEO } from '../components/common/SEO';
 import { useGallery } from '../context/GalleryContext';
 import { ArtworkCard } from '../components/gallery/ArtworkCard';
-import { mockArtists } from '../data/mockData';
 import { HeroPaintCanvas } from '../components/home/HeroPaintCanvas';
 import { HeroBackdrop } from '../components/home/HeroBackdrop';
 import { ClubNumbers } from '../components/home/ClubNumbers';
@@ -14,7 +13,7 @@ import { InstagramStrip } from '../components/home/InstagramStrip';
 import { ArtAroundGcectSection } from '../components/home/ArtAroundGcectSection';
 
 export const HomePage: React.FC = () => {
-  const { artworks, events } = useGallery();
+  const { artworks, events, artists, isLoadingSharedData, sharedDataError } = useGallery();
   const heroRef = useRef<HTMLElement | null>(null);
 
   // 8 artworks for masonry preview
@@ -27,8 +26,8 @@ export const HomePage: React.FC = () => {
   // Next 3 events for upcoming events strip
   const nextThreeEvents = events.filter((e) => e.status !== 'concluded').slice(0, 3);
 
-  // Artist of the month
-  const artistOfTheMonth = mockArtists[0]; // Subhajit Mukherjee
+  // Only feature an artist that is explicitly marked as a spotlight in the API.
+  const featuredArtist = artists.find((artist) => artist.isSpotlight);
 
   return (
     <div className="space-y-[clamp(64px,10vw,130px)] pb-0">
@@ -118,21 +117,21 @@ export const HomePage: React.FC = () => {
 
         {/* Bottom Bar: Stats Ribbon + Small hint at bottom right (hidden on touch) */}
         <div className="gallery-container relative z-10 pt-8 border-t border-[#F5F1EA]/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="flex items-center gap-8 sm:gap-14 text-left">
+          {!isLoadingSharedData && !sharedDataError && <div className="flex items-center gap-8 sm:gap-14 text-left">
             <div>
               <span className="block font-display text-2xl sm:text-3xl font-bold text-[#F5F1EA]">
-                80+
+                {artworks.length}
               </span>
               <span className="text-xs font-mono text-[#F5F1EA]/60">
-                Archived pieces
+                Published artworks
               </span>
             </div>
             <div>
               <span className="block font-display text-2xl sm:text-3xl font-bold text-[var(--ink)]">
-                120+
+                {artists.length}
               </span>
               <span className="text-xs font-mono text-[var(--muted)]">
-                Active members
+                Artist profiles
               </span>
             </div>
             <div>
@@ -143,7 +142,7 @@ export const HomePage: React.FC = () => {
                 Campus sanctuary
               </span>
             </div>
-          </div>
+          </div>}
 
           {/* Small hint at bottom right: "Move your cursor to paint" (hidden on touch) */}
           <div className="hidden md:flex items-center gap-2 text-xs font-mono text-[var(--muted)] select-none">
@@ -293,24 +292,24 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* =========================================================
-          5. Artist of the Month
+          5. Featured Artist
          ========================================================= */}
-      <section className="gallery-container">
+      {featuredArtist && <section className="gallery-container">
         <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[6px] p-6 sm:p-10 lg:p-14 shadow-sm">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-center">
             {/* Large portrait/artwork left */}
             <div className="lg:col-span-5">
               <Link
-                to={`/artists/${artistOfTheMonth.slug}`}
+                to={`/artists/${featuredArtist.slug}`}
                 className="group block aspect-square rounded-[6px] overflow-hidden bg-[var(--paper)] border border-[var(--line)] relative"
               >
                 <img
-                  src={artistOfTheMonth.avatarUrl}
-                  alt={artistOfTheMonth.name}
+                  src={featuredArtist.avatarUrl}
+                  alt={featuredArtist.name}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
                 <div className="absolute bottom-3 left-3 bg-[var(--surface)]/90 backdrop-blur-sm px-3 py-1 text-xs font-mono text-[var(--ink)] border border-[var(--line)] rounded-[4px]">
-                  {artistOfTheMonth.role}
+                  {featuredArtist.role}
                 </div>
               </Link>
             </div>
@@ -319,45 +318,45 @@ export const HomePage: React.FC = () => {
             <div className="lg:col-span-7 space-y-6">
               <div>
                 <span className="text-xs font-mono text-[var(--accent)] font-semibold uppercase tracking-wider block mb-1">
-                  Artist of the month
+                  Featured artist
                 </span>
                 <h3 className="font-display text-3xl sm:text-5xl font-extrabold text-[var(--ink)] tracking-tight">
                   <Link
-                    to={`/artists/${artistOfTheMonth.slug}`}
+                    to={`/artists/${featuredArtist.slug}`}
                     className="hover:text-[var(--accent)] transition-colors"
                   >
-                    {artistOfTheMonth.name}
+                    {featuredArtist.name}
                   </Link>
                 </h3>
                 <p className="text-xs font-mono text-[var(--muted)] mt-1">
-                  {artistOfTheMonth.department} • {artistOfTheMonth.batch}
+                  {featuredArtist.department} • {featuredArtist.batch}
                 </p>
               </div>
 
               {/* Big pull quote */}
               <blockquote className="font-display text-xl sm:text-2xl text-[var(--ink)] border-l-4 border-[var(--accent)] pl-5 py-1 italic leading-snug">
-                &ldquo;{artistOfTheMonth.statement}&rdquo;
+                &ldquo;{featuredArtist.statement}&rdquo;
               </blockquote>
 
               {/* Short bio */}
               <p className="text-sm text-[var(--muted)] leading-relaxed max-w-[65ch] font-sans">
-                {artistOfTheMonth.bio}
+                {featuredArtist.bio}
               </p>
 
               {/* Button "Read the interview" */}
               <div className="pt-2">
                 <Link
-                  to={`/artists/${artistOfTheMonth.slug}`}
+                  to={`/artists/${featuredArtist.slug}`}
                   className="btn-primary"
                 >
-                  <span>Read the interview</span>
+                  <span>View artist profile</span>
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
             </div>
           </div>
         </div>
-      </section>
+      </section>}
 
       {/* =========================================================
           6. Club in Numbers (Count Up Once In View + Heavy Top Rule)

@@ -3,6 +3,7 @@ import { ToastProvider } from './context/ToastContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { GalleryProvider } from './context/GalleryContext';
 import { AdminAuthProvider } from './context/AdminAuthContext';
+import { useGallery } from './context/GalleryContext';
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
 import { ArtworkLightbox } from './components/gallery/ArtworkLightbox';
@@ -48,6 +49,8 @@ const PageLoadingFallback = () => (
 function AppContent() {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin') && location.pathname !== '/admin/login';
+  const showPublicDataStatus = !location.pathname.startsWith('/admin');
+  const { sharedDataError, isLoadingSharedData, retrySharedData } = useGallery();
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--paper)] text-[var(--ink)] transition-colors duration-200">
@@ -61,6 +64,25 @@ function AppContent() {
 
       {/* Hide public Navbar & Footer on Admin pages to avoid double headers and give AdminLayout full canvas */}
       {!isAdminRoute && <Navbar />}
+
+      {showPublicDataStatus && (sharedDataError || isLoadingSharedData) && (
+        <div
+          role={sharedDataError ? 'alert' : 'status'}
+          aria-live="polite"
+          className={`px-4 py-3 text-center text-sm ${sharedDataError ? 'bg-amber-50 text-amber-950 border-b border-amber-200' : 'bg-[var(--surface)] text-[var(--muted)] border-b border-[var(--line)]'}`}
+        >
+          {sharedDataError || 'Loading live site content…'}
+          {sharedDataError && (
+            <button
+              type="button"
+              onClick={retrySharedData}
+              className="ml-3 font-semibold underline underline-offset-2"
+            >
+              Retry
+            </button>
+          )}
+        </div>
+      )}
 
       <main id="main-content" className="flex-1">
         <Suspense fallback={<PageLoadingFallback />}>

@@ -9,13 +9,6 @@ import type {
   AchievementItem,
   HeadlineNumber,
 } from '../types';
-import {
-  mockArtworks as initialArtworks,
-  mockEvents as initialEvents,
-  mockArtists as initialArtists,
-  mockAchievements as initialAchievements,
-  mockHeadlineNumbers as initialHeadlineNumbers,
-} from '../data/mockData';
 import { useToast } from './ToastContext';
 
 interface GalleryContextType {
@@ -24,6 +17,9 @@ interface GalleryContextType {
   events: EventItem[];
   achievements: AchievementItem[];
   headlineNumbers: HeadlineNumber[];
+  sharedDataError: string | null;
+  isLoadingSharedData: boolean;
+  retrySharedData: () => void;
   likedArtworkIds: Set<string>;
   registeredEventIds: Set<string>;
   activeArtworkModal: Artwork | null;
@@ -50,33 +46,19 @@ const GalleryContext = createContext<GalleryContextType | undefined>(undefined);
 
 export const GalleryProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { showSuccess, showInfo, showWarning } = useToast();
-  const [artworks, setArtworks] = useState<Artwork[]>(() => {
-    const sanitize = (list: Artwork[]) =>
-      list.map((a) => ({
-        ...a,
-        category: a.category || 'campus-art',
-        artistDept: a.artistDept || 'GCECT',
-        tags: Array.isArray(a.tags) ? a.tags : [],
-        medium: a.medium || 'Mixed Media',
-      }));
-
-    return sanitize(initialArtworks);
-  });
-
-  const [events, setEvents] = useState<EventItem[]>(() => {
-    return initialEvents;
-  });
-  const [artists, setArtists] = useState<Artist[]>(initialArtists);
+  const [artworks, setArtworks] = useState<Artwork[]>([]);
+  const [events, setEvents] = useState<EventItem[]>([]);
+  const [artists, setArtists] = useState<Artist[]>([]);
 
   const [likedArtworkIds, setLikedArtworkIds] = useState<Set<string>>(() => new Set());
 
   const [registeredEventIds, setRegisteredEventIds] = useState<Set<string>>(() => new Set());
 
-  const [achievements, setAchievements] = useState<AchievementItem[]>(() => {
-    return initialAchievements;
-  });
-
-  const [headlineNumbers, setHeadlineNumbers] = useState<HeadlineNumber[]>(() => initialHeadlineNumbers);
+  const [achievements, setAchievements] = useState<AchievementItem[]>([]);
+  const [headlineNumbers, setHeadlineNumbers] = useState<HeadlineNumber[]>([]);
+  const [sharedDataError, setSharedDataError] = useState<string | null>(null);
+  const [isLoadingSharedData, setIsLoadingSharedData] = useState(true);
+  const [loadVersion, setLoadVersion] = useState(0);
 
   const [activeArtworkModal, setActiveArtworkModal] = useState<Artwork | null>(null);
   const [selectedMedium, setSelectedMedium] = useState<MediumCategory>('All');
@@ -86,6 +68,7 @@ export const GalleryProvider: React.FC<{ children: React.ReactNode }> = ({ child
   useEffect(() => {
     let active = true;
     const loadSharedData = async () => {
+      if (active) setIsLoadingSharedData(true);
       try {
         const { artworkApi, eventApi, artistApi, achievementApi, headlineNumberApi } = await import('../services/api');
         const [artworkResult, eventResult, artistResult, achievementResult, headlineResult] = await Promise.all([
@@ -105,8 +88,12 @@ export const GalleryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setAchievements(achievementResult.achievements || []);
         setHeadlineNumbers(headlineResult.headlineNumbers || []);
         setLikedArtworkIds(new Set((artworkResult.artworks || []).filter((art) => art.isLiked).map((art) => String(art.id))));
+        setSharedDataError(null);
       } catch (error) {
         console.error('Could not load the shared gallery data:', error);
+        if (active) setSharedDataError('Live site content is temporarily unavailable. Please retry in a moment.');
+      } finally {
+        if (active) setIsLoadingSharedData(false);
       }
     };
     void loadSharedData();
@@ -115,7 +102,9 @@ export const GalleryProvider: React.FC<{ children: React.ReactNode }> = ({ child
       active = false;
       window.removeEventListener('bb-data-updated', loadSharedData);
     };
-  }, []);
+  }, [loadVersion]);
+
+  const retrySharedData = () => setLoadVersion((version) => version + 1);
 
   const openArtworkModal = (artwork: Artwork) => {
     setActiveArtworkModal(artwork);
@@ -258,6 +247,9 @@ export const GalleryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         events,
         achievements,
         headlineNumbers,
+        sharedDataError,
+        isLoadingSharedData,
+        retrySharedData,
         likedArtworkIds,
         registeredEventIds,
         activeArtworkModal,
