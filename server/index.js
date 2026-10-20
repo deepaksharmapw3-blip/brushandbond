@@ -35,6 +35,8 @@ mkdirSync(dirname(dbPath), { recursive: true });
 const db = new DatabaseSync(dbPath);
 db.exec(`
   PRAGMA journal_mode = WAL;
+  PRAGMA synchronous = FULL;
+  PRAGMA busy_timeout = 5000;
   PRAGMA foreign_keys = ON;
   CREATE TABLE IF NOT EXISTS records (
     id TEXT PRIMARY KEY,

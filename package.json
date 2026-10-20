@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "api": "node --env-file-if-exists=.env server/index.js",
+    "backup": "node --env-file-if-exists=.env scripts/backup.mjs",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview"
