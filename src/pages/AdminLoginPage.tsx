@@ -9,8 +9,8 @@ export const AdminLoginPage: React.FC = () => {
   const navigate = useNavigate();
   const { login, isLoading } = useAdminAuth();
 
-  const [email, setEmail] = useState('admin@gcectart.club');
-  const [password, setPassword] = useState('Admin@ArtClub2026');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -27,11 +27,6 @@ export const AdminLoginPage: React.FC = () => {
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const handleAutofill = (autofillEmail: string, autofillPass: string) => {
-    setEmail(autofillEmail);
-    setPassword(autofillPass);
   };
 
   if (isLoading) {
@@ -129,31 +124,6 @@ export const AdminLoginPage: React.FC = () => {
             </button>
           </form>
 
-          {/* Quick Autofill Credentials */}
-          <div className="border-t border-slate-200 dark:border-slate-700 pt-6">
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 text-center font-medium">FIXED ADMIN CREDENTIALS (CLICK TO AUTOFILL)</p>
-            <div className="space-y-2">
-              <button
-                type="button"
-                onClick={() => handleAutofill('admin@gcectart.club', 'Admin@ArtClub2026')}
-                className="w-full text-left p-3 bg-white dark:bg-slate-800 border-2 border-blue-500/40 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 transition-colors text-sm shadow-xs cursor-pointer"
-              >
-                <div className="flex items-center justify-between">
-                  <p className="font-bold text-slate-900 dark:text-white">GCECT Art Club Admin</p>
-                  <span className="text-[10px] font-mono bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded">Fixed</span>
-                </div>
-                <p className="text-slate-600 dark:text-slate-400 text-xs mt-0.5">admin@gcectart.club • Admin@ArtClub2026</p>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleAutofill('admin@brushandbond.local', 'admin123')}
-                className="w-full text-left p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 transition-colors text-sm cursor-pointer"
-              >
-                <p className="font-medium text-slate-900 dark:text-white">Demo Admin Account</p>
-                <p className="text-slate-600 dark:text-slate-400 text-xs">admin@brushandbond.local • admin123</p>
-              </button>
-            </div>
-          </div>
         </motion.div>
       </div>
     </>
