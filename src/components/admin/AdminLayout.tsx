@@ -167,7 +167,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeSectio
               </div>
               <div className="hidden sm:block text-left">
                 <p className="text-xs font-semibold text-[var(--ink)] leading-none">{user?.name || 'Administrator'}</p>
-                <p className="text-[10px] text-[var(--muted)] leading-none mt-1">{user?.email || 'admin@gcectart.club'}</p>
+                <p className="text-[10px] text-[var(--muted)] leading-none mt-1">{user?.email || 'Administrator'}</p>
               </div>
               <ChevronDown className="w-3.5 h-3.5 text-[var(--muted)]" />
             </button>
