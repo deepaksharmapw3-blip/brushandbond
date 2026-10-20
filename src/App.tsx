@@ -32,6 +32,7 @@ const AdminGalleryPage = lazy(() => import('./pages/AdminGalleryPage').then(m =>
 const AdminArtistsPage = lazy(() => import('./pages/AdminArtistsPage').then(m => ({ default: m.AdminArtistsPage })));
 const AdminMembersPage = lazy(() => import('./pages/AdminApplicationsPage').then(m => ({ default: m.AdminApplicationsPage })));
 const AdminTeamPage = lazy(() => import('./pages/AdminTeamPage').then(m => ({ default: m.AdminTeamPage })));
+const AdminMessagesPage = lazy(() => import('./pages/AdminMessagesPage').then(m => ({ default: m.AdminMessagesPage })));
 const AdminAnnouncementsPage = lazy(() => import('./pages/AdminAnnouncementsPage').then(m => ({ default: m.AdminAnnouncementsPage })));
 const AdminAchievementsPage = lazy(() => import('./pages/AdminPlaceholderPages').then(m => ({ default: m.AdminAchievementsPage })));
 const AdminAnalyticsPage = lazy(() => import('./pages/AdminPlaceholderPages').then(m => ({ default: m.AdminAnalyticsPage })));
@@ -107,6 +108,7 @@ function AppContent() {
             <Route path="/admin/artists" element={<AdminArtistsPage />} />
             <Route path="/admin/team" element={<AdminTeamPage />} />
             <Route path="/admin/members" element={<AdminMembersPage />} />
+            <Route path="/admin/messages" element={<AdminMessagesPage />} />
             <Route path="/admin/announcements" element={<AdminAnnouncementsPage />} />
             <Route path="/admin/achievements" element={<AdminAchievementsPage />} />
             <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />

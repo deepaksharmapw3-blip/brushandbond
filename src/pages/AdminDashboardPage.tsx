@@ -42,53 +42,6 @@ export const AdminDashboardPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fallback mock data if API is unavailable
-  const MOCK_STATS: DashboardStats = {
-    totalArtworks: 248,
-    upcomingEvents: 8,
-    activeMembers: 145,
-    totalRegistrations: 486,
-    weekStats: {
-      views: 2458,
-      likes: 342,
-      comments: 48,
-    },
-    recentActivity: [
-      {
-        id: '1',
-        type: 'artwork',
-        title: 'New artwork uploaded',
-        description: 'Oil on Canvas: "Urban Dreams" by Priya Sharma',
-        timestamp: '2 hours ago',
-        user: 'Priya Sharma',
-      },
-      {
-        id: '2',
-        type: 'member',
-        title: 'New member application',
-        description: 'Rohan Gupta applied to join Brush and Bond',
-        timestamp: '3 hours ago',
-        user: 'Rohan Gupta',
-      },
-      {
-        id: '3',
-        type: 'event',
-        title: 'Event created',
-        description: 'The Canvas 2026 - Annual Art Exhibition',
-        timestamp: '1 day ago',
-        user: 'Admin',
-      },
-      {
-        id: '4',
-        type: 'comment',
-        title: 'New feedback',
-        description: 'Comment on artwork: "Terracotta Dream"',
-        timestamp: '2 days ago',
-        user: 'Amitabh Kumar',
-      },
-    ],
-  };
-
   useEffect(() => {
     const loadDashboard = async () => {
       try {
@@ -97,9 +50,9 @@ export const AdminDashboardPage: React.FC = () => {
         setStats(data);
         setError(null);
       } catch (err) {
-        console.warn('Failed to load real data, using mock data', err);
-        setStats(MOCK_STATS);
-        setError('Using cached data - backend unavailable');
+        console.error('Failed to load dashboard data:', err);
+        setStats(null);
+        setError(err instanceof Error ? err.message : 'The API is unavailable.');
       } finally {
         setLoading(false);
       }
@@ -117,28 +70,24 @@ export const AdminDashboardPage: React.FC = () => {
           label: 'Total Artworks',
           value: stats.totalArtworks,
           icon: Image,
-          trend: { value: 12, positive: true },
           color: 'blue',
         },
         {
           label: 'Upcoming Events',
           value: stats.upcomingEvents,
           icon: Calendar,
-          trend: { value: 2, positive: true },
           color: 'purple',
         },
         {
           label: 'Active Members',
           value: stats.activeMembers,
           icon: Users,
-          trend: { value: 23, positive: true },
           color: 'green',
         },
         {
           label: 'Registrations',
           value: stats.totalRegistrations,
           icon: UserCheck,
-          trend: { value: 8, positive: false },
           color: 'orange',
         },
       ]
@@ -159,7 +108,7 @@ export const AdminDashboardPage: React.FC = () => {
             {error ? (
               <span className="text-orange-600 dark:text-orange-400">⚠ {error}</span>
             ) : (
-              'Real-time analytics powered by PostgreSQL'
+              'Shared data stored in SQLite'
             )}
           </p>
         </div>
@@ -228,6 +177,11 @@ export const AdminDashboardPage: React.FC = () => {
         {/* Stats Grid */}
         {!loading && (
           <>
+            {!stats && error && (
+              <p role="alert" className="mb-8 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 text-sm text-[var(--muted)]">
+                Dashboard data is unavailable. Check that the API is running, then refresh this page.
+              </p>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               {statCards.map((stat, index) => {
                 const Icon = stat.icon;

@@ -9,8 +9,8 @@ export const AdminLoginPage: React.FC = () => {
   const navigate = useNavigate();
   const { login, isLoading } = useAdminAuth();
 
-  const [email, setEmail] = useState('admin@brushandbond.local');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -21,22 +21,6 @@ export const AdminLoginPage: React.FC = () => {
 
     try {
       await login(email, password);
-      navigate('/admin', { replace: true });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleDemoLogin = async (demoEmail: string, demoPassword: string) => {
-    setEmail(demoEmail);
-    setPassword(demoPassword);
-    setError('');
-    setIsSubmitting(true);
-
-    try {
-      await login(demoEmail, demoPassword);
       navigate('/admin', { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
@@ -140,46 +124,9 @@ export const AdminLoginPage: React.FC = () => {
             </button>
           </form>
 
-          {/* Demo Credentials */}
-          <div className="border-t border-slate-200 dark:border-slate-700 pt-6">
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 text-center font-medium">FIXED ADMIN CREDENTIALS (CLICK TO AUTOFILL)</p>
-            <div className="space-y-2">
-              <button
-                type="button"
-                onClick={() => handleDemoLogin('admin@gcectart.club', 'Admin@ArtClub2026')}
-                disabled={isSubmitting}
-                className="w-full text-left p-3 bg-white dark:bg-slate-800 border-2 border-blue-500/40 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 transition-colors disabled:opacity-50 text-sm shadow-xs"
-              >
-                <div className="flex items-center justify-between">
-                  <p className="font-bold text-slate-900 dark:text-white">GCECT Art Club Admin</p>
-                  <span className="text-[10px] font-mono bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded">Fixed</span>
-                </div>
-                <p className="text-slate-600 dark:text-slate-400 text-xs mt-0.5">admin@gcectart.club • Admin@ArtClub2026</p>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDemoLogin('admin@brushandbond.local', 'admin123')}
-                disabled={isSubmitting}
-                className="w-full text-left p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 transition-colors disabled:opacity-50 text-sm"
-              >
-                <p className="font-medium text-slate-900 dark:text-white">Demo Admin Account</p>
-                <p className="text-slate-600 dark:text-slate-400 text-xs">admin@brushandbond.local • admin123</p>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDemoLogin('editor@brushandbond.local', 'editor123')}
-                disabled={isSubmitting}
-                className="w-full text-left p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 transition-colors disabled:opacity-50 text-sm"
-              >
-                <p className="font-medium text-slate-900 dark:text-white">Editor Account</p>
-                <p className="text-slate-600 dark:text-slate-400 text-xs">editor@brushandbond.local</p>
-              </button>
-            </div>
-          </div>
-
           {/* Help Text */}
           <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-6">
-            This is a development login interface. Real authentication will use Supabase Auth.
+            Sign in with the administrator account configured on the server.
           </p>
         </motion.div>
       </div>

@@ -64,7 +64,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ event, onC
     return Object.keys(errs).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validate()) return;
@@ -80,9 +80,9 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ event, onC
       experienceLevel: 'Practicing Artist',
     };
 
-    const result = registerForEvent(payload);
-
-    if (result.success) {
+    try {
+      const result = await registerForEvent(payload);
+      if (!result.success) return;
       setTicketPass(result.passCode);
       showSuccess('Registration confirmed', `Your event pass ${result.passCode} has been issued.`);
 
@@ -96,6 +96,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ event, onC
       } catch {
         // ignore fallback
       }
+    } catch (error) {
+      setErrors((current) => ({ ...current, email: error instanceof Error ? error.message : 'Could not register for this event. Please try again.' }));
     }
   };
 
