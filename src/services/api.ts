@@ -1,5 +1,15 @@
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
+export class ApiRequestError extends Error {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = 'ApiRequestError';
+    this.status = status;
+  }
+}
+
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const headers = new Headers(options.headers);
   let body = options.body;
@@ -33,7 +43,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(payload.error || `Request failed (${response.status})`);
+    throw new ApiRequestError(payload.error || `Request failed (${response.status})`, response.status);
   }
   if (options.method && options.method !== 'GET' && /^\/(artworks|events|artists|achievements|headline-numbers)(\/|$)/.test(endpoint) && typeof window !== 'undefined') {
     window.dispatchEvent(new Event('bb-data-updated'));

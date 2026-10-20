@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authApi } from '../services/api';
+import { ApiRequestError, authApi } from '../services/api';
 
 export interface AdminUser {
   id: string;
@@ -14,6 +14,8 @@ interface AdminAuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
+  authError: string | null;
+  retrySessionCheck: () => void;
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
@@ -21,13 +23,37 @@ const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefin
 export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AdminUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [sessionCheckVersion, setSessionCheckVersion] = useState(0);
 
   useEffect(() => {
+    let active = true;
+    setIsLoading(true);
+    setAuthError(null);
+
     authApi.getMe()
-      .then(({ admin }) => setUser(admin))
-      .catch(() => setUser(null))
-      .finally(() => setIsLoading(false));
-  }, []);
+      .then(({ admin }) => {
+        if (active) setUser(admin);
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+        setUser(null);
+        // A 401 simply means there is no current session. Network and server
+        // errors need to remain visible so an API outage is not mistaken for logout.
+        if (!(error instanceof ApiRequestError && error.status === 401)) {
+          setAuthError('Could not reach the admin API. Check the server connection and retry.');
+        }
+      })
+      .finally(() => {
+        if (active) setIsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [sessionCheckVersion]);
+
+  const retrySessionCheck = () => setSessionCheckVersion((version) => version + 1);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
@@ -45,7 +71,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   return (
-    <AdminAuthContext.Provider value={{ isAuthenticated: Boolean(user), user, login, logout, isLoading }}>
+    <AdminAuthContext.Provider value={{ isAuthenticated: Boolean(user), user, login, logout, isLoading, authError, retrySessionCheck }}>
       {children}
     </AdminAuthContext.Provider>
   );

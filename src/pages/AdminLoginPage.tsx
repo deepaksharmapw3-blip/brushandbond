@@ -7,7 +7,7 @@ import { useAdminAuth } from '../context/AdminAuthContext';
 
 export const AdminLoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { login, isLoading } = useAdminAuth();
+  const { login, isLoading, authError, retrySessionCheck } = useAdminAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -62,6 +62,15 @@ export const AdminLoginPage: React.FC = () => {
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Studio Admin</h1>
             <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">Brush and Bond Executive Portal</p>
           </div>
+
+          {authError && (
+            <div role="alert" className="mb-5 flex items-center justify-between gap-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100">
+              <span>{authError}</span>
+              <button type="button" onClick={retrySessionCheck} className="shrink-0 font-semibold underline underline-offset-2">
+                Retry
+              </button>
+            </div>
+          )}
 
           {/* Error Alert */}
           {error && (
