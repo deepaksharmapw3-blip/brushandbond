@@ -1,12 +1,30 @@
-// NOTE: All API calls are mocked for development.
-// In production, replace with real backend calls.
+const API_BASE = '/api';
+
+function getAuthHeader(): Record<string, string> {
+  const token = localStorage.getItem('bb-auth-token') || localStorage.getItem('bb-admin-token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  // Mock: just return empty success response
-  // In production: implement real API calls
-  return Promise.resolve({
-    success: true,
-  } as T);
+  const headers: Record<string, string> = {
+    ...getAuthHeader(),
+    ...(options.headers as Record<string, string>),
+  };
+
+  if (!(options.body instanceof FormData) && !headers['Content-Type']) {
+    headers['Content-Type'] = 'application/json';
+  }
+
+  const res = await fetch(`${API_BASE}${endpoint}`, {
+    ...options,
+    headers,
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.message || `API error ${res.status}`);
+  }
+  return data as T;
 }
 
 // 1. Auth API

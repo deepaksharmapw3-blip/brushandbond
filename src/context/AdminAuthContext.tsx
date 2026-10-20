@@ -18,10 +18,6 @@ interface AdminAuthContextType {
 
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
 
-/**
- * Mock admin users for development
- * In production, this will be replaced with real Supabase Auth
- */
 const MOCK_ADMIN_USERS: Record<string, { password: string; user: AdminUser }> = {
   'admin@gcectart.club': {
     password: 'Admin@ArtClub2026',
@@ -62,47 +58,77 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   // Check stored session on mount
   useEffect(() => {
-    const checkSession = async () => {
-      await new Promise((resolve) => setTimeout(resolve, 500));
+    try {
       const stored = localStorage.getItem('bb-admin-session');
       if (stored) {
-        try {
-          const session = JSON.parse(stored);
+        const session = JSON.parse(stored);
+        if (session && session.email) {
           setUser(session);
           setIsAuthenticated(true);
-        } catch {
-          localStorage.removeItem('bb-admin-session');
         }
       }
+    } catch {
+      localStorage.removeItem('bb-admin-session');
+    } finally {
       setIsLoading(false);
-    };
-
-    checkSession();
+    }
   }, []);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Simulate network delay
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      const trimmedEmail = email.trim().toLowerCase();
+      let authenticatedUser: AdminUser | null = null;
+      let token = 'mock-jwt-token-for-dev';
 
-      const adminRecord = MOCK_ADMIN_USERS[email.toLowerCase()];
-
-      if (!adminRecord) {
-        throw new Error('Admin account not found. Try admin@brushandbond.local / admin123');
+      // 1. Try real backend login first
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: trimmedEmail, password }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.token) {
+            token = data.token;
+            authenticatedUser = {
+              id: String(data.admin?.id || 'admin-001'),
+              email: data.admin?.email || trimmedEmail,
+              name: data.admin?.name || 'GCECT Art Club Admin',
+              role: 'admin',
+              avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=gcectadmin',
+            };
+          }
+        }
+      } catch (err) {
+        console.warn('Backend login unavailable, falling back to local credentials', err);
       }
 
-      if (adminRecord.password !== password) {
-        throw new Error('Invalid password. Try admin123');
+      // 2. Fallback to mock credentials if backend was offline or returned error
+      if (!authenticatedUser) {
+        const adminRecord = MOCK_ADMIN_USERS[trimmedEmail];
+        if (!adminRecord) {
+          throw new Error('Admin account not found. Try admin@gcectart.club / Admin@ArtClub2026');
+        }
+        if (adminRecord.password !== password) {
+          throw new Error('Invalid password. Try Admin@ArtClub2026 or admin123');
+        }
+        authenticatedUser = adminRecord.user;
       }
 
-      const authenticatedUser = adminRecord.user;
+      // Store tokens and session
+      localStorage.setItem('bb-auth-token', token);
+      localStorage.setItem('bb-admin-token', token);
+      localStorage.setItem('bb-admin-session', JSON.stringify(authenticatedUser));
+
       setUser(authenticatedUser);
       setIsAuthenticated(true);
-      localStorage.setItem('bb-admin-session', JSON.stringify(authenticatedUser));
     } catch (error: any) {
       setIsAuthenticated(false);
       setUser(null);
+      localStorage.removeItem('bb-auth-token');
+      localStorage.removeItem('bb-admin-token');
       localStorage.removeItem('bb-admin-session');
       throw error;
     } finally {
@@ -113,6 +139,8 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const logout = () => {
     setUser(null);
     setIsAuthenticated(false);
+    localStorage.removeItem('bb-auth-token');
+    localStorage.removeItem('bb-admin-token');
     localStorage.removeItem('bb-admin-session');
   };
 

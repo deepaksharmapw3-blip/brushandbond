@@ -62,12 +62,13 @@ class BackendApiService {
     this.token = localStorage.getItem('bb-auth-token');
   }
 
-  private getHeaders(): Record<string, string> {
+    private getHeaders(): Record<string, string> {
+    const token = localStorage.getItem('bb-auth-token') || localStorage.getItem('bb-admin-token');
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
     }
     return headers;
   }
@@ -83,10 +84,6 @@ class BackendApiService {
       });
 
       if (!response.ok) {
-        if (response.status === 401) {
-          localStorage.removeItem('bb-auth-token');
-          window.location.href = '/admin/login';
-        }
         throw new Error(`API error: ${response.status}`);
       }
 

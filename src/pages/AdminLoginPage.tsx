@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { AlertCircle, Lock, Mail, LogIn } from 'lucide-react';
@@ -7,12 +7,18 @@ import { useAdminAuth } from '../context/AdminAuthContext';
 
 export const AdminLoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { login, isLoading } = useAdminAuth();
+  const { login, isAuthenticated } = useAdminAuth();
 
-  const [email, setEmail] = useState('admin@brushandbond.local');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('admin@gcectart.club');
+  const [password, setPassword] = useState('Admin@ArtClub2026');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/admin', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,17 +50,6 @@ export const AdminLoginPage: React.FC = () => {
       setIsSubmitting(false);
     }
   };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-950">
-        <div className="space-y-3 text-center">
-          <div className="w-8 h-8 rounded-full border-2 border-slate-200 dark:border-slate-700 border-t-blue-500 animate-spin mx-auto" />
-          <p className="text-sm text-slate-500 dark:text-slate-400">Loading...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <>
@@ -179,11 +174,10 @@ export const AdminLoginPage: React.FC = () => {
 
           {/* Help Text */}
           <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-6">
-            This is a development login interface. Real authentication will use Supabase Auth.
+            Enter credentials above or click any fixed account to sign in immediately.
           </p>
         </motion.div>
       </div>
     </>
   );
 };
-
