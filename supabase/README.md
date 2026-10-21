@@ -4,6 +4,10 @@ The files in `migrations/` are the canonical database setup. They create the
 tables, constraints, foreign keys, indexes, row-level security policies, and
 public media buckets used by the frontend. Migration filenames are ordered;
 apply all of them, not just `rls_policies.sql`.
+Artwork likes are included in `20261021010000_artwork_likes_privacy.sql`.
+It exposes only the `toggle_artwork_like` RPC to visitors; direct table reads
+and writes are revoked so visitor identifiers remain private. Existing Supabase
+projects must apply this migration as well as fresh projects.
 
 ## Fresh project with the Supabase CLI
 
@@ -11,9 +15,18 @@ apply all of them, not just `rls_policies.sql`.
 2. From the repository root, run `supabase login` and
    `supabase link --project-ref YOUR_PROJECT_REF`.
 3. Apply the complete schema: `supabase db push`.
-4. In Supabase Auth settings, keep public sign-ups disabled. Create the admin
-   account yourself in the dashboard under **Authentication → Users**.
-5. Copy that user's UUID, then provision the explicit admin profile in the SQL
+4. Apply the checked-in Auth configuration to the hosted project:
+   `supabase config push`. This disables public and anonymous sign-ups; only
+   administrator accounts you create explicitly can sign in.
+5. Deploy the public form endpoint: `supabase functions deploy public-submission`.
+   It uses the Supabase-provided `SUPABASE_URL` and
+   `SUPABASE_SERVICE_ROLE_KEY` function secrets. Public contact, membership,
+   and event-registration inserts are accepted only through this endpoint;
+   it applies persistent per-IP limits (5 contact messages per 15 minutes,
+   3 membership applications per hour, and 8 event registrations per 15 minutes).
+6. Create the admin account yourself in the dashboard under
+   **Authentication → Users**.
+7. Copy that user's UUID, then provision the explicit admin profile in the SQL
    Editor (replace the UUID and name):
 
    ```sql
@@ -22,7 +35,7 @@ apply all of them, not just `rls_policies.sql`.
    on conflict (id) do update set full_name = excluded.full_name, role = 'admin';
    ```
 
-6. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in the frontend hosting
+8. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in the frontend hosting
    environment, then build and deploy the frontend.
 
 If importing records from the older Render API, use the separate migration
@@ -43,6 +56,10 @@ order in the Supabase SQL Editor. Do not apply `rls_policies.sql` afterwards:
 it is the older policy-only script and the migration already installs those
 policies alongside the schema. Keep the migration files committed so later
 projects receive the same database structure.
+The Edge Function still needs deployment with the Supabase CLI; public form
+submissions will fail closed until `public-submission` is deployed. Also link
+the hosted project and run `supabase config push` so the repository's disabled
+sign-up setting is applied to that project.
 
 ## Data shape notes
 

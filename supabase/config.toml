@@ -8,3 +8,11 @@ max_rows = 1000
 
 [db]
 major_version = 15
+
+[auth]
+enabled = true
+enable_signup = false
+enable_anonymous_sign_ins = false
+
+[functions.public-submission]
+verify_jwt = false

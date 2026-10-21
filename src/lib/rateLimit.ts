@@ -2,8 +2,8 @@
  * Client-side token-bucket rate limiter backed by localStorage.
  *
  * Each scope gets its own bucket. Buckets reset automatically after
- * `windowMs` milliseconds. This is a UX guardrail — the real security
- * is Supabase RLS + DB constraints.
+ * `windowMs` milliseconds. This is only a UX guardrail; the public-submission
+ * Supabase Edge Function enforces the actual limits before database writes.
  */
 
 interface Bucket {
