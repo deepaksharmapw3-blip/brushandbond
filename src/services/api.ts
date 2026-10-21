@@ -1,3 +1,8 @@
+// All API calls now go through Supabase. This file re-exports everything from
+// supabaseApi.ts so no import path in any component needs to change.
+export * from './supabaseApi';
+
+// ─── Legacy REST shim (kept for reference, no longer used) ───────────────────
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 export class ApiRequestError extends Error {

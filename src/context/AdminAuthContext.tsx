@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { ApiRequestError, authApi } from '../services/api';
+import { supabase } from '../lib/supabase';
 
 export interface AdminUser {
   id: string;
@@ -24,42 +24,86 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [user, setUser] = useState<AdminUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [sessionCheckVersion, setSessionCheckVersion] = useState(0);
 
+  const resolveUser = async (supabaseUserId: string, email: string) => {
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('role, full_name')
+      .eq('id', supabaseUserId)
+      .single();
+    if (error || !profile) return null;
+    return {
+      id: supabaseUserId,
+      email,
+      name: profile.full_name ?? email,
+      role: 'admin' as const,
+    };
+  };
+
+  // Bootstrap: check existing session on mount
   useEffect(() => {
-    let active = true;
+    let mounted = true;
     setIsLoading(true);
-    setAuthError(null);
 
-    authApi.getMe()
-      .then(({ admin }) => {
-        if (active) setUser(admin);
-      })
-      .catch((error: unknown) => {
-        if (!active) return;
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!mounted) return;
+      if (session?.user) {
+        const resolved = await resolveUser(session.user.id, session.user.email ?? '');
+        if (mounted) setUser(resolved);
+      } else {
         setUser(null);
-        // A 401 simply means there is no current session. Network and server
-        // errors need to remain visible so an API outage is not mistaken for logout.
-        if (!(error instanceof ApiRequestError && error.status === 401)) {
-          setAuthError('Could not reach the admin API. Check the server connection and retry.');
-        }
-      })
-      .finally(() => {
-        if (active) setIsLoading(false);
-      });
+      }
+      setIsLoading(false);
+    }).catch(() => {
+      if (mounted) {
+        setAuthError('Could not reach Supabase. Check your connection and retry.');
+        setIsLoading(false);
+      }
+    });
+
+    // Subscribe to auth state changes (token refresh, sign-out from another tab, etc.)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
+      if (session?.user) {
+        const resolved = await resolveUser(session.user.id, session.user.email ?? '');
+        setUser(resolved);
+      } else {
+        setUser(null);
+      }
+    });
 
     return () => {
-      active = false;
+      mounted = false;
+      subscription.unsubscribe();
     };
-  }, [sessionCheckVersion]);
+  }, []);
 
-  const retrySessionCheck = () => setSessionCheckVersion((version) => version + 1);
+  const retrySessionCheck = () => {
+    setAuthError(null);
+    setIsLoading(true);
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        const resolved = await resolveUser(session.user.id, session.user.email ?? '');
+        setUser(resolved);
+      } else {
+        setUser(null);
+      }
+      setIsLoading(false);
+    }).catch(() => {
+      setAuthError('Could not reach Supabase. Check your connection and retry.');
+      setIsLoading(false);
+    });
+  };
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const { admin } = await authApi.login(email, password);
-      setUser(admin);
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw new Error(error.message);
+      if (!data.user) throw new Error('Login failed — no user returned.');
+      const resolved = await resolveUser(data.user.id, data.user.email ?? email);
+      if (!resolved) throw new Error('Access denied. You are not a staff member.');
+      setUser(resolved);
     } finally {
       setIsLoading(false);
     }
@@ -67,11 +111,13 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const logout = () => {
     setUser(null);
-    void authApi.logout().catch((error) => console.error('Could not end the admin session:', error));
+    void supabase.auth.signOut().catch((err) => console.error('Sign-out error:', err));
   };
 
   return (
-    <AdminAuthContext.Provider value={{ isAuthenticated: Boolean(user), user, login, logout, isLoading, authError, retrySessionCheck }}>
+    <AdminAuthContext.Provider
+      value={{ isAuthenticated: Boolean(user), user, login, logout, isLoading, authError, retrySessionCheck }}
+    >
       {children}
     </AdminAuthContext.Provider>
   );
