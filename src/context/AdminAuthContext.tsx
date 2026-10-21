@@ -31,7 +31,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       .select('role, full_name')
       .eq('id', supabaseUserId)
       .single();
-    if (error || !profile) return null;
+    if (error || !profile || profile.role !== 'admin') return null;
     return {
       id: supabaseUserId,
       email,
@@ -102,7 +102,10 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       if (error) throw new Error(error.message);
       if (!data.user) throw new Error('Login failed — no user returned.');
       const resolved = await resolveUser(data.user.id, data.user.email ?? email);
-      if (!resolved) throw new Error('Access denied. You are not a staff member.');
+      if (!resolved) {
+        await supabase.auth.signOut();
+        throw new Error('Access denied. This account does not have the admin role.');
+      }
       setUser(resolved);
     } finally {
       setIsLoading(false);

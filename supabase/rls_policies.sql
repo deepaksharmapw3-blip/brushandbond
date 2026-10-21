@@ -4,17 +4,32 @@
 -- ============================================================
 
 -- Helper functions
-create or replace function is_staff() returns boolean
-language sql stable security definer set search_path = public as $$
-  select exists (select 1 from profiles where id = auth.uid())
+create or replace function public.is_staff() returns boolean
+language sql stable security definer set search_path = '' as $$
+  -- For now, admin is the only role allowed to manage records. Add other
+  -- trusted roles explicitly here only after defining their permissions.
+  select exists (
+    select 1 from public.profiles p
+    where p.id = (select auth.uid()) and p.role = 'admin'
+  )
 $$;
 
-create or replace function is_admin() returns boolean
-language sql stable security definer set search_path = public as $$
-  select exists (select 1 from profiles where id = auth.uid() and role = 'admin')
+create or replace function public.is_admin() returns boolean
+language sql stable security definer set search_path = '' as $$
+  select exists (
+    select 1 from public.profiles p
+    where p.id = (select auth.uid()) and p.role = 'admin'
+  )
 $$;
 
--- Enable RLS + staff full-access policy on every content table
+-- These helpers are used by authenticated policies; callers without an
+-- authenticated JWT must not be able to invoke them directly.
+revoke all on function public.is_staff() from public, anon, authenticated;
+revoke all on function public.is_admin() from public, anon, authenticated;
+grant execute on function public.is_staff() to authenticated;
+grant execute on function public.is_admin() to authenticated;
+
+-- Enable RLS + admin full-access policy on every content table
 do $$
 declare t text;
 begin

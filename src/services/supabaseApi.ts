@@ -22,7 +22,10 @@ export const authApi = {
       .select('role, full_name')
       .eq('id', data.user.id)
       .single();
-    if (profileError || !profile) throw new Error('Access denied. You are not a staff member.');
+    if (profileError || !profile || profile.role !== 'admin') {
+      await supabase.auth.signOut();
+      throw new Error('Access denied. This account does not have the admin role.');
+    }
     return {
       success: true,
       admin: {
@@ -45,8 +48,8 @@ export const authApi = {
       .select('role, full_name')
       .eq('id', session.user.id)
       .single();
-    if (error || !profile) {
-      const err = Object.assign(new Error('Not staff'), { status: 401 });
+    if (error || !profile || profile.role !== 'admin') {
+      const err = Object.assign(new Error('Not an admin'), { status: 401 });
       throw err;
     }
     return {
