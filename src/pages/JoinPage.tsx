@@ -24,6 +24,7 @@ import {
   type StoredMembershipApplication,
 } from '../services/membershipService';
 import { useToast } from '../context/ToastContext';
+import { checkRateLimit, rateLimitMessage } from '../lib/rateLimit';
 
 interface FormValues {
   name: string;
@@ -230,6 +231,12 @@ export const JoinPage: React.FC = () => {
       if (firstErrorField) {
         firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
+      return;
+    }
+
+    // Rate limit: 3 submissions per hour
+    if (!checkRateLimit('join-form', 3, 60 * 60 * 1000)) {
+      setErrors((prev) => ({ ...prev, email: `Too many applications submitted. ${rateLimitMessage('join-form')}` }));
       return;
     }
 

@@ -158,9 +158,25 @@ export const artworkApi = {
     return { success: true, message: 'Artwork deleted.' };
   },
 
-  like: async (_id: number | string, _liked: boolean) => {
-    // Likes not implemented with Supabase yet — return stub
-    return { success: true, likes: 0, isLiked: false };
+  like: async (id: number | string, _liked: boolean) => {
+    // Get or create a stable anonymous visitor id stored in localStorage
+    let visitorId = '';
+    try {
+      visitorId = localStorage.getItem('bb_visitor_id') ?? '';
+      if (!visitorId) {
+        visitorId = crypto.randomUUID();
+        localStorage.setItem('bb_visitor_id', visitorId);
+      }
+    } catch {
+      visitorId = crypto.randomUUID(); // fallback if localStorage blocked
+    }
+    const { data, error } = await supabase.rpc('toggle_artwork_like', {
+      p_artwork_id: id,
+      p_visitor_id: visitorId,
+    });
+    if (error) throw new Error(error.message);
+    const row = Array.isArray(data) ? data[0] : data;
+    return { success: true, likes: row?.likes ?? 0, isLiked: row?.is_liked ?? false };
   },
 };
 
@@ -548,8 +564,14 @@ export const contactApi = {
   },
 
   markAsRead: async (id: number | string) => {
-    // contact_messages table has no is_read column in the schema — stub
-    return { success: true, contact: { id } };
+    const { data, error } = await supabase
+      .from('contact_messages')
+      .update({ is_read: true })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    return { success: true, contact: data };
   },
 
   delete: async (id: number | string) => {
