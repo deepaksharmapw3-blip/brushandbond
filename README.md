@@ -12,6 +12,8 @@ Requirements: Node.js 24 or newer and npm.
 2. Apply the Supabase migrations and set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in `.env.local` (see [supabase/README.md](supabase/README.md)).
 3. Run `npm run dev` and open the Vite URL it prints.
 
+Legacy hero image optimization notes and helper scripts are kept under [`docs/hero-image-setup/`](docs/hero-image-setup/HERO_SETUP_GUIDE.md).
+
 The frontend connects directly to Supabase. The Node.js API and SQLite-specific operational notes below describe the legacy standalone service; they are not required to run this frontend.
 
 ## Operational monitoring
@@ -27,6 +29,8 @@ The current frontend reads and writes application data through Supabase and does
 Admin sessions use an HttpOnly, SameSite=Strict cookie and expire after 12 hours. Set `NODE_ENV=production` when serving over HTTPS so the cookie is marked Secure. The admin API is disabled until server credentials are configured. No demo account or client-side password is shipped.
 
 Public contact submissions, membership applications, and event registrations are sent to the `public-submission` Supabase Edge Function. Its server-side per-IP limits and the database rate-limit RPC are the enforcement points; browser storage is not trusted for security. Direct public table inserts are revoked by the corresponding migration. The frontend does not apply a localStorage rate limit. Configure and deploy the Edge Function and apply all migrations before accepting submissions.
+
+Artwork likes use an anonymous random visitor ID stored in the visitor's browser. Clearing browser storage or changing browsers can reset that identity, so likes are engagement signals rather than verified, abuse-proof votes.
 
 SQLite easily handles this site's expected scale, including 100+ people and their form records. Image storage is bounded by the hosting disk, not by SQLite: each uploaded image can be up to 4 MB, so 100 images could use up to about 400 MB before backup copies and filesystem overhead. Choose persistent storage with room for growth and monitor available disk space.
 

@@ -7,13 +7,14 @@ Write-Host "🎨 Brush and Bond - Hero Image Setup" -ForegroundColor Cyan
 Write-Host "====================================`n" -ForegroundColor Cyan
 
 # Step 1: Check if image exists
-$imagePath = "public/images/hero-building.jpg"
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
+$imagePath = Join-Path $repoRoot "public\images\hero-building.jpg"
 
 if (-not (Test-Path $imagePath)) {
     Write-Host "📸 Step 1: Save the college building image`n" -ForegroundColor Yellow
-    Write-Host "Location: $(Resolve-Path $imagePath -ErrorAction SilentlyContinue)public/images/hero-building.jpg`n"
+    Write-Host "Location: $imagePath`n"
     Write-Host "Instructions:" -ForegroundColor Green
-    Write-Host "1. Open: c:\Users\DEEPAK\Downloads\brushandbond\public\images"
+    Write-Host "1. Open: $repoRoot\public\images"
     Write-Host "2. Save your college building photo as: hero-building.jpg`n"
     Write-Host "Press ENTER once you've saved the image..." -ForegroundColor Cyan
     Read-Host
@@ -43,7 +44,7 @@ if (-not $python) {
 Write-Host "✓ Python found: $(python --version)`n" -ForegroundColor Green
 
 # Run optimizer
-python optimize_hero.py
+python (Join-Path $PSScriptRoot "optimize_hero.py")
 
 $lastExitCode = $LASTEXITCODE
 

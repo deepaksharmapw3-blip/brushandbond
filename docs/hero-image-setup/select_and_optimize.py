@@ -93,7 +93,7 @@ def main():
     print(f"✓ Selected: {selected_file}")
     print(f"  Size: {os.path.getsize(selected_file) / 1024:.0f} KB\n")
     
-    project_root = Path(__file__).parent
+    project_root = Path(__file__).resolve().parents[2]
     
     try:
         # Ensure Pillow
