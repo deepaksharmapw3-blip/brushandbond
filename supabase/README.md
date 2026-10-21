@@ -1,5 +1,10 @@
 # Supabase setup
 
+The hosted project runs PostgreSQL 17; `config.toml` uses the same major
+version for local Supabase development. Keep these aligned when changing the
+hosted database major version, and review the configuration diff before
+running `supabase config push` against a linked hosted project.
+
 The files in `migrations/` are the canonical database setup. They create the
 tables, constraints, foreign keys, indexes, row-level security policies, and
 public media buckets used by the frontend. Migration filenames are ordered;
@@ -93,6 +98,33 @@ Never put a Supabase service-role key in frontend variables or source control.
 Admin permissions come only from an explicitly provisioned
 `profiles.role = 'admin'` row. Creating a profile alone does not make an account
 an administrator.
+
+## Production verification checklist
+
+Before calling a deployment production-ready, verify the hosted project rather
+than relying on local configuration:
+
+- In the SQL Editor, confirm that the intended administrator's Auth user UUID
+  has exactly an explicit admin profile:
+
+  ```sql
+  select u.id, u.email, p.role
+  from auth.users u
+  left join public.profiles p on p.id = u.id
+  where lower(u.email) = lower('ADMIN_EMAIL_HERE');
+  ```
+
+  The result must be the expected user and `role = 'admin'`. If it is missing,
+  use the provisioning procedure above. Do not grant admin by changing the
+  client-side auth state.
+- Verify backup recovery separately from backup creation: obtain a current
+  backup using the hosted project's supported backup/export mechanism, restore
+  it into an isolated test project, then verify expected tables, representative
+  records, and required Storage objects. Do not test a restore over production.
+  Record when the restore test succeeded and repeat it periodically.
+- Verify the hosted database major version in the Supabase dashboard before
+  running `supabase config push`; `config.toml` does not prove the hosted
+  project's version or backup health.
 
 ## SQL Editor alternative
 
