@@ -54,6 +54,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   );
 };
 
+// oxlint-disable-next-line react/only-export-components -- Keep the theme provider and its hook as one context API.
 export const useTheme = () => {
   const context = useContext(ThemeContext);
   if (!context) {

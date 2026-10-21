@@ -277,6 +277,7 @@ export const GalleryProvider: React.FC<{ children: React.ReactNode }> = ({ child
   );
 };
 
+// oxlint-disable-next-line react/only-export-components -- Keep the gallery provider and its hook as one context API.
 export const useGallery = () => {
   const context = useContext(GalleryContext);
   if (!context) {

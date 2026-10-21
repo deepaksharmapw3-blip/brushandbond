@@ -7,7 +7,6 @@ import {
   Pin,
   Search,
   X,
-  AlertCircle,
 } from 'lucide-react';
 import { SEO } from '../components/common/SEO';
 import { ProtectedAdminRoute } from '../components/admin/ProtectedAdminRoute';
@@ -32,7 +31,6 @@ export const AdminAnnouncementsPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchAnnouncements = async () => {
-    setIsLoading(true);
     try {
       const res = await announcementApi.getAll();
       if (res.success && Array.isArray(res.announcements)) {
@@ -46,6 +44,7 @@ export const AdminAnnouncementsPage: React.FC = () => {
   };
 
   useEffect(() => {
+    // oxlint-disable-next-line react/set-state-in-effect -- This starts an async read; state changes follow the API response.
     fetchAnnouncements();
   }, []);
 

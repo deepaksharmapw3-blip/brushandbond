@@ -124,7 +124,7 @@ export const EventDetailPage: React.FC = () => {
       yearOfStudy: regYear,
       email: regEmail.trim(),
       phone: regPhone.trim(),
-      rollNumber: `GCECT-${Math.floor(100000 + Math.random() * 900000)}`,
+      rollNumber: '',
       experienceLevel: 'Practicing Artist',
     };
 

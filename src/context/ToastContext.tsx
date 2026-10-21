@@ -102,6 +102,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   );
 };
 
+// oxlint-disable-next-line react/only-export-components -- Keep the toast provider and its hook as one context API.
 export const useToast = () => {
   const context = useContext(ToastContext);
   if (!context) {

@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { createHash, randomBytes, scryptSync, timingSafeEqual, randomUUID } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
 import { mockArtworks, mockEvents, mockArtists, mockAchievements, mockTeamMembers, mockHeadlineNumbers } from '../src/data/mockData.ts';
+import { getReadiness } from './health.js';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const dataDir = resolve(root, 'data');
@@ -568,13 +569,24 @@ async function handler(req, res) {
   const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
   if ((url.pathname === '/api' || url.pathname === '/api/health') && req.method === 'GET') {
     const monitoring = getMonitoringSnapshot();
-    const unhealthyBackupStates = ['failed', 'stale', 'no-backup-recorded', 'status-file-invalid'];
-    const healthy = monitoring.disk.status !== 'critical'
-      && !unhealthyBackupStates.includes(monitoring.backup.status)
-      && !(isProduction && !monitoring.backup.configured);
-    return send(res, healthy ? 200 : 503, {
-      success: healthy,
-      status: healthy ? 'ok' : 'degraded',
+    const readiness = getReadiness(monitoring, isProduction);
+    return send(res, 200, {
+      success: true,
+      status: 'ok',
+      service: 'Brush and Bond API',
+      storage: 'sqlite',
+      health: '/api/health',
+      readiness: { ...readiness, endpoint: '/api/ready' },
+      disk: { status: monitoring.disk.status, database: monitoring.disk.database.status, uploads: monitoring.disk.uploads.status },
+      backup: { status: monitoring.backup.status, completedAt: monitoring.backup.completedAt || null },
+    });
+  }
+  if (url.pathname === '/api/ready' && req.method === 'GET') {
+    const monitoring = getMonitoringSnapshot();
+    const readiness = getReadiness(monitoring, isProduction);
+    return send(res, readiness.ready ? 200 : 503, {
+      success: readiness.ready,
+      status: readiness.status,
       service: 'Brush and Bond API',
       storage: 'sqlite',
       health: '/api/health',

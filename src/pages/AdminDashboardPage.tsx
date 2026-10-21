@@ -18,7 +18,7 @@ import {
 import { SEO } from '../components/common/SEO';
 import { ProtectedAdminRoute } from '../components/admin/ProtectedAdminRoute';
 import { AdminLayout } from '../components/admin/AdminLayout';
-import { backendApi, type DashboardStats, type ActivityLog } from '../services/backendApi';
+import { backendApi, type DashboardStats } from '../services/backendApi';
 
 interface StatCard {
   label: string;

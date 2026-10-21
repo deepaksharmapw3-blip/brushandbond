@@ -42,7 +42,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Announcements', icon: Bell, path: '/admin/announcements', section: 'announcements' },
 ];
 
-export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeSection = 'dashboard' }) => {
+export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeSection: _activeSection = 'dashboard' }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAdminAuth();

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -58,13 +58,13 @@ export const ArtworkLightbox: React.FC = () => {
   }, [activeArtworkModal, searchParams, setSearchParams]);
 
   // Handle closing modal and removing URL param
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     const nextParams = new URLSearchParams(searchParams);
     nextParams.delete('artwork');
     nextParams.delete('art');
     setSearchParams(nextParams, { replace: true });
     closeArtworkModal();
-  };
+  }, [searchParams, setSearchParams, closeArtworkModal]);
 
   // Keyboard navigation support: Left / Right / Escape
   useEffect(() => {
@@ -86,7 +86,7 @@ export const ArtworkLightbox: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeArtworkModal, prevArtwork, nextArtwork]);
+  }, [activeArtworkModal, prevArtwork, nextArtwork, handleClose]);
 
   if (!activeArtworkModal) return null;
 

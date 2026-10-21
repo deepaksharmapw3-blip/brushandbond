@@ -9,6 +9,7 @@
     "backup": "node --env-file-if-exists=.env scripts/backup.mjs",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
+    "test": "node --test server/*.test.js",
     "preview": "vite preview"
   },
   "dependencies": {

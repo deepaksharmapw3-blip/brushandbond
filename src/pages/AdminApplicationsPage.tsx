@@ -9,8 +9,6 @@ import {
   ExternalLink,
   Mail,
   Phone,
-  FileText,
-  Clock,
   Sparkles,
 } from 'lucide-react';
 import { SEO } from '../components/common/SEO';
@@ -30,7 +28,6 @@ export const AdminApplicationsPage: React.FC = () => {
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
 
   const fetchApplications = async () => {
-    setIsLoading(true);
     try {
       const res = await applicationApi.getAll();
       if (res.success && Array.isArray(res.applications)) {
@@ -44,6 +41,7 @@ export const AdminApplicationsPage: React.FC = () => {
   };
 
   useEffect(() => {
+    // oxlint-disable-next-line react/set-state-in-effect -- This starts an async read; state changes follow the API response.
     fetchApplications();
   }, []);
 
