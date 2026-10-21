@@ -1,17 +1,18 @@
 # Brush and Bond
 
-Brush and Bond is the art club site and artwork archive for the Government College of Engineering and Ceramic Technology (GCECT). The frontend is a React, TypeScript, and Vite app. The supported API is the Node.js service in `server/index.js` with SQLite persistence. The old PostgreSQL backend in `backend/` is retired and must not be deployed.
+Brush and Bond is the art club site and artwork archive for the Government College of Engineering and Ceramic Technology (GCECT). The frontend is a React, TypeScript, and Vite app. Its current data backend is Supabase. `server/index.js` is a separate legacy SQLite API; `backend/` is a retired PostgreSQL backend.
+
+> **Current frontend data setup:** the frontend now uses Supabase directly through `src/services/supabaseApi.ts`. For a fresh project, apply every migration in `supabase/migrations/` in filename order and follow [supabase/README.md](supabase/README.md). The SQLite API instructions below describe the older standalone server and are not the database setup for the current Supabase frontend.
 
 ## Run locally
 
 Requirements: Node.js 24 or newer and npm.
 
 1. Install dependencies with `npm ci`.
-2. Copy `.env.example` to `.env`, then set a private `ADMIN_EMAIL` and a long, unique `ADMIN_PASSWORD`.
-3. In one terminal run `npm run api`.
-4. In another terminal run `npm run dev` and open the Vite URL it prints.
+2. Apply the Supabase migrations and set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in `.env.local` (see [supabase/README.md](supabase/README.md)).
+3. Run `npm run dev` and open the Vite URL it prints.
 
-The Vite development server forwards `/api` and `/uploads` to the API on port 3002. The API reports its health at `http://127.0.0.1:3002/api/health`.
+The frontend connects directly to Supabase. The Node.js API and SQLite-specific operational notes below describe the legacy standalone service; they are not required to run this frontend.
 
 ## Operational monitoring
 

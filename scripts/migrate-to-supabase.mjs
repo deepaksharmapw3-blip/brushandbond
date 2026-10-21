@@ -5,15 +5,14 @@
  * image to Supabase Storage, then inserts all rows into Supabase Postgres.
  *
  * Prerequisites:
- *   1. Run supabase/rls_policies.sql  in the Supabase SQL Editor.
- *   2. Run supabase/schema_additions.sql in the Supabase SQL Editor.
- *   3. Create a profiles row for at least one admin (Section 7 of the guide).
- *   4. Set env vars (see below) then run:
+ *   1. Apply all `supabase/migrations/*.sql` in filename order.
+ *   2. Create a profiles row for at least one admin (see supabase/README.md).
+ *   3. Set env vars (see below) then run:
  *        node --env-file=.env.local scripts/migrate-to-supabase.mjs
  *
  * Required env vars (in .env.local):
  *   VITE_SUPABASE_URL        – your Supabase project URL
- *   VITE_SUPABASE_ANON_KEY   – anon public key  (read/insert only)
+ *   SUPABASE_SERVICE_ROLE_KEY – private service role key (local migration only)
  *   RENDER_API_URL           – e.g. https://brushandbond-1.onrender.com/api
  *   RENDER_ADMIN_EMAIL       – admin email on Render
  *   RENDER_ADMIN_PASSWORD    – admin password on Render
@@ -29,13 +28,13 @@ import { fileURLToPath } from 'node:url';
 // ─── Config ──────────────────────────────────────────────────────────────────
 
 const SUPABASE_URL     = process.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON    = process.env.VITE_SUPABASE_ANON_KEY;
+const SUPABASE_SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const RENDER_API       = (process.env.RENDER_API_URL || 'https://brushandbond-1.onrender.com/api').replace(/\/$/, '');
 const RENDER_EMAIL     = process.env.RENDER_ADMIN_EMAIL;
 const RENDER_PASSWORD  = process.env.RENDER_ADMIN_PASSWORD;
 
-if (!SUPABASE_URL || !SUPABASE_ANON) {
-  console.error('❌  Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.local');
+if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE) {
+  console.error('❌  Set VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in a local, untracked .env.local');
   process.exit(1);
 }
 if (!RENDER_EMAIL || !RENDER_PASSWORD) {
@@ -43,7 +42,11 @@ if (!RENDER_EMAIL || !RENDER_PASSWORD) {
   process.exit(1);
 }
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
+// This one-off import uses the service role because RLS correctly blocks anon
+// writes to staff-managed content. Keep this key local; never use it in VITE_*.
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE, {
+  auth: { autoRefreshToken: false, persistSession: false },
+});
 const RENDER_BASE = RENDER_API.replace('/api', ''); // for /uploads/ paths
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
