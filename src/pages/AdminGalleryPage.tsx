@@ -16,7 +16,7 @@ import { SEO } from '../components/common/SEO';
 import { ProtectedAdminRoute } from '../components/admin/ProtectedAdminRoute';
 import { AdminLayout } from '../components/admin/AdminLayout';
 import { AdminToast, ConfirmDialog, AdminEmptyState } from '../components/admin/AdminUtils';
-import { artworkApi, artistApi } from '../services/api';
+import { artworkApi, artistApi, uploadImage } from '../services/api';
 
 export const AdminGalleryPage: React.FC = () => {
   const [artworks, setArtworks] = useState<any[]>([]);
@@ -92,27 +92,49 @@ export const AdminGalleryPage: React.FC = () => {
 
     setIsSubmitting(true);
     try {
+      // Map category to Supabase enum values
+      const categoryMap: Record<string, string> = {
+        SKETCHES: 'sketches',
+        PAINTINGS: 'paintings',
+        DIGITAL_ART: 'digitalart',
+        PHOTOGRAPHY: 'photography',
+        CALLIGRAPHY: 'calligraphy',
+        DOODLES: 'doodles',
+      };
+      const mappedCategory = categoryMap[category] ?? category.toLowerCase();
+
+      // Generate a slug from the title
+      const slug = title.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+        + '-' + Date.now();
+
+      const currentYear = new Date().getFullYear();
+
+      let finalImageUrl = imageUrl.trim();
+      let width = 800;
+      let height = 600;
+
       if (imageFile) {
-        const formData = new FormData();
-        formData.append('title', title.trim());
-        formData.append('category', category);
-        formData.append('image', imageFile);
-        if (artistId) formData.append('artistId', artistId);
-        if (description) formData.append('description', description);
-        if (tags) formData.append('tags', tags);
-        formData.append('featured', String(featured));
-        await artworkApi.create(formData);
-      } else {
-        await artworkApi.create({
-          title: title.trim(),
-      category: category.toLowerCase(),
-          imageUrl: imageUrl.trim(),
-          artistId: artistId ? parseInt(artistId, 10) : undefined,
-          description: description ? description.trim() : undefined,
-          tags: tags ? tags.trim() : undefined,
-          featured,
-        });
+        // Upload to Supabase Storage first
+        const uploaded = await uploadImage('artworks', imageFile, String(currentYear));
+        finalImageUrl = uploaded.publicUrl;
+        if (uploaded.width) width = uploaded.width;
+        if (uploaded.height) height = uploaded.height;
       }
+
+      await artworkApi.create({
+        title: title.trim(),
+        slug,
+        category: mappedCategory,
+        image_url: finalImageUrl,
+        width,
+        height,
+        alt: title.trim(),
+        art_year: currentYear,
+        artist_id: artistId || null,
+        description: description.trim() || null,
+        featured,
+        is_published: true,
+      });
 
       setToast({ message: 'Artwork uploaded successfully to Gallery!', type: 'success' });
       setIsUploadOpen(false);
@@ -209,7 +231,7 @@ export const AdminGalleryPage: React.FC = () => {
               >
                 <div className="aspect-square bg-[var(--paper)] overflow-hidden relative">
                   <img
-                    src={artwork.imageUrl}
+                    src={artwork.image_url || artwork.imageUrl}
                     alt={artwork.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
