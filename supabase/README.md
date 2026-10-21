@@ -126,6 +126,56 @@ than relying on local configuration:
   running `supabase config push`; `config.toml` does not prove the hosted
   project's version or backup health.
 
+### Recovery drill: isolated Supabase project
+
+This drill must not restore over the production project. Supabase's
+**Restore to a new project** workflow restores database contents, but Storage
+objects and settings need separate handling. Database backups alone do not
+contain the actual Storage files.
+
+1. In the production project's **Database → Backups**, select a recent backup
+   and use **Restore to a new project** if that option is available. Give the
+   destination a clearly recognizable test name. If using a manual backup,
+   restore it only into a newly created test project, following Supabase's
+   current backup/restore guide. Do not paste database passwords or service
+   role keys into chat or commit them.
+2. Before the restore, record source counts in the production SQL Editor, then
+   run the same query against the test project's SQL Editor after restore:
+
+   ```sql
+   select 'artworks' as table_name, count(*) as row_count from public.artworks
+   union all select 'artists', count(*) from public.artists
+   union all select 'events', count(*) from public.events
+   union all select 'event_photos', count(*) from public.event_photos
+   union all select 'event_registrations', count(*) from public.event_registrations
+   union all select 'membership_applications', count(*) from public.membership_applications
+   union all select 'contact_messages', count(*) from public.contact_messages
+   union all select 'team_members', count(*) from public.team_members
+   union all select 'achievements', count(*) from public.achievements
+   union all select 'artwork_likes', count(*) from public.artwork_likes
+   order by table_name;
+   ```
+
+   Counts should match the selected backup point. The test project can
+   legitimately differ from today's production if submissions happened after
+   that backup was taken. Check a few representative rows and foreign-key
+   relationships as well; avoid copying personal submission data to a test
+   project unless it is access-controlled and then deleted after the drill.
+3. In **Storage → Files**, list the production buckets and record the object
+   counts. Recreate the required buckets and their public/private settings in
+   the test project, then copy the actual objects using Supabase's documented
+   CLI or S3-compatible migration method. Compare per-bucket object counts and
+   open representative artwork/event images using the test project's URLs.
+   Restored `storage.objects` metadata alone does not prove that the file bytes
+   are present.
+4. Point a local/test frontend at the test project's URL and anon key only.
+   Verify a public image loads and an admin-only operation remains denied to an
+   unauthenticated user. Do not point the production frontend at the test
+   project.
+5. Record source backup timestamp, restore completion time, table and bucket
+   count comparisons, image checks, and any failures. Delete the test project
+   and local backup files securely when they are no longer needed.
+
 ## SQL Editor alternative
 
 If not using the CLI, run every `supabase/migrations/*.sql` file in filename
