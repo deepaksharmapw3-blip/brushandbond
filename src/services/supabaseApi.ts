@@ -478,19 +478,22 @@ export const headlineNumberApi = {
     const { data, error } = await supabase.from('site_stats').select('key, value');
     if (error) throw new Error(error.message);
     // Map to the shape the old API returned: [{ id: key, label: key, value }]
-    const headlineNumbers = (data ?? []).map((r) => ({ id: r.key, label: r.key, value: r.value }));
+    const headlineNumbers = (data ?? []).map((r) => ({ id: r.key, label: r.key, value: String(r.value), description: '' }));
     return { success: true, headlineNumbers };
   },
 
-  update: async (id: number | string, body: { value?: number }) => {
+  update: async (id: number | string, body: { value?: string }) => {
     const { data, error } = await supabase
       .from('site_stats')
-      .update({ value: body.value })
+      .update({ value: body.value === undefined ? undefined : Number(body.value) })
       .eq('key', id)
       .select()
       .single();
     if (error) throw new Error(error.message);
-    return { success: true, headlineNumber: normalizeRow(data) };
+    return {
+      success: true,
+      headlineNumber: { id: data.key, label: data.key, value: String(data.value), description: '' },
+    };
   },
 };
 
@@ -660,6 +663,52 @@ export const statsApi = {
         totalMembers: members.count ?? 0,
         totalRegistrations: registrations.count ?? 0,
       },
+    };
+  },
+};
+
+// ─── Admin analytics (database-backed counts only) ───────────────────────────
+
+async function countRows(table: string, createdSince?: string) {
+  let query = supabase.from(table).select('id', { count: 'exact', head: true });
+  if (createdSince) query = query.gte('created_at', createdSince);
+  const { count, error } = await query;
+  if (error) throw new Error(error.message);
+  return count ?? 0;
+}
+
+async function sumPublishedArtworkLikes() {
+  // The artwork_likes table deliberately denies direct reads so visitor IDs
+  // remain private. The public artwork aggregate is safe to use for analytics.
+  const { data, error } = await supabase.from('artworks').select('likes');
+  if (error) throw new Error(error.message);
+  return (data ?? []).reduce((total, artwork) => total + (artwork.likes ?? 0), 0);
+}
+
+export const adminAnalyticsApi = {
+  getOverview: async () => {
+    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const [
+      artworks, artists, events, registrations, applications, messages, achievements, likes,
+      recentRegistrations, recentApplications, recentMessages,
+    ] = await Promise.all([
+      countRows('artworks'),
+      countRows('artists'),
+      countRows('events'),
+      countRows('event_registrations'),
+      countRows('membership_applications'),
+      countRows('contact_messages'),
+      countRows('achievements'),
+      sumPublishedArtworkLikes(),
+      countRows('event_registrations', since),
+      countRows('membership_applications', since),
+      countRows('contact_messages', since),
+    ]);
+
+    return {
+      totals: { artworks, artists, events, registrations, applications, messages, achievements, likes },
+      last30Days: { registrations: recentRegistrations, applications: recentApplications, messages: recentMessages },
+      generatedAt: new Date().toISOString(),
     };
   },
 };

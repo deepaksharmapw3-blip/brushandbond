@@ -24,7 +24,6 @@ import { useGallery } from '../context/GalleryContext';
 import { useToast } from '../context/ToastContext';
 import { RegistrationModal } from '../components/events/RegistrationModal';
 import type { RegistrationPayload } from '../types';
-import { checkRateLimit, rateLimitMessage } from '../lib/rateLimit';
 
 export const EventDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -110,12 +109,6 @@ export const EventDetailPage: React.FC = () => {
 
     setRegErrors(errs);
     if (Object.keys(errs).length > 0) return;
-
-    // Rate limit: 8 registrations per 15 minutes
-    if (!checkRateLimit('event-registration', 8, 15 * 60 * 1000)) {
-      setRegErrors((current) => ({ ...current, email: `Too many registration attempts. ${rateLimitMessage('event-registration')}` }));
-      return;
-    }
 
     const payload: RegistrationPayload = {
       eventId: event.id,

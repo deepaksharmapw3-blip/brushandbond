@@ -113,7 +113,11 @@ Deno.serve(async (request) => {
         .select('id, created_at')
         .single();
       if (error) throw error;
-      return json({ success: true, message: 'Application submitted!', application }, 200, origin);
+      return json({
+        success: true,
+        message: 'Application submitted!',
+        application: { ...application, name, email, department, year, interest, portfolio, reason },
+      }, 200, origin);
     }
 
     const eventId = text(data.eventId ?? data.event_id, 64);

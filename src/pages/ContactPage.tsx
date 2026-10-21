@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Mail, MapPin, Clock, Send, CheckCircle2, ExternalLink } from 'lucide-react';
 import { SEO } from '../components/common/SEO';
 import { useToast } from '../context/ToastContext';
-import { checkRateLimit, rateLimitMessage } from '../lib/rateLimit';
 
 // ── Inline SVG brand icons ──
 const InstagramIcon: React.FC<{ size?: number }> = ({ size = 16 }) => (
@@ -34,12 +33,6 @@ export const ContactPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError('');
-
-    // Rate limit: 5 submissions per 15 minutes
-    if (!checkRateLimit('contact-form', 5, 15 * 60 * 1000)) {
-      setSubmitError(`Too many messages sent. ${rateLimitMessage('contact-form')}`);
-      return;
-    }
 
     try {
       const { contactApi } = await import('../services/api');
