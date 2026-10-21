@@ -38,6 +38,51 @@ projects must apply this migration as well as fresh projects.
 8. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in the frontend hosting
    environment, then build and deploy the frontend.
 
+## Existing Supabase project: preflight before applying migrations
+
+Do not run `supabase db push` against a non-empty project until its remote
+migration history and actual schema have been inspected. Git migration files
+and `supabase_migrations.schema_migrations` are separate records;
+`CREATE TABLE IF NOT EXISTS` does not reconcile missing columns in a table that
+already exists.
+
+1. Back up the project and link the intended project:
+   `supabase link --project-ref YOUR_PROJECT_REF`.
+2. Compare local and hosted migration history:
+   `supabase migration list --linked`.
+3. In the Supabase SQL Editor, inspect the hosted history and relevant columns:
+
+   ```sql
+   select version from supabase_migrations.schema_migrations order by version;
+
+   select table_name, column_name, data_type
+   from information_schema.columns
+   where table_schema = 'public'
+     and table_name in (
+       'artworks', 'artwork_likes', 'events', 'event_registrations',
+       'membership_applications', 'contact_messages', 'public_form_rate_limits'
+     )
+   order by table_name, ordinal_position;
+   ```
+
+4. If the hosted schema was created manually and the migration history is
+   empty or incomplete, first capture and compare the live schema with
+   `supabase db pull`. Do not mark the initial migration applied unless every
+   object it creates has been verified. Use
+   `supabase migration repair <VERSION> --status applied` only when the
+   corresponding migration is already fully present on the remote database;
+   repair changes history only and does not execute SQL.
+5. Review `supabase db push --dry-run`. Resolve any history or schema mismatch
+   before applying. Once the remote state matches the expected baseline, run
+   `supabase db push` to apply only pending migrations.
+
+The forward migration `20261021030000_existing_table_reconciliation.sql`
+repairs missing columns and constraints in the likes and rate-limit tables
+created by the preceding migrations. It preserves valid rows and raises an
+explanatory error instead of guessing when existing values cannot be converted
+safely. It does not make an unknown legacy schema safe to migrate without this
+preflight; review the dry run and the actual schema first.
+
 If importing records from the older Render API, use the separate migration
 script with `SUPABASE_SERVICE_ROLE_KEY` in a local, untracked `.env.local`.
 That key bypasses RLS and must never be added to a `VITE_*` variable or hosted
