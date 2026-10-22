@@ -43,7 +43,6 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // Bootstrap: check existing session on mount
   useEffect(() => {
     let mounted = true;
-    setIsLoading(true);
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!mounted) return;
@@ -126,6 +125,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   );
 };
 
+// oxlint-disable-next-line react/only-export-components -- Keep the auth provider and its hook as one context API.
 export const useAdminAuth = () => {
   const context = useContext(AdminAuthContext);
   if (!context) throw new Error('useAdminAuth must be used within AdminAuthProvider');

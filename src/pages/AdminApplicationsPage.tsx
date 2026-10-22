@@ -9,8 +9,6 @@ import {
   ExternalLink,
   Mail,
   Phone,
-  FileText,
-  Clock,
   Sparkles,
 } from 'lucide-react';
 import { SEO } from '../components/common/SEO';
@@ -22,6 +20,7 @@ import { applicationApi } from '../services/api';
 export const AdminApplicationsPage: React.FC = () => {
   const [applications, setApplications] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -31,6 +30,7 @@ export const AdminApplicationsPage: React.FC = () => {
 
   const fetchApplications = async () => {
     setIsLoading(true);
+    setLoadError(null);
     try {
       const res = await applicationApi.getAll();
       if (res.success && Array.isArray(res.applications)) {
@@ -38,12 +38,14 @@ export const AdminApplicationsPage: React.FC = () => {
       }
     } catch (err: any) {
       console.warn('Failed to load applications:', err.message);
+      setLoadError(err.message || 'Could not load membership applications.');
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
+    // oxlint-disable-next-line react/set-state-in-effect -- This starts an async read; state changes follow the API response.
     fetchApplications();
   }, []);
 
@@ -77,11 +79,9 @@ export const AdminApplicationsPage: React.FC = () => {
   };
 
   const filteredApplications = applications.filter((app) => {
-    const matchesSearch =
-      app.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      app.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      app.department.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      app.rollNumber.toLowerCase().includes(searchQuery.toLowerCase());
+    const query = searchQuery.trim().toLowerCase();
+    const matchesSearch = [app.fullName, app.name, app.email, app.department, app.rollNumber, app.roll_number]
+      .some((value) => String(value ?? '').toLowerCase().includes(query));
     const matchesStatus = statusFilter === 'ALL' || app.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -138,7 +138,19 @@ export const AdminApplicationsPage: React.FC = () => {
         </div>
 
         {/* Applications List */}
-        {filteredApplications.length > 0 ? (
+        {loadError ? (
+          <div role="alert" className="rounded-xl border border-red-300 bg-red-50 p-5 text-sm text-red-800">
+            <p className="font-semibold">Could not load membership applications.</p>
+            <p className="mt-1 break-words">{loadError}</p>
+            <button
+              type="button"
+              onClick={() => void fetchApplications()}
+              className="mt-3 rounded-lg bg-red-700 px-3 py-1.5 font-semibold text-white hover:bg-red-800"
+            >
+              Try again
+            </button>
+          </div>
+        ) : filteredApplications.length > 0 ? (
           <div className="space-y-4">
             {filteredApplications.map((app) => (
               <motion.div

@@ -6,14 +6,12 @@ import {
   Trash2,
   Search,
   Star,
-  ExternalLink,
   X,
-  Upload,
 } from 'lucide-react';
 import { SEO } from '../components/common/SEO';
 import { ProtectedAdminRoute } from '../components/admin/ProtectedAdminRoute';
 import { AdminLayout } from '../components/admin/AdminLayout';
-import { AdminToast, ConfirmDialog, AdminEmptyState, AdminBadge } from '../components/admin/AdminUtils';
+import { AdminToast, ConfirmDialog, AdminEmptyState } from '../components/admin/AdminUtils';
 import { artistApi } from '../services/api';
 
 export const AdminArtistsPage: React.FC = () => {
@@ -37,7 +35,6 @@ export const AdminArtistsPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchArtists = async () => {
-    setIsLoading(true);
     try {
       const res = await artistApi.getAll();
       if (res.success && Array.isArray(res.artists)) {
@@ -51,6 +48,7 @@ export const AdminArtistsPage: React.FC = () => {
   };
 
   useEffect(() => {
+    // oxlint-disable-next-line react/set-state-in-effect -- This starts an async read; state changes follow the API response.
     fetchArtists();
   }, []);
 

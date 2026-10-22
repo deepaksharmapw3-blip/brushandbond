@@ -1,16 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Image,
-  Plus,
   Trash2,
   Upload,
   Grid3X3,
   Search,
   X,
-  CheckCircle2,
-  AlertCircle,
-  ExternalLink,
 } from 'lucide-react';
 import { SEO } from '../components/common/SEO';
 import { ProtectedAdminRoute } from '../components/admin/ProtectedAdminRoute';
@@ -41,7 +36,6 @@ export const AdminGalleryPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchArtworks = async () => {
-    setIsLoading(true);
     try {
       const res = await artworkApi.getAll();
       if (res.success && Array.isArray(res.artworks)) {
@@ -64,6 +58,7 @@ export const AdminGalleryPage: React.FC = () => {
   };
 
   useEffect(() => {
+    // oxlint-disable-next-line react/set-state-in-effect -- These start async reads; state changes follow the API responses.
     fetchArtworks();
     fetchArtists();
   }, []);

@@ -28,7 +28,10 @@ export const AdminMessagesPage: React.FC = () => {
     }
   };
 
-  useEffect(() => { void refresh(); }, []);
+  useEffect(() => {
+    // oxlint-disable-next-line react/set-state-in-effect -- This starts an async read; state changes follow the API response.
+    void refresh();
+  }, []);
 
   const markRead = async (message: ContactMessage) => {
     try {

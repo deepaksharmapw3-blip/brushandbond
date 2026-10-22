@@ -41,8 +41,8 @@ choco install libwebp
 **Then run the setup script:**
 
 ```powershell
-cd c:\Users\DEEPAK\Downloads\brushandbond
-.\HERO_IMAGE_SETUP.ps1
+cd <repo-root>
+.\docs\hero-image-setup\HERO_IMAGE_SETUP.ps1
 ```
 
 This will automatically generate all three WebP sizes.
@@ -88,7 +88,7 @@ public/images/
 
 Check in Windows Explorer:
 ```
-c:\Users\DEEPAK\Downloads\brushandbond\public\images\
+<repo-root>\public\images\
 ```
 
 ## Step 4: Test the Hero
@@ -194,7 +194,7 @@ Once the hero is working:
 
 ## Questions?
 
-Refer to `IMAGE_SETUP.md` for detailed technical information about the HeroBackdrop component.
+Refer to `docs/hero-image-setup/IMAGE_SETUP.md` for detailed technical information about the HeroBackdrop component.
 
 ---
 

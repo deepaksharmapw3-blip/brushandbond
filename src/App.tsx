@@ -35,8 +35,8 @@ const AdminMembersPage = lazy(() => import('./pages/AdminApplicationsPage').then
 const AdminTeamPage = lazy(() => import('./pages/AdminTeamPage').then(m => ({ default: m.AdminTeamPage })));
 const AdminMessagesPage = lazy(() => import('./pages/AdminMessagesPage').then(m => ({ default: m.AdminMessagesPage })));
 const AdminAnnouncementsPage = lazy(() => import('./pages/AdminAnnouncementsPage').then(m => ({ default: m.AdminAnnouncementsPage })));
-const AdminAchievementsPage = lazy(() => import('./pages/AdminPlaceholderPages').then(m => ({ default: m.AdminAchievementsPage })));
-const AdminAnalyticsPage = lazy(() => import('./pages/AdminPlaceholderPages').then(m => ({ default: m.AdminAnalyticsPage })));
+const AdminAchievementsPage = lazy(() => import('./pages/AdminAchievementsPage').then(m => ({ default: m.AdminAchievementsPage })));
+const AdminAnalyticsPage = lazy(() => import('./pages/AdminAnalyticsPage').then(m => ({ default: m.AdminAnalyticsPage })));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
 
 const PageLoadingFallback = () => (
