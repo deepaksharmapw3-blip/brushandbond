@@ -340,16 +340,29 @@ export const artistApi = {
 export const applicationApi = {
   submit: async (payload: Record<string, unknown>) => {
     const { error } = await supabase.from('membership_applications').insert({
-      name: payload.name,
-      department: payload.department,
-      year: payload.year,
-      email: payload.email,
-      interest: payload.interest,
-      portfolio: payload.portfolio ?? null,
-      reason: payload.reason ?? null,
+      name: (payload.fullName || payload.name) as string,
+      department: payload.department as string,
+      year: (payload.academicYear || payload.year) as string,
+      email: payload.email as string,
+      interest: (payload.artInterests || payload.interest) as string,
+      portfolio: (payload.portfolioUrl ?? null) as string | null,
+      reason: (payload.whyJoin || payload.reason || null) as string | null,
     });
     if (error) throw new Error('We could not send your application. Please try again.');
-    return { success: true, message: 'Application submitted!', application: payload };
+    // Return shape that membershipService.ts expects
+    const application = {
+      id: crypto.randomUUID(),
+      fullName: payload.fullName || payload.name,
+      email: payload.email,
+      department: payload.department,
+      academicYear: payload.academicYear || payload.year,
+      artInterests: payload.artInterests || payload.interest,
+      portfolioUrl: payload.portfolioUrl || null,
+      whyJoin: payload.whyJoin || payload.reason,
+      submittedAt: new Date().toISOString(),
+      status: 'PENDING',
+    };
+    return { success: true, message: 'Application submitted!', application };
   },
 
   getAll: async (status?: string) => {
