@@ -1,4 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { createOriginPolicy } from './origin-policy.mjs';
 
 // Browser origins allowed to call this function. The production site and local
 // dev servers are built in, so forms keep working without any configuration.
@@ -8,6 +9,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 // A leading "*." label matches any subdomain of a domain you control.
 const DEFAULT_ORIGINS = [
   'https://brushandbond.gcect.ac.in',
+  'https://*.gcect.ac.in',
   'http://localhost:5173',
   'http://127.0.0.1:5173',
   'http://localhost:4173',
@@ -16,27 +18,7 @@ const extraOrigins = (Deno.env.get('ALLOWED_ORIGINS') ?? '')
   .split(',')
   .map((entry) => entry.trim())
   .filter(Boolean);
-const allowedOrigins = [...DEFAULT_ORIGINS, ...extraOrigins];
-
-const originAllowed = (origin: string) =>
-  allowedOrigins.some((rule) => {
-    if (!rule.includes('*')) return rule === origin;
-    const [scheme, host = ''] = rule.split('://');
-    const suffix = host.replace(/^\*/, ''); // "*.example.app" -> ".example.app"
-    try {
-      const url = new URL(origin);
-      return url.protocol === `${scheme}:` && url.hostname.endsWith(suffix) && url.hostname.length > suffix.length;
-    } catch {
-      return false;
-    }
-  });
-
-const corsHeaders = (origin: string | null): Record<string, string> => ({
-  ...(origin && originAllowed(origin) ? { 'Access-Control-Allow-Origin': origin } : {}),
-  'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Vary': 'Origin',
-});
+const { originAllowed, corsHeaders } = createOriginPolicy([...DEFAULT_ORIGINS, ...extraOrigins]);
 
 const json = (body: Record<string, unknown>, status: number, origin: string | null) =>
   new Response(JSON.stringify(body), {
