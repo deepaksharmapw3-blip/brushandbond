@@ -68,7 +68,7 @@ export const GalleryPage: React.FC = () => {
   // Multi-year archive years list
   const availableYears = useMemo(() => {
     const years = Array.from(new Set(artworks.map((a) => a.year))).sort((a, b) => b - a);
-    return ['all', ...years.map(String)];
+    return years.map(String);
   }, [artworks]);
 
   // Featured artwork of the week (Top Hero Tile)
@@ -93,8 +93,7 @@ export const GalleryPage: React.FC = () => {
           activeCategorySlug === 'all' || art.category === activeCategorySlug;
 
         // Year filter
-        const matchesYear =
-          selectedYear === 'all' || art.year.toString() === selectedYear;
+        const matchesYear = art.year.toString() === selectedYear;
 
         // Search query filter
         const query = searchQuery.toLowerCase().trim();
@@ -204,7 +203,7 @@ export const GalleryPage: React.FC = () => {
       </section>
 
       {/* 2. Featured Artwork of the Week (Top Hero Tile) */}
-      {featuredArtworkOfWeek && activeCategorySlug === 'all' && selectedYear === 'all' && !searchQuery && (
+      {featuredArtworkOfWeek && activeCategorySlug === 'all' && selectedYear === '2026' && !searchQuery && (
         <section className="gallery-container">
           <div className="relative overflow-hidden bg-[var(--surface)] border border-[var(--line)] rounded-[8px] p-4 sm:p-7 shadow-lg transition-all duration-300 hover:border-[var(--ink)]">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-center">
@@ -386,14 +385,11 @@ export const GalleryPage: React.FC = () => {
                   className="bg-transparent text-[var(--ink)] font-semibold focus:outline-none cursor-pointer"
                   aria-label="Archive Year"
                 >
-                  <option value="all">All Years</option>
-                  {availableYears
-                    .filter((y) => y !== 'all')
-                    .map((year) => (
-                      <option key={year} value={year}>
-                        {year}
-                      </option>
-                    ))}
+                  {availableYears.map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
                 </select>
               </div>
 
