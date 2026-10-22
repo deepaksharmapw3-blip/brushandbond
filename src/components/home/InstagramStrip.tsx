@@ -62,7 +62,7 @@ const defaultPosts: InstagramPost[] = [
 
 export const InstagramStrip: React.FC<InstagramStripProps> = ({
   posts = defaultPosts,
-  handle = '@brushandbond',
+  handle = '@brushandbond.gcect',
 }) => {
   return (
     <section className="gallery-container space-y-8">
@@ -78,7 +78,7 @@ export const InstagramStrip: React.FC<InstagramStripProps> = ({
         </div>
 
         <a
-          href="https://instagram.com"
+          href="https://www.instagram.com/brushandbond.gcect/"
           target="_blank"
           rel="noopener noreferrer"
           className="text-xs font-mono text-[var(--accent)] hover:underline inline-flex items-center gap-1.5 font-semibold"
@@ -93,7 +93,7 @@ export const InstagramStrip: React.FC<InstagramStripProps> = ({
         {posts.slice(0, 6).map((post) => (
           <a
             key={post.id}
-            href="https://instagram.com"
+            href="https://www.instagram.com/brushandbond.gcect/"
             target="_blank"
             rel="noopener noreferrer"
             className="group relative aspect-square rounded-[4px] overflow-hidden bg-[var(--paper)] border border-[var(--line)] block"

@@ -37,7 +37,7 @@ export const ArtistsPage: React.FC = () => {
           Creativity • Expression • Community
         </p>
         <p className="text-lg text-[var(--muted)] leading-relaxed max-w-[65ch] font-sans">
-          Meet the students making art on our campus, and look back at how Brush and Bond came to life in 2024. Follow us on Instagram at <strong className="text-[var(--accent)]">@brushandbond</strong>.
+          Meet the students making art on our campus, and look back at how Brush and Bond came to life in 2024. Follow us on Instagram at <a href="https://www.instagram.com/brushandbond.gcect/" target="_blank" rel="noopener noreferrer" className="text-[var(--accent)] hover:underline">@brushandbond.gcect</a>.
         </p>
       </div>
 

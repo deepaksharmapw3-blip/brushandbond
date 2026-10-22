@@ -245,7 +245,7 @@ export const ContactPage: React.FC = () => {
 
               {/* Instagram */}
               <a
-                href="https://instagram.com/brushandbond"
+                href="https://www.instagram.com/brushandbond.gcect/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-3 text-sm text-[var(--ink)] hover:text-[var(--accent)] transition-colors group"
@@ -255,7 +255,7 @@ export const ContactPage: React.FC = () => {
                 </div>
                 <div className="min-w-0">
                   <span className="text-[11px] font-mono text-[var(--muted)] block leading-tight">Instagram</span>
-                  <span className="font-mono text-sm font-semibold">@brushandbond</span>
+                  <span className="font-mono text-sm font-semibold">@brushandbond.gcect</span>
                 </div>
                 <ExternalLink className="w-3.5 h-3.5 text-[var(--muted)] ml-auto opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
               </a>
