@@ -339,30 +339,32 @@ export const artistApi = {
 
 export const applicationApi = {
   submit: async (payload: Record<string, unknown>) => {
-    const { error } = await supabase.from('membership_applications').insert({
-      name: (payload.fullName || payload.name) as string,
-      department: payload.department as string,
-      year: (payload.academicYear || payload.year) as string,
-      email: payload.email as string,
-      interest: (payload.artInterests || payload.interest) as string,
-      portfolio: (payload.portfolioUrl ?? null) as string | null,
-      reason: (payload.whyJoin || payload.reason || null) as string | null,
+    const { data, error } = await supabase.functions.invoke('public-submission', {
+      body: { type: 'membership', data: payload },
     });
-    if (error) throw new Error('We could not send your application. Please try again.');
-    // Return shape that membershipService.ts expects
-    const application = {
-      id: crypto.randomUUID(),
-      fullName: payload.fullName || payload.name,
-      email: payload.email,
-      department: payload.department,
-      academicYear: payload.academicYear || payload.year,
-      artInterests: payload.artInterests || payload.interest,
-      portfolioUrl: payload.portfolioUrl || null,
-      whyJoin: payload.whyJoin || payload.reason,
-      submittedAt: new Date().toISOString(),
-      status: 'PENDING',
+    if (error) throw new Error(await getFunctionError(error));
+    if (!data?.success) throw new Error(data?.error ?? 'We could not send your application. Please try again.');
+    const saved = data.application;
+    return {
+      success: true,
+      message: data.message,
+      application: {
+        id: saved.id,
+        fullName: saved.name,
+        name: saved.name,
+        email: payload.email,
+        department: saved.department,
+        academicYear: saved.year,
+        year: saved.year,
+        artInterests: saved.interest,
+        areaOfInterest: saved.interest,
+        portfolioUrl: saved.portfolio ?? undefined,
+        whyJoin: saved.reason,
+        reasonToJoin: saved.reason,
+        submittedAt: saved.created_at,
+        status: 'PENDING',
+      },
     };
-    return { success: true, message: 'Application submitted!', application };
   },
 
   getAll: async (status?: string) => {
@@ -370,7 +372,16 @@ export const applicationApi = {
     if (status && status !== 'ALL') q = q.eq('status', status.toLowerCase());
     const { data, error } = await q;
     if (error) throw new Error(error.message);
-    return { success: true, applications: data ?? [] };
+    const applications = (normalizeRow(data ?? []) as Array<Record<string, any>>).map((application) => ({
+      ...application,
+      fullName: application.fullName || application.name || '',
+      academicYear: application.academicYear || application.year || '',
+      artInterests: application.artInterests || application.interest || application.primaryWing || '',
+      portfolioUrl: application.portfolioUrl || application.portfolio_url || application.portfolio || '',
+      whyJoin: application.whyJoin || application.reason || application.motivation || '',
+      status: String(application.status ?? 'pending').toUpperCase(),
+    }));
+    return { success: true, applications };
   },
 
   updateStatus: async (id: number | string, status: 'APPROVED' | 'REJECTED' | 'PENDING') => {
