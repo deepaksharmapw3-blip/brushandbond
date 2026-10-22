@@ -729,13 +729,13 @@ export async function uploadImage(
   file: File,
   folder?: string,
 ): Promise<{ publicUrl: string; width: number; height: number }> {
-  const maxBytes = 10 * 1024 * 1024;
+  const maxBytes = 1 * 1024 * 1024;
   const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
   if (!allowedTypes.has(file.type)) {
     throw new Error('Choose a JPEG, PNG, or WebP image.');
   }
   if (file.size === 0 || file.size > maxBytes) {
-    throw new Error('Images must be smaller than 10 MB.');
+    throw new Error('Images must be 1 MB or smaller.');
   }
 
   // Decode before uploading so corrupt files and extreme dimensions never
