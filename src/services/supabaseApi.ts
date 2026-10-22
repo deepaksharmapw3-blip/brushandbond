@@ -45,6 +45,11 @@ function normalizeRow<T>(value: T): T {
       normalized[alias] = normalizedValue;
     }
   }
+  // The Edge Function also checks this canonical database column. If a legacy
+  // camelCase field is present, never let it disagree with the backend value.
+  if (typeof normalized.registration_open === 'boolean') {
+    normalized.registrationOpen = normalized.registration_open;
+  }
   return normalized as unknown as T;
 }
 

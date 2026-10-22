@@ -14,6 +14,14 @@ import { AdminLayout } from '../components/admin/AdminLayout';
 import { AdminToast, ConfirmDialog, AdminEmptyState, AdminBadge } from '../components/admin/AdminUtils';
 import { eventApi } from '../services/api';
 
+const isEventDatePast = (event: any) => {
+  const value = event.event_date || event.date;
+  if (!value) return false;
+  const date = String(value).slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(date)
+    && date < new Date().toLocaleDateString('en-CA');
+};
+
 export const AdminEventsPage: React.FC = () => {
   const [events, setEvents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -36,6 +44,8 @@ export const AdminEventsPage: React.FC = () => {
   const [description, setDescription] = useState('');
   const [bannerUrl, setBannerUrl] = useState('');
   const [isPast, setIsPast] = useState(false);
+  const [registrationOpen, setRegistrationOpen] = useState(true);
+  const [savingRegistrationId, setSavingRegistrationId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchEvents = async () => {
@@ -66,6 +76,7 @@ export const AdminEventsPage: React.FC = () => {
     setDescription('');
     setBannerUrl('');
     setIsPast(false);
+    setRegistrationOpen(true);
     setSelectedEvent(null);
   };
 
@@ -78,6 +89,7 @@ export const AdminEventsPage: React.FC = () => {
 
     setIsSubmitting(true);
     try {
+      const eventIsPast = isPast || isEventDatePast({ event_date: eventDate });
       await eventApi.create({
         event_name: eventName.trim(),
         event_date: eventDate,
@@ -87,7 +99,9 @@ export const AdminEventsPage: React.FC = () => {
         max_capacity: parseInt(maxCapacity, 10) || 100,
         description: description.trim(),
         banner_url: bannerUrl.trim() || 'https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?w=800',
-        is_past: isPast,
+        is_past: eventIsPast,
+        registration_open: !eventIsPast && registrationOpen,
+        status: !eventIsPast && registrationOpen ? 'open' : eventIsPast ? 'concluded' : 'upcoming',
       });
 
       setToast({ message: 'Event created successfully!', type: 'success' });
@@ -98,6 +112,40 @@ export const AdminEventsPage: React.FC = () => {
       setToast({ message: err.message || 'Failed to create event', type: 'error' });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const toggleRegistration = async (event: any) => {
+    const id = event.event_id || event.id;
+    if (!id || event.is_past || event.status === 'concluded' || isEventDatePast(event)) return;
+
+    const isOpen = Boolean(event.registration_open ?? event.registrationOpen);
+    const nextIsOpen = !isOpen;
+    const nextStatus = nextIsOpen
+      ? 'open'
+      : event.status === 'open'
+        ? 'upcoming'
+        : event.status;
+
+    setSavingRegistrationId(String(id));
+    try {
+      await eventApi.update(id, {
+        registration_open: nextIsOpen,
+        status: nextStatus,
+      });
+      setEvents((current) => current.map((item) => (
+        String(item.event_id || item.id) === String(id)
+          ? { ...item, registration_open: nextIsOpen, registrationOpen: nextIsOpen, status: nextStatus }
+          : item
+      )));
+      setToast({
+        message: nextIsOpen ? 'Event registration is now open' : 'Event registration is now closed',
+        type: 'success',
+      });
+    } catch (err: any) {
+      setToast({ message: err.message || 'Could not update registration status', type: 'error' });
+    } finally {
+      setSavingRegistrationId(null);
     }
   };
 
@@ -194,6 +242,7 @@ export const AdminEventsPage: React.FC = () => {
                     <th className="px-6 py-3.5">Date & Time</th>
                     <th className="px-6 py-3.5">Venue</th>
                     <th className="px-6 py-3.5">Category</th>
+                    <th className="px-6 py-3.5">Registration</th>
                     <th className="px-6 py-3.5">Attendees</th>
                     <th className="px-6 py-3.5 text-right">Actions</th>
                   </tr>
@@ -225,6 +274,27 @@ export const AdminEventsPage: React.FC = () => {
                           <AdminBadge variant={event.is_past ? 'info' : 'success'}>
                             {event.category || 'Workshop'}
                           </AdminBadge>
+                        </td>
+                        <td className="px-6 py-4">
+                          {(() => {
+                            const registrationIsOpen = Boolean(event.registration_open ?? event.registrationOpen);
+                            const registrationIsSaving = savingRegistrationId === String(id);
+                            return (
+                              <button
+                                type="button"
+                                onClick={() => toggleRegistration(event)}
+                                disabled={registrationIsSaving || event.is_past || event.status === 'concluded' || isEventDatePast(event)}
+                                aria-label={`${registrationIsOpen ? 'Close' : 'Open'} registration for ${name}`}
+                                className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                                  registrationIsOpen
+                                    ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+                                    : 'border-[var(--line)] bg-[var(--paper)] text-[var(--muted)] hover:border-[var(--accent)]'
+                                }`}
+                              >
+                                {registrationIsSaving ? 'Saving…' : registrationIsOpen ? 'Open · Close' : 'Closed · Open'}
+                              </button>
+                            );
+                          })()}
                         </td>
                         <td className="px-6 py-4">
                           <button
@@ -411,6 +481,20 @@ export const AdminEventsPage: React.FC = () => {
                     />
                     <label htmlFor="past-check" className="text-xs font-medium text-[var(--ink)] cursor-pointer">
                       Mark as Past Event (Archive)
+                    </label>
+                  </div>
+
+                  <div className="flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      id="registration-open-check"
+                      checked={registrationOpen && !isPast && !isEventDatePast({ event_date: eventDate })}
+                      disabled={isPast || isEventDatePast({ event_date: eventDate })}
+                      onChange={(e) => setRegistrationOpen(e.target.checked)}
+                      className="mt-0.5 w-4 h-4 rounded text-[var(--accent)] focus:ring-[var(--accent)]"
+                    />
+                    <label htmlFor="registration-open-check" className="text-xs font-medium text-[var(--ink)] cursor-pointer">
+                      Open registration immediately (show “Register Now”)
                     </label>
                   </div>
 
