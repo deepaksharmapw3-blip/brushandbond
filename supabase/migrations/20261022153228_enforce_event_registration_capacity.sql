@@ -61,7 +61,6 @@ $$;
 
 revoke all on function public.enforce_event_registration_capacity() from public, anon, authenticated;
 
-drop trigger if exists event_registration_capacity_guard on public.event_registrations;
 create trigger event_registration_capacity_guard
 before insert or update of event_id on public.event_registrations
 for each row execute function public.enforce_event_registration_capacity();
