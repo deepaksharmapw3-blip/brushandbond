@@ -37,6 +37,38 @@ async function sha256(value: string) {
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
+async function signVisitorId(visitorId: string, signingKey: string) {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(signingKey),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const signature = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(`artwork-like:${visitorId}`));
+  return [...new Uint8Array(signature)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+const signaturesEqual = (left: string, right: string) => {
+  if (left.length !== right.length) return false;
+  let difference = 0;
+  for (let index = 0; index < left.length; index++) difference |= left.charCodeAt(index) ^ right.charCodeAt(index);
+  return difference === 0;
+};
+
+const getServiceRoleKey = () => {
+  const secretKeys = Deno.env.get('SUPABASE_SECRET_KEYS');
+  if (secretKeys) {
+    try {
+      const keys = JSON.parse(secretKeys) as Record<string, string>;
+      if (keys.default) return keys.default;
+    } catch {
+      // Fall back to the legacy service-role secret below.
+    }
+  }
+  return Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+};
+
 Deno.serve(async (request) => {
   const origin = request.headers.get('origin');
   if (origin && !originAllowed(origin)) return json({ error: 'Origin not allowed.' }, 403, origin);
@@ -64,7 +96,7 @@ Deno.serve(async (request) => {
   }
   const data = body.data as Record<string, unknown>;
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
-  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  const serviceRoleKey = getServiceRoleKey();
   if (!supabaseUrl || !serviceRoleKey) return json({ error: 'Submission service is not configured.' }, 503, origin);
 
   const admin = createClient(supabaseUrl, serviceRoleKey, {
@@ -78,21 +110,54 @@ Deno.serve(async (request) => {
     // single shared IP can submit for up to 100 people in the relevant window.
     membership: { max: 100, seconds: 60 * 60 },
     'event-registration': { max: 100, seconds: 15 * 60 },
+    'artwork-like': { max: 100, seconds: 15 * 60 },
   };
   const type = typeof body.type === 'string' ? body.type : '';
-  const policy = limits[type];
+  const rateLimitScope = type === 'artwork-like-identity' || type === 'artwork-like' ? 'artwork-like' : type;
+  const policy = limits[rateLimitScope];
   if (!policy) return json({ error: 'Unknown submission type.' }, 400, origin);
 
   try {
-    const clientKey = await sha256(`${type}:${clientIp}`);
+    const clientKey = await sha256(`${rateLimitScope}:${clientIp}`);
     const { data: allowed, error: limitError } = await admin.rpc('consume_public_form_rate_limit', {
-      p_form_scope: type,
+      p_form_scope: rateLimitScope,
       p_client_key: clientKey,
       p_limit: policy.max,
       p_window_seconds: policy.seconds,
     });
     if (limitError) throw limitError;
     if (!allowed) return json({ error: 'Too many submissions. Please wait and try again.' }, 429, origin);
+
+    if (type === 'artwork-like-identity') {
+      // Preserve the older browser UUID when it is valid, but sign it here so
+      // the client cannot invoke the SECURITY DEFINER RPC with arbitrary IDs.
+      const requestedVisitorId = text(data.visitorId, 64);
+      const visitorId = validUuid(requestedVisitorId) ? requestedVisitorId : crypto.randomUUID();
+      const signature = await signVisitorId(visitorId, serviceRoleKey);
+      return json({ success: true, visitorToken: `${visitorId}.${signature}` }, 200, origin);
+    }
+
+    if (type === 'artwork-like') {
+      const artworkId = text(data.artworkId, 64);
+      const visitorToken = text(data.visitorToken, 120);
+      const [visitorId, signature, extra] = visitorToken.split('.');
+      if (!validUuid(artworkId) || !validUuid(visitorId ?? '') || !signature || extra !== undefined) {
+        return json({ error: 'Artwork or visitor identity is invalid.' }, 400, origin);
+      }
+      const expectedSignature = await signVisitorId(visitorId, serviceRoleKey);
+      if (!signaturesEqual(signature, expectedSignature)) {
+        return json({ error: 'Visitor identity is invalid. Refresh the page and try again.' }, 401, origin);
+      }
+
+      const { data: likeResult, error: likeError } = await admin.rpc('toggle_artwork_like', {
+        p_artwork_id: artworkId,
+        p_visitor_id: visitorId,
+      });
+      if (likeError?.code === 'P0002') return json({ error: 'Artwork not found.' }, 404, origin);
+      if (likeError) throw likeError;
+      const row = Array.isArray(likeResult) ? likeResult[0] : likeResult;
+      return json({ success: true, likes: row?.likes ?? 0, isLiked: row?.is_liked ?? false }, 200, origin);
+    }
 
     if (type === 'contact') {
       const name = text(data.name, 100);
