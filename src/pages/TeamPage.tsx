@@ -1,14 +1,16 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { SEO } from '../components/common/SEO';
 import {
   ArrowRight,
   Users,
+  ShieldCheck,
 } from 'lucide-react';
-import { mockTeamMembers, mockActiveMembers } from '../data/mockData';
-import type { ActiveMember } from '../types';
+import type { TeamMember, ActiveMember } from '../types';
 import type { Easing } from 'framer-motion';
+import { teamApi } from '../services/api';
+import { useAdminAuth } from '../context/AdminAuthContext';
 
 // ── Inline SVG brand icons (lucide-react doesn't ship brand icons) ──
 const InstagramIcon: React.FC<{ size?: number }> = ({ size = 16 }) => (
@@ -101,17 +103,92 @@ const SocialIcons: React.FC<{
 type YearFilter = 'All' | '1st Year' | '2nd Year' | '3rd Year' | '4th Year';
 
 export const TeamPage: React.FC = () => {
-  const faculty = mockTeamMembers.filter((m) => m.tier === 'faculty');
-  const executives = mockTeamMembers.filter((m) => m.tier === 'executive');
-  const leads = mockTeamMembers.filter((m) => m.tier === 'lead');
+  const { isAuthenticated } = useAdminAuth();
+  const [teamList, setTeamList] = useState<TeamMember[]>([]);
+  const [activeList, setActiveList] = useState<ActiveMember[]>([]);
+  const [isLoadingTeam, setIsLoadingTeam] = useState(true);
+  const [teamLoadError, setTeamLoadError] = useState<string | null>(null);
+  const [teamReloadVersion, setTeamReloadVersion] = useState(0);
+
+  useEffect(() => {
+    let active = true;
+    const fetchLiveTeam = async () => {
+      setIsLoadingTeam(true);
+      try {
+        const res = await teamApi.getAll();
+        if (!res.success || !Array.isArray(res.team)) throw new Error('Team data is unavailable.');
+        const liveMembers: TeamMember[] = [];
+        const liveActives: ActiveMember[] = [];
+
+        res.team.forEach((m: any) => {
+            const tier = (m.tier || 'executive').toLowerCase();
+            if (tier === 'member') {
+              liveActives.push({
+                id: `am-${m.id}`,
+                name: m.name,
+                department: m.department || 'Ceramic Technology',
+                year: (m.year as any) || '1st Year',
+                specialty: m.specialty || m.role || 'Fine Arts',
+                avatarUrl: m.avatarUrl || undefined,
+                instagramUrl: m.instagramUrl || undefined,
+                linkedinUrl: m.linkedinUrl || undefined,
+              });
+            } else {
+              const respArray = Array.isArray(m.responsibilities)
+                ? m.responsibilities.map((s: unknown) => String(s).trim()).filter(Boolean)
+                : typeof m.responsibilities === 'string'
+                  ? m.responsibilities.split(',').map((s: string) => s.trim()).filter(Boolean)
+                  : [];
+              liveMembers.push({
+                id: `tm-${m.id}`,
+                name: m.name,
+                slug: m.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+                role: m.role,
+                department: m.department || 'GCECT',
+                batch: m.year || (tier === 'faculty' ? 'Faculty Advisor' : 'Batch of 2026'),
+                tier: (tier === 'faculty' || tier === 'lead') ? tier : 'executive',
+                bio: m.bio || '',
+                quote: m.quote || undefined,
+                avatarUrl: m.avatarUrl || undefined,
+                instagramUrl: m.instagramUrl || undefined,
+                linkedinUrl: m.linkedinUrl || undefined,
+                responsibilities: respArray,
+              });
+            }
+        });
+
+        if (active) {
+          setTeamList(liveMembers);
+          setActiveList(liveActives);
+          setTeamLoadError(null);
+        }
+      } catch (e) {
+        console.error('Could not load team data:', e);
+        if (active) {
+          setTeamList([]);
+          setActiveList([]);
+          setTeamLoadError('Team information is temporarily unavailable. Please retry in a moment.');
+        }
+      } finally {
+        if (active) setIsLoadingTeam(false);
+      }
+    };
+
+    void fetchLiveTeam();
+    return () => { active = false; };
+  }, [teamReloadVersion]);
+
+  const faculty = teamList.filter((m) => m.tier === 'faculty');
+  const executives = teamList.filter((m) => m.tier === 'executive');
+  const leads = teamList.filter((m) => m.tier === 'lead');
 
   const [yearFilter, setYearFilter] = useState<YearFilter>('All');
   const yearOptions: YearFilter[] = ['All', '1st Year', '2nd Year', '3rd Year', '4th Year'];
 
   const filteredMembers: ActiveMember[] = useMemo(() => {
-    if (yearFilter === 'All') return mockActiveMembers;
-    return mockActiveMembers.filter((m) => m.year === yearFilter);
-  }, [yearFilter]);
+    if (yearFilter === 'All') return activeList;
+    return activeList.filter((m) => m.year === yearFilter);
+  }, [yearFilter, activeList]);
 
   const containerVariants = {
     hidden: {},
@@ -135,6 +212,23 @@ export const TeamPage: React.FC = () => {
       />
     <div className="gallery-container py-10 sm:py-16 space-y-20">
 
+      {/* Admin Mode Shortcut Banner */}
+      {isAuthenticated && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-[var(--surface)] border border-[var(--accent)]/50 rounded-lg shadow-sm">
+          <div className="flex items-center gap-2 text-xs font-mono text-[var(--accent)] font-semibold">
+            <ShieldCheck className="w-4 h-4 shrink-0" />
+            <span>Admin Mode: You have full access to manage and update the team roster.</span>
+          </div>
+          <Link
+            to="/admin/team"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-mono font-semibold bg-[var(--accent)] text-[var(--on-accent)] hover:opacity-90 transition-opacity shrink-0"
+          >
+            <span>Manage Team (Admin)</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      )}
+
       {/* ────────────────────────────────────────────────── */}
       {/* Page Header */}
       {/* ────────────────────────────────────────────────── */}
@@ -150,6 +244,20 @@ export const TeamPage: React.FC = () => {
           The students and faculty mentors who keep Studio 204 alive — curating gallery walls, coordinating weekly sketch crawls, managing kiln schedules, and welcoming new members.
         </p>
       </header>
+
+      {teamLoadError && (
+        <div role="alert" className="flex flex-wrap items-center gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+          <span>{teamLoadError}</span>
+          <button type="button" onClick={() => setTeamReloadVersion((version) => version + 1)} className="font-semibold underline underline-offset-2">
+            Retry
+          </button>
+        </div>
+      )}
+      {!isLoadingTeam && !teamLoadError && teamList.length === 0 && activeList.length === 0 && (
+        <p className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4 text-sm text-[var(--muted)]">
+          No team profiles have been published yet.
+        </p>
+      )}
 
       {/* ────────────────────────────────────────────────── */}
       {/* Faculty Patron — full-width highlight */}
@@ -418,7 +526,7 @@ export const TeamPage: React.FC = () => {
             Active members
           </h2>
           <p className="text-sm text-[var(--muted)] mt-2 font-sans">
-            {mockActiveMembers.length} students across Ceramic Tech, CSE, and IT who shape Studio 204 every week.
+            {activeList.length} students across Ceramic Tech, CSE, and IT who shape Studio 204 every week.
           </p>
         </div>
 
@@ -436,7 +544,7 @@ export const TeamPage: React.FC = () => {
               {yr}
               {yr !== 'All' && (
                 <span className="ml-1.5 font-mono text-[11px] opacity-70">
-                  ({mockActiveMembers.filter((m) => m.year === yr).length})
+                  ({activeList.filter((m) => m.year === yr).length})
                 </span>
               )}
             </button>

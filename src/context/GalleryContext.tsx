@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type {
   Artwork,
+  Artist,
   MediumCategory,
   EventItem,
   RegistrationPayload,
@@ -8,19 +9,17 @@ import type {
   AchievementItem,
   HeadlineNumber,
 } from '../types';
-import {
-  mockArtworks as initialArtworks,
-  mockEvents as initialEvents,
-  mockAchievements as initialAchievements,
-  mockHeadlineNumbers as initialHeadlineNumbers,
-} from '../data/mockData';
 import { useToast } from './ToastContext';
 
 interface GalleryContextType {
   artworks: Artwork[];
+  artists: Artist[];
   events: EventItem[];
   achievements: AchievementItem[];
   headlineNumbers: HeadlineNumber[];
+  sharedDataError: string | null;
+  isLoadingSharedData: boolean;
+  retrySharedData: () => void;
   likedArtworkIds: Set<string>;
   registeredEventIds: Set<string>;
   activeArtworkModal: Artwork | null;
@@ -31,90 +30,35 @@ interface GalleryContextType {
   closeArtworkModal: () => void;
   nextArtwork: () => void;
   prevArtwork: () => void;
-  toggleLike: (artworkId: string) => void;
+  toggleLike: (artworkId: string) => Promise<void>;
   setSelectedMedium: (medium: MediumCategory) => void;
   setSearchQuery: (query: string) => void;
   setSortBy: (sort: 'featured' | 'recent' | 'likes') => void;
-  registerForEvent: (payload: RegistrationPayload) => { success: boolean; passCode: string };
-  submitMembership: (payload: MembershipPayload) => { success: boolean; applicantId: string };
-  addAchievement: (achievement: Omit<AchievementItem, 'id'>) => void;
-  updateAchievement: (id: string, updated: Partial<AchievementItem>) => void;
-  deleteAchievement: (id: string) => void;
-  updateHeadlineNumber: (id: string, updated: Partial<HeadlineNumber>) => void;
+  registerForEvent: (payload: RegistrationPayload) => Promise<{ success: boolean; passCode: string }>;
+  submitMembership: (payload: MembershipPayload) => Promise<{ success: boolean; applicantId: string }>;
+  addAchievement: (achievement: Omit<AchievementItem, 'id'>) => Promise<void>;
+  updateAchievement: (id: string, updated: Partial<AchievementItem>) => Promise<void>;
+  deleteAchievement: (id: string) => Promise<void>;
+  updateHeadlineNumber: (id: string, updated: Partial<HeadlineNumber>) => Promise<void>;
 }
 
 const GalleryContext = createContext<GalleryContextType | undefined>(undefined);
 
 export const GalleryProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { showSuccess, showInfo } = useToast();
-  const [artworks, setArtworks] = useState<Artwork[]>(() => {
-    const sanitize = (list: Artwork[]) =>
-      list.map((a) => ({
-        ...a,
-        category: a.category || 'campus-art',
-        artistDept: a.artistDept || 'GCECT',
-        tags: Array.isArray(a.tags) ? a.tags : [],
-        medium: a.medium || 'Mixed Media',
-      }));
+  const { showSuccess, showInfo, showWarning } = useToast();
+  const [artworks, setArtworks] = useState<Artwork[]>([]);
+  const [events, setEvents] = useState<EventItem[]>([]);
+  const [artists, setArtists] = useState<Artist[]>([]);
 
-    const saved = localStorage.getItem('bb-artworks');
-    if (!saved) return sanitize(initialArtworks);
-    try {
-      const parsed: Artwork[] = JSON.parse(saved);
-      const existingIds = new Set(parsed.map((a) => a.id));
-      const missingInitial = initialArtworks.filter((a) => !existingIds.has(a.id));
-      const merged = missingInitial.length > 0 ? [...parsed, ...missingInitial] : parsed;
-      return sanitize(merged);
-    } catch {
-      return sanitize(initialArtworks);
-    }
-  });
+  const [likedArtworkIds, setLikedArtworkIds] = useState<Set<string>>(() => new Set());
 
-  const [events, setEvents] = useState<EventItem[]>(() => {
-    const saved = localStorage.getItem('bb-events');
-    if (!saved) return initialEvents;
-    try {
-      const parsed: EventItem[] = JSON.parse(saved);
-      const existingIds = new Set(parsed.map((e) => e.id));
-      const missingInitial = initialEvents.filter((e) => !existingIds.has(e.id));
-      return missingInitial.length > 0 ? [...parsed, ...missingInitial] : parsed;
-    } catch {
-      return initialEvents;
-    }
-  });
+  const [registeredEventIds, setRegisteredEventIds] = useState<Set<string>>(() => new Set());
 
-  const [likedArtworkIds, setLikedArtworkIds] = useState<Set<string>>(() => {
-    const saved = localStorage.getItem('bb-liked-art');
-    return saved ? new Set(JSON.parse(saved)) : new Set();
-  });
-
-  const [registeredEventIds, setRegisteredEventIds] = useState<Set<string>>(() => {
-    const saved = localStorage.getItem('bb-registered-events');
-    return saved ? new Set(JSON.parse(saved)) : new Set();
-  });
-
-  const [achievements, setAchievements] = useState<AchievementItem[]>(() => {
-    const saved = localStorage.getItem('bb-achievements');
-    if (!saved) return initialAchievements;
-    try {
-      const parsed: AchievementItem[] = JSON.parse(saved);
-      const existingIds = new Set(parsed.map((a) => a.id));
-      const missingInitial = initialAchievements.filter((a) => !existingIds.has(a.id));
-      return missingInitial.length > 0 ? [...parsed, ...missingInitial] : parsed;
-    } catch {
-      return initialAchievements;
-    }
-  });
-
-  const [headlineNumbers, setHeadlineNumbers] = useState<HeadlineNumber[]>(() => {
-    const saved = localStorage.getItem('bb-headline-numbers');
-    if (!saved) return initialHeadlineNumbers;
-    try {
-      return JSON.parse(saved);
-    } catch {
-      return initialHeadlineNumbers;
-    }
-  });
+  const [achievements, setAchievements] = useState<AchievementItem[]>([]);
+  const [headlineNumbers, setHeadlineNumbers] = useState<HeadlineNumber[]>([]);
+  const [sharedDataError, setSharedDataError] = useState<string | null>(null);
+  const [isLoadingSharedData, setIsLoadingSharedData] = useState(true);
+  const [loadVersion, setLoadVersion] = useState(0);
 
   const [activeArtworkModal, setActiveArtworkModal] = useState<Artwork | null>(null);
   const [selectedMedium, setSelectedMedium] = useState<MediumCategory>('All');
@@ -122,28 +66,45 @@ export const GalleryProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [sortBy, setSortBy] = useState<'featured' | 'recent' | 'likes'>('featured');
 
   useEffect(() => {
-    localStorage.setItem('bb-artworks', JSON.stringify(artworks));
-  }, [artworks]);
+    let active = true;
+    const loadSharedData = async () => {
+      if (active) setIsLoadingSharedData(true);
+      try {
+        const { artworkApi, eventApi, artistApi, achievementApi, headlineNumberApi } = await import('../services/api');
+        const [artworkResult, eventResult, artistResult, achievementResult, headlineResult] = await Promise.all([
+          artworkApi.getAll(), eventApi.getAll(), artistApi.getAll(), achievementApi.getAll(), headlineNumberApi.getAll(),
+        ]);
+        if (!active) return;
+        setArtworks((artworkResult.artworks || []).map((art) => ({
+          ...art,
+          category: art.category || 'campus-art',
+          artistDept: art.artistDept || 'GCECT',
+          tags: Array.isArray(art.tags) ? art.tags : [],
+          medium: art.medium || 'Mixed Media',
+        })));
+        setEvents(eventResult.events || []);
+        setRegisteredEventIds(new Set((eventResult.events || []).filter((event) => event.isRegistered).map((event) => String(event.id))));
+        setArtists(artistResult.artists || []);
+        setAchievements(achievementResult.achievements || []);
+        setHeadlineNumbers(headlineResult.headlineNumbers || []);
+        setLikedArtworkIds(new Set((artworkResult.artworks || []).filter((art) => art.isLiked).map((art) => String(art.id))));
+        setSharedDataError(null);
+      } catch (error) {
+        console.error('Could not load the shared gallery data:', error);
+        if (active) setSharedDataError('Live site content is temporarily unavailable. Please retry in a moment.');
+      } finally {
+        if (active) setIsLoadingSharedData(false);
+      }
+    };
+    void loadSharedData();
+    window.addEventListener('bb-data-updated', loadSharedData);
+    return () => {
+      active = false;
+      window.removeEventListener('bb-data-updated', loadSharedData);
+    };
+  }, [loadVersion]);
 
-  useEffect(() => {
-    localStorage.setItem('bb-events', JSON.stringify(events));
-  }, [events]);
-
-  useEffect(() => {
-    localStorage.setItem('bb-achievements', JSON.stringify(achievements));
-  }, [achievements]);
-
-  useEffect(() => {
-    localStorage.setItem('bb-headline-numbers', JSON.stringify(headlineNumbers));
-  }, [headlineNumbers]);
-
-  useEffect(() => {
-    localStorage.setItem('bb-liked-art', JSON.stringify(Array.from(likedArtworkIds)));
-  }, [likedArtworkIds]);
-
-  useEffect(() => {
-    localStorage.setItem('bb-registered-events', JSON.stringify(Array.from(registeredEventIds)));
-  }, [registeredEventIds]);
+  const retrySharedData = () => setLoadVersion((version) => version + 1);
 
   const openArtworkModal = (artwork: Artwork) => {
     setActiveArtworkModal(artwork);
@@ -169,52 +130,43 @@ export const GalleryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setActiveArtworkModal(artworks[prevIndex]);
   };
 
-  const toggleLike = (artworkId: string) => {
+  const toggleLike = async (artworkId: string) => {
     const isLiked = likedArtworkIds.has(artworkId);
-    const nextLikes = new Set(likedArtworkIds);
-
-    if (isLiked) {
-      nextLikes.delete(artworkId);
-      setArtworks((prev) =>
-        prev.map((art) => (art.id === artworkId ? { ...art, likes: Math.max(0, art.likes - 1) } : art))
-      );
-      showInfo('Removed from your curated favorites');
-    } else {
-      nextLikes.add(artworkId);
-      setArtworks((prev) =>
-        prev.map((art) => (art.id === artworkId ? { ...art, likes: art.likes + 1 } : art))
-      );
-      showSuccess('Appreciated! Saved to your studio bookmarks');
-      // Sync like to backend
-      import('../services/api').then(({ artworkApi }) => {
-        const numId = parseInt(artworkId, 10);
-        if (!isNaN(numId)) {
-          artworkApi.like(numId).catch(() => {});
-        }
+    try {
+      const { artworkApi } = await import('../services/api');
+      const result = await artworkApi.like(artworkId, !isLiked);
+      setArtworks((prev) => prev.map((art) => art.id === artworkId ? { ...art, likes: result.likes } : art));
+      setLikedArtworkIds((prev) => {
+        const next = new Set(prev);
+        if (result.isLiked) next.add(artworkId);
+        else next.delete(artworkId);
+        return next;
       });
+      if (result.isLiked) showSuccess('Appreciated! Saved to your studio bookmarks');
+      else showInfo('Removed from your curated favorites');
+    } catch (error) {
+      showWarning('Could not update your appreciation', error instanceof Error ? error.message : 'Please try again.');
     }
-
-    setLikedArtworkIds(nextLikes);
   };
 
-  const registerForEvent = (payload: RegistrationPayload) => {
-    const passCode = `GCECT-ART-${Math.floor(1000 + Math.random() * 9000)}`;
-
-    // Sync registration to backend
-    import('../services/api').then(({ eventApi }) => {
-      const numId = parseInt(payload.eventId, 10) || 1;
-      eventApi.register(numId, {
+  const registerForEvent = async (payload: RegistrationPayload) => {
+    const { eventApi } = await import('../services/api');
+    const { registration, registeredCount } = await eventApi.register(payload.eventId, {
         applicant_name: payload.name,
+        name: payload.name,
         applicant_email: payload.email,
+        email: payload.email,
         applicant_phone: payload.phone,
+        phone: payload.phone,
         department: payload.department,
-      }).catch(() => {});
-    });
+        yearOfStudy: payload.yearOfStudy,
+        rollNumber: payload.rollNumber,
+      });
 
     setEvents((prev) =>
       prev.map((evt) =>
         evt.id === payload.eventId
-          ? { ...evt, registeredCount: evt.registeredCount + 1 }
+          ? { ...evt, registeredCount }
           : evt
       )
     );
@@ -225,71 +177,79 @@ export const GalleryProvider: React.FC<{ children: React.ReactNode }> = ({ child
       return next;
     });
 
-    return { success: true, passCode };
+    return { success: true, passCode: registration.passCode };
   };
 
-  const submitMembership = (payload: MembershipPayload) => {
-    const applicantId = `BB-APP-${Date.now().toString().slice(-4)}`;
-
-    // Sync application to backend
-    import('../services/api').then(({ applicationApi }) => {
-      applicationApi.submit({
+  const submitMembership = async (payload: MembershipPayload) => {
+    const { applicationApi } = await import('../services/api');
+    const result = await applicationApi.submit({
         fullName: payload.fullName,
         email: payload.email,
-        phone: '9876543210',
         department: payload.department,
-        rollNumber: payload.rollNumber || `ROLL-${Date.now().toString().slice(-4)}`,
+        rollNumber: payload.rollNumber,
         academicYear: payload.yearOfStudy,
         artInterests: payload.primaryWing,
         portfolioUrl: payload.portfolioUrl,
         whyJoin: payload.motivation || payload.experienceSummary || 'Passionate about Art at GCECT',
-      }).catch(() => {});
-    });
-
-    const savedApps = localStorage.getItem('bb-applicants');
-    const apps = savedApps ? JSON.parse(savedApps) : [];
-    apps.push({ ...payload, applicantId, submittedAt: new Date().toISOString() });
-    localStorage.setItem('bb-applicants', JSON.stringify(apps));
-
-    return { success: true, applicantId };
+      });
+    return { success: true, applicantId: result.application.id };
   };
 
-  const addAchievement = (data: Omit<AchievementItem, 'id'>) => {
-    const newId = `ach-${Date.now().toString().slice(-4)}`;
-    const newAchievement: AchievementItem = {
-      ...data,
-      id: newId,
-    };
-    setAchievements((prev) => [newAchievement, ...prev]);
-    showSuccess('Achievement Added', `"${newAchievement.title}" has been recorded in honors.`);
+  const addAchievement = async (data: Omit<AchievementItem, 'id'>) => {
+    try {
+      const { achievementApi } = await import('../services/api');
+      const { achievement } = await achievementApi.create(data);
+      setAchievements((prev) => [achievement, ...prev]);
+      showSuccess('Achievement Added', `"${achievement.title}" has been recorded in honors.`);
+    } catch (error) {
+      showWarning('Could not save achievement', error instanceof Error ? error.message : 'Please try again.');
+    }
   };
 
-  const updateAchievement = (id: string, updated: Partial<AchievementItem>) => {
-    setAchievements((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, ...updated } : a))
-    );
-    showSuccess('Milestone Updated', 'Achievement details updated successfully.');
+  const updateAchievement = async (id: string, updated: Partial<AchievementItem>) => {
+    try {
+      const { achievementApi } = await import('../services/api');
+      const { achievement } = await achievementApi.update(id, updated);
+      setAchievements((prev) => prev.map((item) => item.id === id ? achievement : item));
+      showSuccess('Milestone Updated', 'Achievement details updated successfully.');
+    } catch (error) {
+      showWarning('Could not update achievement', error instanceof Error ? error.message : 'Please try again.');
+    }
   };
 
-  const deleteAchievement = (id: string) => {
-    setAchievements((prev) => prev.filter((a) => a.id !== id));
-    showInfo('Achievement Removed', 'Item removed from campus honors archive.');
+  const deleteAchievement = async (id: string) => {
+    try {
+      const { achievementApi } = await import('../services/api');
+      await achievementApi.delete(id);
+      setAchievements((prev) => prev.filter((a) => a.id !== id));
+      showInfo('Achievement Removed', 'Item removed from campus honors archive.');
+    } catch (error) {
+      showWarning('Could not remove achievement', error instanceof Error ? error.message : 'Please try again.');
+    }
   };
 
-  const updateHeadlineNumber = (id: string, updated: Partial<HeadlineNumber>) => {
-    setHeadlineNumbers((prev) =>
-      prev.map((h) => (h.id === id ? { ...h, ...updated } : h))
-    );
-    showSuccess('Headline Metric Updated', 'Metric updated on honors scoreboard.');
+  const updateHeadlineNumber = async (id: string, updated: Partial<HeadlineNumber>) => {
+    try {
+      const { headlineNumberApi } = await import('../services/api');
+      const { headlineNumber } = await headlineNumberApi.update(id, updated);
+      setHeadlineNumbers((prev) => prev.map((item) => item.id === id ? headlineNumber : item));
+      showSuccess('Headline Metric Updated', 'Metric updated on honors scoreboard.');
+    } catch (error) {
+      showWarning('Could not update the metric', error instanceof Error ? error.message : 'Please try again.');
+    }
   };
 
   return (
     <GalleryContext.Provider
       value={{
         artworks,
+        artists,
         events,
         achievements,
         headlineNumbers,
+        sharedDataError,
+        isLoadingSharedData,
+        retrySharedData,
         likedArtworkIds,
         registeredEventIds,
         activeArtworkModal,

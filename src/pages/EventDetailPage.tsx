@@ -91,7 +91,7 @@ export const EventDetailPage: React.FC = () => {
   };
 
   // Embedded Registration Submit
-  const handleEmbeddedRegister = (e: React.FormEvent) => {
+  const handleEmbeddedRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     const errs: typeof regErrors = {};
 
@@ -121,8 +121,9 @@ export const EventDetailPage: React.FC = () => {
       experienceLevel: 'Practicing Artist',
     };
 
-    const res = registerForEvent(payload);
-    if (res.success) {
+    try {
+      const res = await registerForEvent(payload);
+      if (!res.success) return;
       setTicketPass(res.passCode);
       showSuccess('Registration confirmed', `Your pass ${res.passCode} has been issued.`);
       try {
@@ -135,6 +136,8 @@ export const EventDetailPage: React.FC = () => {
       } catch {
         // ignore
       }
+    } catch (error) {
+      setRegErrors((current) => ({ ...current, email: error instanceof Error ? error.message : 'Could not register for this event. Please try again.' }));
     }
   };
 
@@ -489,6 +492,7 @@ export const EventDetailPage: React.FC = () => {
                     </label>
                     <input
                       type="text"
+                      maxLength={120}
                       value={regName}
                       onChange={(e) => {
                         setRegName(e.target.value);
@@ -545,6 +549,7 @@ export const EventDetailPage: React.FC = () => {
                     </label>
                     <input
                       type="email"
+                      maxLength={254}
                       value={regEmail}
                       onChange={(e) => {
                         setRegEmail(e.target.value);
@@ -567,6 +572,7 @@ export const EventDetailPage: React.FC = () => {
                     </label>
                     <input
                       type="tel"
+                      maxLength={30}
                       value={regPhone}
                       onChange={(e) => {
                         setRegPhone(e.target.value);

@@ -2,8 +2,7 @@
  * Membership Application Service
  * Brush and Bond — GCECT Art Club
  * 
- * Mocked with localStorage persistence and realistic async latency.
- * Supabase-ready: contains direct schema mapping and client query template.
+ * Membership application submission through the persistent server API.
  */
 
 export type AreaOfInterest =
@@ -30,7 +29,7 @@ export interface MembershipApplicationData {
 export interface StoredMembershipApplication extends MembershipApplicationData {
   id: string;
   submittedAt: string;
-  status: 'received' | 'under_review' | 'accepted';
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
 }
 
 export interface MembershipApplicationResult {
@@ -43,29 +42,11 @@ export interface MembershipApplicationResult {
 /**
  * Submits a membership application to the Brush and Bond registry.
  *
- * Designed to seamlessly plug into Supabase:
- * ```ts
- * const { data, error } = await supabase
- *   .from('membership_applications')
- *   .insert([{
- *     name: payload.name,
- *     department: payload.department,
- *     year: payload.year,
- *     email: payload.email,
- *     area_of_interest: payload.areaOfInterest,
- *     portfolio_url: payload.portfolioUrl || null,
- *     reason_to_join: payload.reasonToJoin,
- *   }])
- *   .select()
- *   .single();
- * ```
+ * The server validates the submission and commits it to SQLite before returning success.
  */
 export async function submitMembershipApplication(
   data: MembershipApplicationData
 ): Promise<MembershipApplicationResult> {
-  // Simulate realistic network delay (600ms - 800ms)
-  await new Promise((resolve) => setTimeout(resolve, 700));
-
   // Basic sanity validation
   if (!data.name?.trim()) {
     throw new Error('Name is required.');
@@ -86,66 +67,34 @@ export async function submitMembershipApplication(
     throw new Error('Please share a sentence or two on why you want to join (at least 10 characters).');
   }
 
-  // Generate unique membership reference
-  const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-  const id = `BB-${new Date().getFullYear()}-${randomSuffix}`;
-
-  const record: StoredMembershipApplication = {
-    name: data.name.trim(),
-    department: data.department.trim(),
-    year: data.year,
+  const { applicationApi } = await import('./api');
+  const result = await applicationApi.submit({
+    fullName: data.name.trim(),
     email: data.email.trim().toLowerCase(),
-    areaOfInterest: data.areaOfInterest,
-    portfolioUrl: data.portfolioUrl?.trim() || undefined,
-    reasonToJoin: data.reasonToJoin.trim(),
-    id,
-    submittedAt: new Date().toISOString(),
-    status: 'received',
+    department: data.department.trim(),
+    academicYear: data.year,
+    artInterests: data.areaOfInterest,
+    portfolioUrl: data.portfolioUrl?.trim(),
+    whyJoin: data.reasonToJoin.trim(),
+  });
+  const saved = result.application;
+  const record: StoredMembershipApplication = {
+    name: saved.fullName,
+    department: saved.department,
+    year: saved.academicYear,
+    email: saved.email,
+    areaOfInterest: saved.artInterests,
+    portfolioUrl: saved.portfolioUrl || undefined,
+    reasonToJoin: saved.whyJoin,
+    id: saved.id,
+    submittedAt: saved.submittedAt,
+    status: saved.status,
   };
-
-  // Submit to backend API
-  try {
-    const { applicationApi } = await import('./api');
-    await applicationApi.submit({
-      fullName: data.name.trim(),
-      email: data.email.trim().toLowerCase(),
-      phone: (data as any).phone || '9876543210',
-      department: data.department.trim(),
-      rollNumber: (data as any).rollNumber || `GCECT-${Date.now().toString().slice(-4)}`,
-      academicYear: data.year,
-      artInterests: data.areaOfInterest,
-      portfolioUrl: data.portfolioUrl?.trim(),
-      whyJoin: data.reasonToJoin.trim(),
-    });
-  } catch (apiErr) {
-    console.warn('API submission notice:', apiErr);
-  }
-
-  try {
-    const existing = localStorage.getItem('bb-membership-applications');
-    const list: StoredMembershipApplication[] = existing ? JSON.parse(existing) : [];
-    list.unshift(record);
-    localStorage.setItem('bb-membership-applications', JSON.stringify(list));
-  } catch (err) {
-    console.warn('Could not persist to localStorage:', err);
-  }
 
   return {
     success: true,
-    id,
-    message: "You're in. We'll email you the next steps.",
+    id: record.id,
+    message: result.message,
     application: record,
   };
-}
-
-/**
- * Retrieves all stored membership applications (for admin & debugging)
- */
-export function getStoredMembershipApplications(): StoredMembershipApplication[] {
-  try {
-    const raw = localStorage.getItem('bb-membership-applications');
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
 }

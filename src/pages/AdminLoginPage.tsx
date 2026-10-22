@@ -9,8 +9,8 @@ export const AdminLoginPage: React.FC = () => {
   const navigate = useNavigate();
   const { login, isLoading } = useAdminAuth();
 
-  const [email, setEmail] = useState('admin@brushandbond.local');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('admin@gcectart.club');
+  const [password, setPassword] = useState('Admin@ArtClub2026');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -29,20 +29,9 @@ export const AdminLoginPage: React.FC = () => {
     }
   };
 
-  const handleDemoLogin = async (demoEmail: string, demoPassword: string) => {
-    setEmail(demoEmail);
-    setPassword(demoPassword);
-    setError('');
-    setIsSubmitting(true);
-
-    try {
-      await login(demoEmail, demoPassword);
-      navigate('/admin', { replace: true });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleAutofill = (autofillEmail: string, autofillPass: string) => {
+    setEmail(autofillEmail);
+    setPassword(autofillPass);
   };
 
   if (isLoading) {
@@ -133,45 +122,40 @@ export const AdminLoginPage: React.FC = () => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2.5 rounded-lg font-medium text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2.5 rounded-lg font-medium text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
             >
               <LogIn className="w-4 h-4" />
               {isSubmitting ? 'Signing in...' : 'Sign in'}
             </button>
           </form>
 
-          {/* Demo Credentials */}
+          {/* Quick Autofill Credentials */}
           <div className="border-t border-slate-200 dark:border-slate-700 pt-6">
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 text-center font-medium">DEMO ACCOUNTS</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 text-center font-medium">FIXED ADMIN CREDENTIALS (CLICK TO AUTOFILL)</p>
             <div className="space-y-2">
               <button
                 type="button"
-                onClick={() => handleDemoLogin('admin@brushandbond.local', 'admin123')}
-                disabled={isSubmitting}
-                className="w-full text-left p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 transition-colors disabled:opacity-50 text-sm"
+                onClick={() => handleAutofill('admin@gcectart.club', 'Admin@ArtClub2026')}
+                className="w-full text-left p-3 bg-white dark:bg-slate-800 border-2 border-blue-500/40 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 transition-colors text-sm shadow-xs cursor-pointer"
               >
-                <p className="font-medium text-slate-900 dark:text-white">Admin Account</p>
-                <p className="text-slate-600 dark:text-slate-400 text-xs">admin@brushandbond.local</p>
+                <div className="flex items-center justify-between">
+                  <p className="font-bold text-slate-900 dark:text-white">GCECT Art Club Admin</p>
+                  <span className="text-[10px] font-mono bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded">Fixed</span>
+                </div>
+                <p className="text-slate-600 dark:text-slate-400 text-xs mt-0.5">admin@gcectart.club • Admin@ArtClub2026</p>
               </button>
               <button
                 type="button"
-                onClick={() => handleDemoLogin('editor@brushandbond.local', 'editor123')}
-                disabled={isSubmitting}
-                className="w-full text-left p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 transition-colors disabled:opacity-50 text-sm"
+                onClick={() => handleAutofill('admin@brushandbond.local', 'admin123')}
+                className="w-full text-left p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 transition-colors text-sm cursor-pointer"
               >
-                <p className="font-medium text-slate-900 dark:text-white">Editor Account</p>
-                <p className="text-slate-600 dark:text-slate-400 text-xs">editor@brushandbond.local</p>
+                <p className="font-medium text-slate-900 dark:text-white">Demo Admin Account</p>
+                <p className="text-slate-600 dark:text-slate-400 text-xs">admin@brushandbond.local • admin123</p>
               </button>
             </div>
           </div>
-
-          {/* Help Text */}
-          <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-6">
-            This is a development login interface. Real authentication will use Supabase Auth.
-          </p>
         </motion.div>
       </div>
     </>
   );
 };
-

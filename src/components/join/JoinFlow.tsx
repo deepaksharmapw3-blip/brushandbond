@@ -8,7 +8,7 @@ import { useToast } from '../../context/ToastContext';
 
 export const JoinFlow: React.FC = () => {
   const { submitMembership } = useGallery();
-  const { showSuccess } = useToast();
+  const { showSuccess, showWarning } = useToast();
 
   const [form, setForm] = useState<MembershipPayload>({
     fullName: '',
@@ -51,15 +51,13 @@ export const JoinFlow: React.FC = () => {
     },
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = submitMembership(form);
-    if (res.success) {
+    try {
+      const res = await submitMembership(form);
+      if (!res.success) return;
       setSubmittedCandidateId(res.applicantId);
-      showSuccess(
-        'Portfolio Application Submitted',
-        `Your candidate reference ${res.applicantId} has been filed for Studio 204 intake.`
-      );
+      showSuccess('Portfolio Application Submitted', `Your candidate reference ${res.applicantId} has been filed for Studio 204 intake.`);
 
       try {
         confetti({
@@ -71,6 +69,8 @@ export const JoinFlow: React.FC = () => {
       } catch {
         // fallback
       }
+    } catch (error) {
+      showWarning('Application not submitted', error instanceof Error ? error.message : 'Could not save your application. Please try again.');
     }
   };
 

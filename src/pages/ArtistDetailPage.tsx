@@ -1,17 +1,16 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, ExternalLink, Camera } from 'lucide-react';
-import { mockArtists } from '../data/mockData';
 import { useGallery } from '../context/GalleryContext';
 import { useToast } from '../context/ToastContext';
 import { ArtworkCard } from '../components/gallery/ArtworkCard';
 
 export const ArtistDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
-  const { artworks } = useGallery();
+  const { artists, artworks } = useGallery();
   const { showSuccess } = useToast();
 
-  const artist = mockArtists.find(
+  const artist = artists.find(
     (a) => a.slug === slug || a.id === slug || a.name.toLowerCase().replace(/\s+/g, '-') === slug
   );
 
@@ -41,7 +40,7 @@ export const ArtistDetailPage: React.FC = () => {
     showSuccess('Instagram handle copied', `${artist.handle} copied to your clipboard.`);
   };
 
-  const otherArtists = mockArtists.filter((a) => a.id !== artist.id).slice(0, 3);
+  const otherArtists = artists.filter((a) => a.id !== artist.id).slice(0, 3);
 
   return (
     <div className="gallery-container py-10 sm:py-16 space-y-16">

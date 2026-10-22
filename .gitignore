@@ -12,7 +12,7 @@ dist
 dist-ssr
 *.local
 
-# Environment variables
+# Environment variables (NEVER COMMIT)
 .env
 .env.*
 *.env
@@ -20,6 +20,13 @@ dist-ssr
 .env.development.local
 .env.test.local
 .env.production.local
+!.env.example
+!**/.env.example
+
+# Backend uploads & generated
+backend/uploads/*
+!backend/uploads/.gitkeep
+backend/generated/
 
 # Editor directories and files
 .vscode/*
@@ -42,3 +49,10 @@ dist.zip
 dist (2).zip
 node_modules/
 dist/
+data/*.sqlite
+data/*.sqlite-shm
+data/*.sqlite-wal
+uploads/*
+!uploads/.gitkeep
+
+.netlify/

@@ -28,9 +28,11 @@ export const ContactPage: React.FC = () => {
     message: '',
   });
   const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitError('');
     try {
       const { contactApi } = await import('../services/api');
       await contactApi.submit({
@@ -40,12 +42,13 @@ export const ContactPage: React.FC = () => {
         message: formData.message,
       });
     } catch (err) {
-      console.warn('Contact API notice:', err);
+      setSubmitError(err instanceof Error ? err.message : 'We could not save your message. Please try again.');
+      return;
     }
     setSubmitted(true);
     showSuccess(
-      'Message dispatched to Studio 204',
-      'A curatorial coordinator will respond to your email within 24 to 48 hours.'
+      'Message saved for Studio 204',
+      'The student coordinators can review your message and follow up by email.'
     );
   };
 
@@ -91,12 +94,13 @@ export const ContactPage: React.FC = () => {
                 Thank you for reaching out
               </h3>
               <p className="text-sm text-[var(--muted)] max-w-md mx-auto font-sans">
-                Your message has been received by our student coordinators. We will reply to <strong className="text-[var(--ink)]">{formData.email}</strong> shortly.
+                Your message has been saved for the student coordinators. They can follow up at <strong className="text-[var(--ink)]">{formData.email}</strong>.
               </p>
               <button
                 type="button"
                 onClick={() => {
                   setSubmitted(false);
+                  setSubmitError('');
                   setFormData({ name: '', email: '', message: '' });
                 }}
                 className="btn-secondary text-xs"
@@ -106,6 +110,11 @@ export const ContactPage: React.FC = () => {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
+              {submitError && (
+                <p role="alert" className="rounded-[6px] border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
+                  {submitError}
+                </p>
+              )}
               {/* Name + Email row */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
@@ -115,6 +124,7 @@ export const ContactPage: React.FC = () => {
                   <input
                     id="contact-name"
                     type="text"
+                    maxLength={100}
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -130,6 +140,7 @@ export const ContactPage: React.FC = () => {
                   <input
                     id="contact-email"
                     type="email"
+                    maxLength={254}
                     required
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -146,6 +157,7 @@ export const ContactPage: React.FC = () => {
                 </label>
                 <textarea
                   id="contact-message"
+                  maxLength={5000}
                   required
                   rows={6}
                   value={formData.message}

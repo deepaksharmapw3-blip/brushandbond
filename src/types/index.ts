@@ -80,6 +80,7 @@ export interface Artist {
   avatarUrl: string;
   joinedYear: number;
   handle: string;
+  isSpotlight?: boolean;
 }
 
 export interface Milestone {

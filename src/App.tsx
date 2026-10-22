@@ -3,6 +3,7 @@ import { ToastProvider } from './context/ToastContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { GalleryProvider } from './context/GalleryContext';
 import { AdminAuthProvider } from './context/AdminAuthContext';
+import { useGallery } from './context/GalleryContext';
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
 import { ArtworkLightbox } from './components/gallery/ArtworkLightbox';
@@ -31,6 +32,8 @@ const AdminEventsPage = lazy(() => import('./pages/AdminEventsPage').then(m => (
 const AdminGalleryPage = lazy(() => import('./pages/AdminGalleryPage').then(m => ({ default: m.AdminGalleryPage })));
 const AdminArtistsPage = lazy(() => import('./pages/AdminArtistsPage').then(m => ({ default: m.AdminArtistsPage })));
 const AdminMembersPage = lazy(() => import('./pages/AdminApplicationsPage').then(m => ({ default: m.AdminApplicationsPage })));
+const AdminTeamPage = lazy(() => import('./pages/AdminTeamPage').then(m => ({ default: m.AdminTeamPage })));
+const AdminMessagesPage = lazy(() => import('./pages/AdminMessagesPage').then(m => ({ default: m.AdminMessagesPage })));
 const AdminAnnouncementsPage = lazy(() => import('./pages/AdminAnnouncementsPage').then(m => ({ default: m.AdminAnnouncementsPage })));
 const AdminAchievementsPage = lazy(() => import('./pages/AdminPlaceholderPages').then(m => ({ default: m.AdminAchievementsPage })));
 const AdminAnalyticsPage = lazy(() => import('./pages/AdminPlaceholderPages').then(m => ({ default: m.AdminAnalyticsPage })));
@@ -46,6 +49,8 @@ const PageLoadingFallback = () => (
 function AppContent() {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin') && location.pathname !== '/admin/login';
+  const showPublicDataStatus = !location.pathname.startsWith('/admin');
+  const { sharedDataError, isLoadingSharedData, retrySharedData } = useGallery();
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--paper)] text-[var(--ink)] transition-colors duration-200">
@@ -59,6 +64,25 @@ function AppContent() {
 
       {/* Hide public Navbar & Footer on Admin pages to avoid double headers and give AdminLayout full canvas */}
       {!isAdminRoute && <Navbar />}
+
+      {showPublicDataStatus && (sharedDataError || isLoadingSharedData) && (
+        <div
+          role={sharedDataError ? 'alert' : 'status'}
+          aria-live="polite"
+          className={`px-4 py-3 text-center text-sm ${sharedDataError ? 'bg-amber-50 text-amber-950 border-b border-amber-200' : 'bg-[var(--surface)] text-[var(--muted)] border-b border-[var(--line)]'}`}
+        >
+          {sharedDataError || 'Loading live site content…'}
+          {sharedDataError && (
+            <button
+              type="button"
+              onClick={retrySharedData}
+              className="ml-3 font-semibold underline underline-offset-2"
+            >
+              Retry
+            </button>
+          )}
+        </div>
+      )}
 
       <main id="main-content" className="flex-1">
         <Suspense fallback={<PageLoadingFallback />}>
@@ -104,7 +128,9 @@ function AppContent() {
             <Route path="/admin/events" element={<AdminEventsPage />} />
             <Route path="/admin/gallery" element={<AdminGalleryPage />} />
             <Route path="/admin/artists" element={<AdminArtistsPage />} />
+            <Route path="/admin/team" element={<AdminTeamPage />} />
             <Route path="/admin/members" element={<AdminMembersPage />} />
+            <Route path="/admin/messages" element={<AdminMessagesPage />} />
             <Route path="/admin/announcements" element={<AdminAnnouncementsPage />} />
             <Route path="/admin/achievements" element={<AdminAchievementsPage />} />
             <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
