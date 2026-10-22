@@ -1,29 +1,10 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { createOriginPolicy } from './origin-policy.mjs';
+import { corsHeaders } from './origin-policy.mjs';
 
-// Browser origins allowed to call this function. The production site and local
-// dev servers are built in, so forms keep working without any configuration.
-// To allow more origins (e.g. a preview deployment), set the ALLOWED_ORIGINS
-// secret to a comma-separated list; they are added to the built-in ones:
-//   supabase secrets set ALLOWED_ORIGINS="https://preview.example.app"
-// A leading "*." label matches any subdomain of a domain you control.
-const DEFAULT_ORIGINS = [
-  'https://brushandbond.gcect.ac.in',
-  'https://*.gcect.ac.in',
-  'http://localhost:5173',
-  'http://127.0.0.1:5173',
-  'http://localhost:4173',
-];
-const extraOrigins = (Deno.env.get('ALLOWED_ORIGINS') ?? '')
-  .split(',')
-  .map((entry) => entry.trim())
-  .filter(Boolean);
-const { originAllowed, corsHeaders } = createOriginPolicy([...DEFAULT_ORIGINS, ...extraOrigins]);
-
-const json = (body: Record<string, unknown>, status: number, origin: string | null) =>
+const json = (body: Record<string, unknown>, status: number, _origin: string | null) =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' },
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
 
 const text = (value: unknown, max: number) =>
@@ -58,8 +39,7 @@ async function sha256(value: string) {
 
 Deno.serve(async (request) => {
   const origin = request.headers.get('origin');
-  if (origin && !originAllowed(origin)) return json({ error: 'Origin not allowed.' }, 403, origin);
-  if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders(origin) });
+  if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (request.method !== 'POST') return json({ error: 'Method not allowed.' }, 405, origin);
 
   const rawBody = await request.text();
