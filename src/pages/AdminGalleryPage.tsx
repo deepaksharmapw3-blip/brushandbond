@@ -13,12 +13,15 @@ import { AdminLayout } from '../components/admin/AdminLayout';
 import { AdminToast, ConfirmDialog, AdminEmptyState } from '../components/admin/AdminUtils';
 import { artworkApi, artistApi, uploadImage } from '../services/api';
 
+const ARTWORKS_PER_PAGE = 24;
+
 export const AdminGalleryPage: React.FC = () => {
   const [artworks, setArtworks] = useState<any[]>([]);
   const [artists, setArtists] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
+  const [currentPage, setCurrentPage] = useState(1);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedArtwork, setSelectedArtwork] = useState<any | null>(null);
@@ -37,7 +40,7 @@ export const AdminGalleryPage: React.FC = () => {
 
   const fetchArtworks = async () => {
     try {
-      const res = await artworkApi.getAll();
+      const res = await artworkApi.getAll({ limit: 500 });
       if (res.success && Array.isArray(res.artworks)) {
         setArtworks(res.artworks);
       }
@@ -132,6 +135,7 @@ export const AdminGalleryPage: React.FC = () => {
       });
 
       setToast({ message: 'Artwork uploaded successfully to Gallery!', type: 'success' });
+      setCurrentPage(1);
       setIsUploadOpen(false);
       resetForm();
       fetchArtworks();
@@ -164,6 +168,12 @@ export const AdminGalleryPage: React.FC = () => {
       categoryFilter === 'All' || String(art.category).toUpperCase() === categoryFilter.toUpperCase();
     return matchesSearch && matchesCategory;
   });
+  const pageCount = Math.max(1, Math.ceil(filteredArtworks.length / ARTWORKS_PER_PAGE));
+  const safePage = Math.min(currentPage, pageCount);
+  const visibleArtworks = filteredArtworks.slice(
+    (safePage - 1) * ARTWORKS_PER_PAGE,
+    safePage * ARTWORKS_PER_PAGE,
+  );
 
   return (
     <ProtectedAdminRoute>
@@ -197,13 +207,19 @@ export const AdminGalleryPage: React.FC = () => {
               type="text"
               placeholder="Search by title, artist, or tag..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
               className="w-full pl-10 pr-4 py-2 bg-[var(--surface)] border border-[var(--line)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)] text-[var(--ink)]"
             />
           </div>
           <select
             value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
+            onChange={(e) => {
+              setCategoryFilter(e.target.value);
+              setCurrentPage(1);
+            }}
             className="px-4 py-2 bg-[var(--surface)] border border-[var(--line)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)] text-[var(--ink)]"
           >
             <option value="All">All Categories</option>
@@ -217,7 +233,7 @@ export const AdminGalleryPage: React.FC = () => {
         {/* Gallery Grid */}
         {filteredArtworks.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {filteredArtworks.map((artwork) => (
+            {visibleArtworks.map((artwork) => (
               <motion.div
                 key={artwork.id}
                 initial={{ opacity: 0, scale: 0.97 }}
@@ -228,6 +244,8 @@ export const AdminGalleryPage: React.FC = () => {
                   <img
                     src={artwork.image_url || artwork.imageUrl}
                     alt={artwork.title}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                   {artwork.featured && (
@@ -276,6 +294,30 @@ export const AdminGalleryPage: React.FC = () => {
               setIsUploadOpen(true);
             }}
           />
+        )}
+
+        {filteredArtworks.length > ARTWORKS_PER_PAGE && (
+          <nav className="mt-6 flex items-center justify-center gap-4" aria-label="Artwork pages">
+            <button
+              type="button"
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              disabled={safePage === 1}
+              className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <span className="text-sm text-[var(--muted)]" aria-live="polite">
+              Page {safePage} of {pageCount}
+            </span>
+            <button
+              type="button"
+              onClick={() => setCurrentPage((page) => Math.min(pageCount, page + 1))}
+              disabled={safePage === pageCount}
+              className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Next
+            </button>
+          </nav>
         )}
 
         {/* ── UPLOAD ARTWORK MODAL ── */}
