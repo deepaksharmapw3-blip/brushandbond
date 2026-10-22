@@ -38,7 +38,7 @@ const PAGE_SIZE = 8;
 export const GalleryPage: React.FC = () => {
   const { category: routeCategory, param } = useParams<{ category?: string; param?: string }>();
   const navigate = useNavigate();
-  const { artworks, openArtworkModal, likedArtworkIds, toggleLike } = useGallery();
+  const { artworks, openArtworkModal, likedArtworkIds, toggleLike, sharedDataError, isLoadingSharedData, retrySharedData } = useGallery();
 
   // Local filter states
   const [selectedYear, setSelectedYear] = useState<string>('all');
@@ -426,7 +426,21 @@ export const GalleryPage: React.FC = () => {
 
       {/* 4. Masonry Grid / Empty State */}
       <section className="gallery-container">
-        {filteredArtworks.length > 0 ? (
+        {sharedDataError && (
+          <div role={artworks.length === 0 ? 'alert' : 'status'} className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-[8px] border border-[var(--accent)]/40 bg-[var(--surface)] p-4 text-sm text-[var(--ink)]">
+            <p>{sharedDataError}</p>
+            <button type="button" onClick={retrySharedData} className="btn-secondary shrink-0">
+              <RefreshCw className="w-4 h-4" />
+              <span>Retry loading</span>
+            </button>
+          </div>
+        )}
+        {isLoadingSharedData && artworks.length === 0 ? (
+          <div role="status" className="text-center py-20 text-sm text-[var(--muted)]">
+            <RefreshCw className="w-5 h-5 mx-auto mb-3 animate-spin text-[var(--accent)]" />
+            Loading the GCECT Canvas…
+          </div>
+        ) : filteredArtworks.length > 0 ? (
           <div className="space-y-10">
             {/* CSS Columns Masonry Grid: 1 col on mobile, 2 on tablet, 3-4 on desktop */}
             <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-6 [column-fill:_balance]">

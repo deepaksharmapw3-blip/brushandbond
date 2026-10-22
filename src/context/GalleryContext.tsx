@@ -71,26 +71,59 @@ export const GalleryProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (active) setIsLoadingSharedData(true);
       try {
         const { artworkApi, eventApi, artistApi, achievementApi, headlineNumberApi } = await import('../services/api');
-        const [artworkResult, eventResult, artistResult, achievementResult, headlineResult] = await Promise.all([
+        const results = await Promise.allSettled([
           artworkApi.getAll({ limit: 500 }), eventApi.getAll(), artistApi.getAll(), achievementApi.getAll(), headlineNumberApi.getAll(),
         ]);
         if (!active) return;
-        setArtworks((artworkResult.artworks || []).map((art) => ({
-          ...art,
-          category: art.category || 'campus-art',
-          artistDept: art.artistDept || 'GCECT',
-          tags: Array.isArray(art.tags) ? art.tags : [],
-          medium: art.medium || 'Mixed Media',
-        })));
-        setEvents(eventResult.events || []);
-        setRegisteredEventIds(new Set((eventResult.events || []).filter((event) => event.isRegistered).map((event) => String(event.id))));
-        setArtists(artistResult.artists || []);
-        setAchievements(achievementResult.achievements || []);
-        setHeadlineNumbers(headlineResult.headlineNumbers || []);
-        setLikedArtworkIds(new Set((artworkResult.artworks || []).filter((art) => art.isLiked).map((art) => String(art.id))));
-        setSharedDataError(null);
+        const [artworkResult, eventResult, artistResult, achievementResult, headlineResult] = results;
+        const failedSections: string[] = [];
+
+        if (artworkResult.status === 'fulfilled') {
+          const loadedArtworks = artworkResult.value.artworks || [];
+          setArtworks(loadedArtworks.map((art) => ({
+            ...art,
+            category: art.category || 'campus-art',
+            artistDept: art.artistDept || 'GCECT',
+            tags: Array.isArray(art.tags) ? art.tags : [],
+            medium: art.medium || 'Mixed Media',
+          })));
+          setLikedArtworkIds(new Set(loadedArtworks.filter((art) => art.isLiked).map((art) => String(art.id))));
+        } else {
+          console.error('Could not load GCECT Canvas artworks:', artworkResult.reason);
+          failedSections.push('Canvas artworks');
+        }
+
+        if (eventResult.status === 'fulfilled') {
+          setEvents(eventResult.value.events || []);
+          setRegisteredEventIds(new Set((eventResult.value.events || []).filter((event) => event.isRegistered).map((event) => String(event.id))));
+        } else {
+          console.error('Could not load events:', eventResult.reason);
+          failedSections.push('events');
+        }
+
+        if (artistResult.status === 'fulfilled') setArtists(artistResult.value.artists || []);
+        else {
+          console.error('Could not load artist profiles:', artistResult.reason);
+          failedSections.push('artist profiles');
+        }
+
+        if (achievementResult.status === 'fulfilled') setAchievements(achievementResult.value.achievements || []);
+        else {
+          console.error('Could not load achievements:', achievementResult.reason);
+          failedSections.push('achievements');
+        }
+
+        if (headlineResult.status === 'fulfilled') setHeadlineNumbers(headlineResult.value.headlineNumbers || []);
+        else {
+          console.error('Could not load headline metrics:', headlineResult.reason);
+          failedSections.push('site metrics');
+        }
+
+        setSharedDataError(failedSections.length
+          ? `Some live content could not be loaded (${failedSections.join(', ')}). Retry to try again.`
+          : null);
       } catch (error) {
-        console.error('Could not load the shared gallery data:', error);
+        console.error('Could not initialize the shared gallery data:', error);
         if (active) setSharedDataError('Live site content is temporarily unavailable. Please retry in a moment.');
       } finally {
         if (active) setIsLoadingSharedData(false);
