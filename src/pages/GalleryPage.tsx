@@ -41,7 +41,7 @@ export const GalleryPage: React.FC = () => {
   const { artworks, openArtworkModal, likedArtworkIds, toggleLike, sharedDataError, isLoadingSharedData, retrySharedData } = useGallery();
 
   // Local filter states
-  const [selectedYear, setSelectedYear] = useState<string>('all');
+  const [selectedYear, setSelectedYear] = useState<string>('2026');
   const [sortBy, setSortBy] = useState<'newest' | 'featured' | 'likes'>('newest');
   const [searchQuery, setSearchQuery] = useState('');
   const [pagination, setPagination] = useState({ filterKey: '', count: PAGE_SIZE });
