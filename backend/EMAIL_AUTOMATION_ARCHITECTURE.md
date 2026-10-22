@@ -200,14 +200,27 @@ EMAIL_PASSWORD=your-app-specific-password
 
 ## Email Provider Setup Guide
 
-### Gmail Setup
+### Gmail Setup (Official Brush and Bond Email)
 ```
-1. Enable 2-Factor Authentication
-2. Create App Password: https://myaccount.google.com/apppasswords
-3. Use app password in EMAIL_PASSWORD
-4. EMAIL_HOST=smtp.gmail.com
-5. EMAIL_PORT=587
-6. EMAIL_SECURE=false
+Official Email: brushandbondgcect22@gmail.com
+
+Steps:
+1. Go to: https://myaccount.google.com
+2. Sign in with brushandbondgcect22@gmail.com
+3. Ensure 2-Factor Authentication is enabled
+4. Go to: https://myaccount.google.com/apppasswords
+5. Select App: "Mail"
+6. Select Device: "Windows Computer" (or your device)
+7. Click "Generate"
+8. Copy the 16-character password
+
+Configuration:
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_SECURE=false
+EMAIL_USER=brushandbondgcect22@gmail.com
+EMAIL_PASSWORD=your-16-char-app-password
+EMAIL_FROM=Brush and Bond <brushandbondgcect22@gmail.com>
 ```
 
 ### SendGrid Setup

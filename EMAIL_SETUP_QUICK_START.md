@@ -8,50 +8,46 @@ cd backend
 npm install
 ```
 
-### 2. Configure Email Provider
+### 2. Generate Gmail App Password for Official Email
 
-**Choose one email provider:**
+For the official Brush and Bond email (brushandbondgcect22@gmail.com):
 
-#### Option A: Gmail (Easiest for Development)
 ```bash
 # 1. Go to: https://myaccount.google.com/apppasswords
-# 2. Generate App Password (requires 2FA enabled)
-# 3. Add to .env:
+# 2. Sign in with brushandbondgcect22@gmail.com
+# 3. Select "Mail" and "Windows Computer" (or your device)
+# 4. Click "Generate"
+# 5. Copy the 16-character password
 
+# 3. Add to .env:
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
 EMAIL_SECURE=false
-EMAIL_USER=your-email@gmail.com
+EMAIL_USER=brushandbondgcect22@gmail.com
 EMAIL_PASSWORD=your-16-char-app-password
-EMAIL_FROM=Brush and Bond <noreply@brushandbond.gcect.edu>
+EMAIL_FROM=Brush and Bond <brushandbondgcect22@gmail.com>
 ```
 
-#### Option B: SendGrid (Production Recommended)
-```bash
-# 1. Create account at sendgrid.com
-# 2. Get API key from settings
-# 3. Add to .env:
+### Alternative Email Providers (if needed)
 
+#### SendGrid
+```bash
 EMAIL_HOST=smtp.sendgrid.net
 EMAIL_PORT=587
 EMAIL_SECURE=false
 EMAIL_USER=apikey
 EMAIL_PASSWORD=SG.your-long-api-key
-EMAIL_FROM=Brush and Bond <noreply@brushandbond.gcect.edu>
+EMAIL_FROM=Brush and Bond <noreply@sendgrid.domain>
 ```
 
-#### Option C: AWS SES
+#### AWS SES
 ```bash
-# 1. Verify sender in AWS SES console
-# 2. Create SMTP credentials
-# 3. Add to .env:
-
 EMAIL_HOST=email-smtp.us-east-1.amazonaws.com
 EMAIL_PORT=587
 EMAIL_SECURE=false
 EMAIL_USER=your-ses-username
 EMAIL_PASSWORD=your-ses-password
-EMAIL_FROM=Brush and Bond <noreply@brushandbond.gcect.edu>
+EMAIL_FROM=Brush and Bond <brushandbondgcect22@gmail.com>
 ```
 
 ### 3. Add Club Information to .env

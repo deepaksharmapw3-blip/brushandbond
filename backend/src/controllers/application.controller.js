@@ -6,7 +6,7 @@ const CLUB_INFO = {
   name: "GCECT Art Club - Brush and Bond",
   description: "We are a vibrant community of artists and creatives dedicated to celebrating art in all forms. From traditional paintings to digital art, sculptures to photography, we celebrate diverse artistic expressions. Join us for workshops, exhibitions, collaborations, and events that celebrate creativity and foster artistic growth.",
   instagramUrl: process.env.CLUB_INSTAGRAM_URL || "https://instagram.com/brushandbond",
-  contactEmail: process.env.CLUB_EMAIL || "brushandbond@gcect.edu",
+  contactEmail: process.env.CLUB_EMAIL || "brushandbondgcect22@gmail.com",
 };
 
 // POST /api/applications (Public: Join the Club)
