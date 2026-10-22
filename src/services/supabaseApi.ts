@@ -80,6 +80,43 @@ async function getFunctionError(error: unknown): Promise<string> {
   return error instanceof Error ? error.message : 'The submission could not be saved. Please try again.';
 }
 
+let volatileArtworkVisitorToken = '';
+const validArtworkVisitorToken = (value: string) =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.[0-9a-f]{64}$/i.test(value);
+
+async function getArtworkVisitorToken() {
+  let visitorToken = volatileArtworkVisitorToken;
+  try {
+    visitorToken = localStorage.getItem('bb_visitor_token') ?? visitorToken;
+  } catch {
+    // Keep using the in-memory token when browser storage is unavailable.
+  }
+  if (validArtworkVisitorToken(visitorToken)) return visitorToken;
+
+  let legacyVisitorId = '';
+  try {
+    legacyVisitorId = localStorage.getItem('bb_visitor_id') ?? '';
+  } catch {
+    // A new server-generated identity will be used when storage is unavailable.
+  }
+  const { data, error } = await supabase.functions.invoke('public-submission', {
+    body: { type: 'artwork-like-identity', data: { visitorId: legacyVisitorId } },
+  });
+  if (error) throw new Error(await getFunctionError(error));
+  if (!data?.success || typeof data.visitorToken !== 'string' || !validArtworkVisitorToken(data.visitorToken)) {
+    throw new Error(data?.error ?? 'Could not initialize your artwork like. Please try again.');
+  }
+
+  visitorToken = data.visitorToken;
+  volatileArtworkVisitorToken = visitorToken;
+  try {
+    localStorage.setItem('bb_visitor_token', visitorToken);
+  } catch {
+    // The module-level token still works for this page session.
+  }
+  return visitorToken;
+}
+
 // ─── Auth ────────────────────────────────────────────────────────────────────
 
 export const authApi = {
@@ -228,26 +265,28 @@ export const artworkApi = {
   },
 
   like: async (id: number | string, _liked: boolean) => {
-    // Get or create a stable anonymous visitor id stored in localStorage
-    let visitorId = '';
-    const isUuid = (value: string) =>
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
-    try {
-      visitorId = localStorage.getItem('bb_visitor_id') ?? '';
-      if (!isUuid(visitorId)) {
-        visitorId = crypto.randomUUID();
-        localStorage.setItem('bb_visitor_id', visitorId);
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const visitorToken = await getArtworkVisitorToken();
+      const { data, error } = await supabase.functions.invoke('public-submission', {
+        body: { type: 'artwork-like', data: { artworkId: id, visitorToken } },
+      });
+      if (error) {
+        const message = await getFunctionError(error);
+        if (attempt === 0 && message.includes('Visitor identity is invalid')) {
+          volatileArtworkVisitorToken = '';
+          try {
+            localStorage.removeItem('bb_visitor_token');
+          } catch {
+            // The next token will remain in module memory.
+          }
+          continue;
+        }
+        throw new Error(message);
       }
-    } catch {
-      visitorId = crypto.randomUUID(); // fallback if localStorage blocked
+      if (!data?.success) throw new Error(data?.error ?? 'Could not update the artwork like. Please try again.');
+      return { success: true, likes: data.likes ?? 0, isLiked: data.isLiked ?? false };
     }
-    const { data, error } = await supabase.rpc('toggle_artwork_like', {
-      p_artwork_id: id,
-      p_visitor_id: visitorId,
-    });
-    if (error) throw new Error(error.message);
-    const row = Array.isArray(data) ? data[0] : data;
-    return { success: true, likes: row?.likes ?? 0, isLiked: row?.is_liked ?? false };
+    throw new Error('Could not update the artwork like. Please try again.');
   },
 };
 

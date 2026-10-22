@@ -10,9 +10,12 @@ tables, constraints, foreign keys, indexes, row-level security policies, and
 public media buckets used by the frontend. Migration filenames are ordered;
 apply all of them, not just `rls_policies.sql`.
 Artwork likes are included in `20261021010000_artwork_likes_privacy.sql`.
-It exposes only the `toggle_artwork_like` RPC to visitors; direct table reads
-and writes are revoked so visitor identifiers remain private. Existing Supabase
-projects must apply this migration as well as fresh projects.
+The client calls the like action through `public-submission`; the Edge Function
+rate-limits by source IP and signs visitor IDs before invoking the database
+function. Direct table reads and writes remain revoked, and
+`toggle_artwork_like` is executable only by `service_role`. Existing Supabase
+projects must apply `20261022193526_secure_artwork_like_rate_limits.sql` as well
+as fresh projects.
 
 RLS helper functions (`is_staff`, `is_admin`) live in the `private` schema
 (`20261022040000_private_auth_helpers.sql`). That schema is intentionally not
