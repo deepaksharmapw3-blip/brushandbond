@@ -14,6 +14,18 @@ It exposes only the `toggle_artwork_like` RPC to visitors; direct table reads
 and writes are revoked so visitor identifiers remain private. Existing Supabase
 projects must apply this migration as well as fresh projects.
 
+RLS helper functions (`is_staff`, `is_admin`) live in the `private` schema
+(`20261022040000_private_auth_helpers.sql`). That schema is intentionally not
+listed in `config.toml` `[api].schemas`, so the helpers work inside policies but
+are not callable as RPCs.
+
+The `public-submission` function only accepts browser requests from
+`https://brushandbond.gcect.ac.in` and local dev servers (built in, no setup
+needed). To allow additional origins such as a preview deployment, add them with
+`supabase secrets set ALLOWED_ORIGINS="https://preview.example.app"`. Avoid
+wildcards for shared hosts like `*.netlify.app`, since anyone can host a site
+there.
+
 ## Fresh project with the Supabase CLI
 
 1. Create a Supabase project and install the Supabase CLI.
