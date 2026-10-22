@@ -1,6 +1,6 @@
 # Brush and Bond
 
-Brush and Bond is the art club site and artwork archive for the Government College of Engineering and Ceramic Technology (GCECT). The frontend is a React, TypeScript, and Vite app. Its current data backend is Supabase. `server/index.js` is a separate legacy SQLite API; `backend/` is a retired PostgreSQL backend.
+Brush and Bond is the art club site and artwork archive for the Government College of Engineering and Ceramic Technology (GCECT). The frontend is a React, TypeScript, and Vite app. Its current data backend is Supabase. `server/index.js` is a separate legacy SQLite API that the frontend does not use. The former `backend/` (PostgreSQL) service and its email guides were removed; email is handled by `supabase/email-relay` and the Edge Functions (see their SETUP.md).
 
 > **Current frontend data setup:** the frontend now uses Supabase directly through `src/services/supabaseApi.ts`. For a fresh project, apply every migration in `supabase/migrations/` in filename order and follow [supabase/README.md](supabase/README.md). The SQLite API instructions below describe the older standalone server and are not the database setup for the current Supabase frontend.
 
