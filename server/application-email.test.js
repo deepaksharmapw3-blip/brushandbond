@@ -6,8 +6,9 @@ test('approval email includes the applicant name in safe HTML and plain text', (
   const email = buildEmail('approved', 'Mira Sen');
 
   assert.match(email.subject, /approved/i);
-  assert.match(email.html, /Welcome to Brush and Bond, Mira!/);
-  assert.match(email.text, /Mira/);
+  assert.match(email.html, /Hello Mira,/);
+  assert.match(email.html, /Welcome to Brush and Bond!/);
+  assert.match(email.text, /Hello Mira,/);
 });
 
 test('rejection email escapes applicant names and admin feedback in HTML', () => {
@@ -21,6 +22,6 @@ test('rejection email escapes applicant names and admin feedback in HTML', () =>
 
 test('emails fall back to a generic greeting for an empty name', () => {
   const email = buildEmail('approved', '');
-  assert.match(email.html, /Welcome to Brush and Bond, artist!/);
-  assert.match(email.text, /artist/);
+  assert.match(email.html, /Hello artist,/);
+  assert.match(email.text, /Hello artist,/);
 });

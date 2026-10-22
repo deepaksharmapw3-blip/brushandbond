@@ -32,7 +32,7 @@ console.log('\n✨ Test Template Generation:');
 
 // Test approval email template
 const testMemberName = 'John Doe';
-const testMemberEmail = 'john@example.com';
+const _testMemberEmail = 'john@example.com';
 
 console.log(`  Generating approval email for ${testMemberName}...`);
 try {

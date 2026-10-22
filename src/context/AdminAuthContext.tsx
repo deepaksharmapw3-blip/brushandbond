@@ -66,6 +66,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     let active = true;
     if (!authIdentity) {
+      // oxlint-disable-next-line react/set-state-in-effect -- Mirrors an external Supabase sign-out into React state; the active flag guards stale updates.
       setUser(null);
       setAuthError(null);
       setIsLoading(false);
