@@ -1,10 +1,10 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { corsHeaders } from './origin-policy.mjs';
+import { corsHeaders, originAllowed } from './origin-policy.mjs';
 
 const json = (body: Record<string, unknown>, status: number, _origin: string | null) =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    headers: { ...corsHeaders(_origin), 'Content-Type': 'application/json' },
   });
 
 const text = (value: unknown, max: number) =>
@@ -39,7 +39,8 @@ async function sha256(value: string) {
 
 Deno.serve(async (request) => {
   const origin = request.headers.get('origin');
-  if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  if (origin && !originAllowed(origin)) return json({ error: 'Origin not allowed.' }, 403, origin);
+  if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders(origin) });
   if (request.method !== 'POST') return json({ error: 'Method not allowed.' }, 405, origin);
 
   const rawBody = await request.text();
