@@ -1,6 +1,7 @@
 const allowedOrigins = new Set([
   'https://brushandbond.gcect.ac.in',
   'https://www.brushandbond.gcect.ac.in',
+  'https://brushandbond.vercel.app',
   'http://localhost:5173',
   'http://127.0.0.1:5173',
   'http://localhost:4173',

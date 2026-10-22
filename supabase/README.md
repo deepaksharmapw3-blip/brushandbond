@@ -19,12 +19,12 @@ RLS helper functions (`is_staff`, `is_admin`) live in the `private` schema
 listed in `config.toml` `[api].schemas`, so the helpers work inside policies but
 are not callable as RPCs.
 
-The `public-submission` function only accepts browser requests from the
-production site (`https://brushandbond.gcect.ac.in` and its `www` host) and local
-dev servers. To allow another origin, add its exact URL to the allowlist in
-`supabase/functions/public-submission/origin-policy.mjs`, then redeploy the
-function. Avoid wildcards for shared hosts like `*.netlify.app`, since anyone
-can host a site there.
+The `public-submission` and `admin-application-status` functions only accept
+browser requests from the production site (`https://brushandbond.gcect.ac.in`,
+its `www` host, and `https://brushandbond.vercel.app`) and local dev servers.
+To allow another origin, add its exact URL to both function allowlists and
+redeploy both functions. Avoid wildcards for shared hosts like `*.netlify.app`,
+since anyone can host a site there.
 
 ## Fresh project with the Supabase CLI
 
