@@ -11,6 +11,55 @@ function todayISO() {
   return new Date().toLocaleDateString('en-CA'); // yyyy-mm-dd local time
 }
 
+// Supabase stores canonical snake_case columns while the UI models use
+// camelCase (and a few domain names such as event `date` and `imageUrl`).
+// Keep database keys for older admin screens, and add normalized UI keys at
+// this boundary. Recursing also handles joined artist/event-photo rows.
+const rowAliases: Record<string, string> = {
+  event_date: 'date',
+  event_time: 'time',
+  event_name: 'title',
+  image_url: 'imageUrl',
+  cover_url: 'imageUrl',
+  banner_url: 'imageUrl',
+  avatar_url: 'avatarUrl',
+  photo_url: 'avatarUrl',
+};
+
+function normalizeRow<T>(value: T): T {
+  if (Array.isArray(value)) return value.map((item) => normalizeRow(item)) as unknown as T;
+  if (!value || typeof value !== 'object') return value;
+
+  const row = value as Record<string, unknown>;
+  const normalized: Record<string, unknown> = {};
+  for (const [key, item] of Object.entries(row)) {
+    normalized[key] = normalizeRow(item);
+  }
+  for (const [key, normalizedValue] of Object.entries(normalized)) {
+    const camelKey = key.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase());
+    if (camelKey !== key && (normalized[camelKey] == null || normalized[camelKey] === '')) {
+      normalized[camelKey] = normalizedValue;
+    }
+    const alias = rowAliases[key];
+    if (alias && (normalized[alias] == null || normalized[alias] === '')) {
+      normalized[alias] = normalizedValue;
+    }
+  }
+  return normalized as unknown as T;
+}
+
+async function getFunctionError(error: unknown): Promise<string> {
+  if (error && typeof error === 'object' && 'context' in error && error.context instanceof Response) {
+    try {
+      const body = await error.context.clone().json();
+      if (typeof body?.error === 'string') return body.error;
+    } catch {
+      // Fall back to the SDK's message when the response body is unavailable.
+    }
+  }
+  return error instanceof Error ? error.message : 'The submission could not be saved. Please try again.';
+}
+
 // ─── Auth ────────────────────────────────────────────────────────────────────
 
 export const authApi = {
@@ -85,7 +134,7 @@ export const artworkApi = {
     if (params?.search) q = q.ilike('title', `%${params.search}%`);
     const { data, error, count } = await q;
     if (error) throw new Error(error.message);
-    return { success: true, total: count ?? 0, artworks: data ?? [] };
+    return { success: true, total: count ?? 0, artworks: normalizeRow(data ?? []) };
   },
 
   getCategories: async () => {
@@ -107,7 +156,7 @@ export const artworkApi = {
       .eq('featured', true)
       .order('created_at', { ascending: false });
     if (error) throw new Error(error.message);
-    return { success: true, artworks: data ?? [] };
+    return { success: true, artworks: normalizeRow(data ?? []) };
   },
 
   getById: async (id: number | string) => {
@@ -117,7 +166,7 @@ export const artworkApi = {
       .eq('id', id)
       .single();
     if (error) throw new Error(error.message);
-    return { success: true, artwork: data };
+    return { success: true, artwork: normalizeRow(data) };
   },
 
   create: async (body: Record<string, unknown>) => {
@@ -127,7 +176,7 @@ export const artworkApi = {
       .select()
       .single();
     if (error) throw new Error(error.message);
-    return { success: true, artwork: data };
+    return { success: true, artwork: normalizeRow(data) };
   },
 
   update: async (id: number | string, body: Record<string, unknown>) => {
@@ -138,7 +187,7 @@ export const artworkApi = {
       .select()
       .single();
     if (error) throw new Error(error.message);
-    return { success: true, artwork: data };
+    return { success: true, artwork: normalizeRow(data) };
   },
 
   delete: async (id: number | string) => {
@@ -161,9 +210,11 @@ export const artworkApi = {
   like: async (id: number | string, _liked: boolean) => {
     // Get or create a stable anonymous visitor id stored in localStorage
     let visitorId = '';
+    const isUuid = (value: string) =>
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
     try {
       visitorId = localStorage.getItem('bb_visitor_id') ?? '';
-      if (!visitorId) {
+      if (!isUuid(visitorId)) {
         visitorId = crypto.randomUUID();
         localStorage.setItem('bb_visitor_id', visitorId);
       }
@@ -191,7 +242,7 @@ export const eventApi = {
     else q = q.order('event_date', { ascending: false });
     const { data, error } = await q;
     if (error) throw new Error(error.message);
-    return { success: true, events: data ?? [] };
+    return { success: true, events: normalizeRow(data ?? []) };
   },
 
   getUpcoming: async () => {
@@ -201,7 +252,7 @@ export const eventApi = {
       .gte('event_date', todayISO())
       .order('event_date', { ascending: true });
     if (error) throw new Error(error.message);
-    return { success: true, events: data ?? [] };
+    return { success: true, events: normalizeRow(data ?? []) };
   },
 
   getPast: async () => {
@@ -211,7 +262,7 @@ export const eventApi = {
       .lt('event_date', todayISO())
       .order('event_date', { ascending: false });
     if (error) throw new Error(error.message);
-    return { success: true, events: data ?? [] };
+    return { success: true, events: normalizeRow(data ?? []) };
   },
 
   getById: async (id: number | string) => {
@@ -221,26 +272,26 @@ export const eventApi = {
       .select('*, event_photos(*)')
       .eq('id', id)
       .maybeSingle();
-    if (byId.data) return { success: true, event: byId.data };
+    if (byId.data) return { success: true, event: normalizeRow(byId.data) };
     const { data, error } = await supabase
       .from('events')
       .select('*, event_photos(*)')
       .eq('slug', id)
       .single();
     if (error) throw new Error(error.message);
-    return { success: true, event: data };
+    return { success: true, event: normalizeRow(data) };
   },
 
   create: async (body: Record<string, unknown>) => {
     const { data, error } = await supabase.from('events').insert(body).select().single();
     if (error) throw new Error(error.message);
-    return { success: true, event: data };
+    return { success: true, event: normalizeRow(data) };
   },
 
   update: async (id: number | string, body: Record<string, unknown>) => {
     const { data, error } = await supabase.from('events').update(body).eq('id', id).select().single();
     if (error) throw new Error(error.message);
-    return { success: true, event: data };
+    return { success: true, event: normalizeRow(data) };
   },
 
   delete: async (id: number | string) => {
@@ -250,21 +301,17 @@ export const eventApi = {
   },
 
   register: async (id: number | string, payload: Record<string, unknown>) => {
-    const { error } = await supabase.from('event_registrations').insert({
-      event_id: id,
-      name: payload.name,
-      department: payload.department,
-      year: payload.year,
-      email: payload.email,
-      phone: payload.phone ?? null,
+    const { data, error } = await supabase.functions.invoke('public-submission', {
+      body: { type: 'event-registration', data: { ...payload, eventId: id } },
     });
-    if (error?.code === '23505') throw new Error('You are already registered for this event.');
-    if (error) throw new Error('Registration failed. Please try again.');
-    const { count } = await supabase
-      .from('event_registrations')
-      .select('*', { count: 'exact', head: true })
-      .eq('event_id', id);
-    return { success: true, message: 'Registered successfully!', registration: payload, registeredCount: count ?? 0 };
+    if (error) throw new Error(await getFunctionError(error));
+    if (!data?.success) throw new Error(data?.error ?? 'Registration failed. Please try again.');
+    return {
+      success: true,
+      message: data.message,
+      registration: { ...payload, ...data.registration },
+      registeredCount: data.registeredCount ?? 0,
+    };
   },
 
   getRegistrations: async (id: number | string) => {
@@ -274,7 +321,7 @@ export const eventApi = {
       .eq('event_id', id)
       .order('created_at', { ascending: false });
     if (error) throw new Error(error.message);
-    return { success: true, registrations: data ?? [] };
+    return { success: true, registrations: normalizeRow(data ?? []) };
   },
 };
 
@@ -286,7 +333,7 @@ export const artistApi = {
     if (search) q = q.ilike('name', `%${search}%`);
     const { data, error } = await q;
     if (error) throw new Error(error.message);
-    return { success: true, artists: data ?? [] };
+    return { success: true, artists: normalizeRow(data ?? []) };
   },
 
   getSpotlight: async () => {
@@ -297,7 +344,7 @@ export const artistApi = {
       .order('spotlight_month', { ascending: false })
       .limit(3);
     if (error) throw new Error(error.message);
-    return { success: true, artists: data ?? [] };
+    return { success: true, artists: normalizeRow(data ?? []) };
   },
 
   getById: async (id: number | string) => {
@@ -306,26 +353,26 @@ export const artistApi = {
       .select('*, artworks(*)')
       .eq('id', id)
       .maybeSingle();
-    if (byId.data) return { success: true, artist: byId.data };
+    if (byId.data) return { success: true, artist: normalizeRow(byId.data) };
     const { data, error } = await supabase
       .from('artists')
       .select('*, artworks(*)')
       .eq('slug', id)
       .single();
     if (error) throw new Error(error.message);
-    return { success: true, artist: data };
+    return { success: true, artist: normalizeRow(data) };
   },
 
   create: async (body: Record<string, unknown>) => {
     const { data, error } = await supabase.from('artists').insert(body).select().single();
     if (error) throw new Error(error.message);
-    return { success: true, artist: data };
+    return { success: true, artist: normalizeRow(data) };
   },
 
   update: async (id: number | string, body: Record<string, unknown>) => {
     const { data, error } = await supabase.from('artists').update(body).eq('id', id).select().single();
     if (error) throw new Error(error.message);
-    return { success: true, artist: data };
+    return { success: true, artist: normalizeRow(data) };
   },
 
   delete: async (id: number | string) => {
@@ -392,7 +439,7 @@ export const applicationApi = {
       .select()
       .single();
     if (error) throw new Error(error.message);
-    return { success: true, message: 'Status updated.', application: data };
+    return { success: true, message: 'Status updated.', application: normalizeRow(data) };
   },
 
   delete: async (id: number | string) => {
@@ -411,19 +458,19 @@ export const achievementApi = {
       .select('*')
       .order('achieved_on', { ascending: false });
     if (error) throw new Error(error.message);
-    return { success: true, achievements: data ?? [] };
+    return { success: true, achievements: normalizeRow(data ?? []) };
   },
 
   create: async (body: Record<string, unknown>) => {
     const { data, error } = await supabase.from('achievements').insert(body).select().single();
     if (error) throw new Error(error.message);
-    return { success: true, achievement: data };
+    return { success: true, achievement: normalizeRow(data) };
   },
 
   update: async (id: number | string, body: Record<string, unknown>) => {
     const { data, error } = await supabase.from('achievements').update(body).eq('id', id).select().single();
     if (error) throw new Error(error.message);
-    return { success: true, achievement: data };
+    return { success: true, achievement: normalizeRow(data) };
   },
 
   delete: async (id: number | string) => {
@@ -440,19 +487,22 @@ export const headlineNumberApi = {
     const { data, error } = await supabase.from('site_stats').select('key, value');
     if (error) throw new Error(error.message);
     // Map to the shape the old API returned: [{ id: key, label: key, value }]
-    const headlineNumbers = (data ?? []).map((r) => ({ id: r.key, label: r.key, value: r.value }));
+    const headlineNumbers = (data ?? []).map((r) => ({ id: r.key, label: r.key, value: String(r.value), description: '' }));
     return { success: true, headlineNumbers };
   },
 
-  update: async (id: number | string, body: { value?: number }) => {
+  update: async (id: number | string, body: { value?: string }) => {
     const { data, error } = await supabase
       .from('site_stats')
-      .update({ value: body.value })
+      .update({ value: body.value === undefined ? undefined : Number(body.value) })
       .eq('key', id)
       .select()
       .single();
     if (error) throw new Error(error.message);
-    return { success: true, headlineNumber: data };
+    return {
+      success: true,
+      headlineNumber: { id: data.key, label: data.key, value: String(data.value), description: '' },
+    };
   },
 };
 
@@ -466,19 +516,19 @@ export const teamApi = {
       .order('tier')
       .order('sort_order');
     if (error) throw new Error(error.message);
-    return { success: true, team: data ?? [] };
+    return { success: true, team: normalizeRow(data ?? []) };
   },
 
   create: async (body: Record<string, unknown>) => {
     const { data, error } = await supabase.from('team_members').insert(body).select().single();
     if (error) throw new Error(error.message);
-    return { success: true, member: data };
+    return { success: true, member: normalizeRow(data) };
   },
 
   update: async (id: number | string, body: Record<string, unknown>) => {
     const { data, error } = await supabase.from('team_members').update(body).eq('id', id).select().single();
     if (error) throw new Error(error.message);
-    return { success: true, member: data };
+    return { success: true, member: normalizeRow(data) };
   },
 
   delete: async (id: number | string) => {
@@ -498,7 +548,7 @@ export const campusArtApi = {
       .eq('category', 'campus-art')
       .order('created_at', { ascending: false });
     if (error) throw new Error(error.message);
-    return { success: true, artworks: data ?? [] };
+    return { success: true, artworks: normalizeRow(data ?? []) };
   },
 
   getById: async (id: number | string) => {
@@ -508,7 +558,7 @@ export const campusArtApi = {
       .eq('id', id)
       .single();
     if (error) throw new Error(error.message);
-    return { success: true, artwork: data };
+    return { success: true, artwork: normalizeRow(data) };
   },
 
   create: async (body: Record<string, unknown>) => {
@@ -518,13 +568,13 @@ export const campusArtApi = {
       .select()
       .single();
     if (error) throw new Error(error.message);
-    return { success: true, artwork: data };
+    return { success: true, artwork: normalizeRow(data) };
   },
 
   update: async (id: number | string, body: Record<string, unknown>) => {
     const { data, error } = await supabase.from('artworks').update(body).eq('id', id).select().single();
     if (error) throw new Error(error.message);
-    return { success: true, artwork: data };
+    return { success: true, artwork: normalizeRow(data) };
   },
 
   delete: async (id: number | string) => {
@@ -543,19 +593,19 @@ export const announcementApi = {
       .select('*')
       .order('created_at', { ascending: false });
     if (error) throw new Error(error.message);
-    return { success: true, announcements: data ?? [] };
+    return { success: true, announcements: normalizeRow(data ?? []) };
   },
 
   create: async (body: Record<string, unknown>) => {
     const { data, error } = await supabase.from('announcements').insert(body).select().single();
     if (error) throw new Error(error.message);
-    return { success: true, announcement: data };
+    return { success: true, announcement: normalizeRow(data) };
   },
 
   update: async (id: number | string, body: Record<string, unknown>) => {
     const { data, error } = await supabase.from('announcements').update(body).eq('id', id).select().single();
     if (error) throw new Error(error.message);
-    return { success: true, announcement: data };
+    return { success: true, announcement: normalizeRow(data) };
   },
 
   delete: async (id: number | string) => {
@@ -569,13 +619,12 @@ export const announcementApi = {
 
 export const contactApi = {
   submit: async (payload: { name: string; email: string; subject?: string; message: string }) => {
-    const { error } = await supabase.from('contact_messages').insert({
-      name: payload.name,
-      email: payload.email,
-      message: payload.subject ? `[${payload.subject}] ${payload.message}` : payload.message,
+    const { data, error } = await supabase.functions.invoke('public-submission', {
+      body: { type: 'contact', data: payload },
     });
-    if (error) throw new Error('Could not send your message. Please try again.');
-    return { success: true, message: 'Message sent!', contact: payload };
+    if (error) throw new Error(await getFunctionError(error));
+    if (!data?.success) throw new Error(data?.error ?? 'Could not send your message. Please try again.');
+    return { success: true, message: data.message, contact: payload };
   },
 
   getAll: async (_isRead?: boolean) => {
@@ -584,7 +633,7 @@ export const contactApi = {
       .select('*')
       .order('created_at', { ascending: false });
     if (error) throw new Error(error.message);
-    return { success: true, messages: data ?? [] };
+    return { success: true, messages: normalizeRow(data ?? []) };
   },
 
   markAsRead: async (id: number | string) => {
@@ -595,7 +644,7 @@ export const contactApi = {
       .select()
       .single();
     if (error) throw new Error(error.message);
-    return { success: true, contact: data };
+    return { success: true, contact: normalizeRow(data) };
   },
 
   delete: async (id: number | string) => {
@@ -623,6 +672,52 @@ export const statsApi = {
         totalMembers: members.count ?? 0,
         totalRegistrations: registrations.count ?? 0,
       },
+    };
+  },
+};
+
+// ─── Admin analytics (database-backed counts only) ───────────────────────────
+
+async function countRows(table: string, createdSince?: string) {
+  let query = supabase.from(table).select('id', { count: 'exact', head: true });
+  if (createdSince) query = query.gte('created_at', createdSince);
+  const { count, error } = await query;
+  if (error) throw new Error(error.message);
+  return count ?? 0;
+}
+
+async function sumPublishedArtworkLikes() {
+  // The artwork_likes table deliberately denies direct reads so visitor IDs
+  // remain private. The public artwork aggregate is safe to use for analytics.
+  const { data, error } = await supabase.from('artworks').select('likes');
+  if (error) throw new Error(error.message);
+  return (data ?? []).reduce((total, artwork) => total + (artwork.likes ?? 0), 0);
+}
+
+export const adminAnalyticsApi = {
+  getOverview: async () => {
+    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const [
+      artworks, artists, events, registrations, applications, messages, achievements, likes,
+      recentRegistrations, recentApplications, recentMessages,
+    ] = await Promise.all([
+      countRows('artworks'),
+      countRows('artists'),
+      countRows('events'),
+      countRows('event_registrations'),
+      countRows('membership_applications'),
+      countRows('contact_messages'),
+      countRows('achievements'),
+      sumPublishedArtworkLikes(),
+      countRows('event_registrations', since),
+      countRows('membership_applications', since),
+      countRows('contact_messages', since),
+    ]);
+
+    return {
+      totals: { artworks, artists, events, registrations, applications, messages, achievements, likes },
+      last30Days: { registrations: recentRegistrations, applications: recentApplications, messages: recentMessages },
+      generatedAt: new Date().toISOString(),
     };
   },
 };
