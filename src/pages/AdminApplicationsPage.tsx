@@ -52,9 +52,11 @@ export const AdminApplicationsPage: React.FC = () => {
   const handleUpdateStatus = async (id: number, status: 'APPROVED' | 'REJECTED') => {
     setActionLoadingId(id);
     try {
-      await applicationApi.updateStatus(id, status);
+      const result = await applicationApi.updateStatus(id, status);
       setToast({
-        message: `Application ${status.toLowerCase()} successfully! ${status === 'APPROVED' ? 'Member enrolled into club registry.' : ''}`,
+        message: result.notificationSent
+          ? `Application ${status.toLowerCase()} and notification email sent.`
+          : `Application ${status.toLowerCase()} successfully. The notification email was already processed.`,
         type: 'success',
       });
       fetchApplications();

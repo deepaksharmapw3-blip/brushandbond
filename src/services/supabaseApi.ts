@@ -452,14 +452,12 @@ export const applicationApi = {
   },
 
   updateStatus: async (id: number | string, status: 'APPROVED' | 'REJECTED' | 'PENDING') => {
-    const { data, error } = await supabase
-      .from('membership_applications')
-      .update({ status: status.toLowerCase() })
-      .eq('id', id)
-      .select()
-      .single();
-    if (error) throw new Error(error.message);
-    return { success: true, message: 'Status updated.', application: normalizeRow(data) };
+    const { data, error } = await supabase.functions.invoke('admin-application-status', {
+      body: { id, status },
+    });
+    if (error) throw new Error(await getFunctionError(error));
+    if (!data?.success) throw new Error(data?.error ?? 'The application status could not be updated.');
+    return data;
   },
 
   delete: async (id: number | string) => {

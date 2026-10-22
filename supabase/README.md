@@ -208,3 +208,30 @@ contact messages, membership applications, and event registrations. Admin
 records require an authenticated administrator. Artwork/event/artist/team
 images use public storage buckets by design; personal submissions are not
 publicly readable.
+
+# Membership application email notifications
+
+Admin approval and rejection actions call the `admin-application-status` Edge
+Function. The function validates the Supabase session and admin profile,
+sends the notification through Resend, then changes the application status.
+If email delivery fails, the status remains pending so an admin can safely
+retry. The function sends an idempotency key to Resend for retry protection.
+
+Before using approval/rejection in production, configure these secrets in the
+Supabase Dashboard under **Edge Functions → Secrets**:
+
+- `RESEND_API_KEY`: a Resend API key with permission to send email.
+- `RESEND_FROM_EMAIL`: a sender address on a domain verified with Resend, for
+  example `Brush and Bond <notifications@example.org>`.
+- `CLUB_EMAIL`: optional reply-to address (defaults to the club email).
+
+For local development, copy `supabase/functions/.env.example` to
+`supabase/functions/.env` and fill in test credentials. Do not commit that
+file. Supabase CLI deployments can set the production values with
+`supabase secrets set RESEND_API_KEY=... RESEND_FROM_EMAIL=...`.
+
+Deploy the function with `supabase functions deploy admin-application-status`
+and make sure the frontend build containing the function invocation is
+deployed. The function authenticates its bearer token itself, so its config
+sets `verify_jwt = false`; it still rejects requests without a valid Supabase
+session and an `admin` profile.
