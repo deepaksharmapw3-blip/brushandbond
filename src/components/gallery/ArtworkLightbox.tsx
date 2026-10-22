@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import React, { useCallback, useEffect, useRef } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -31,10 +31,21 @@ export const ArtworkLightbox: React.FC = () => {
   } = useGallery();
   const { showSuccess } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const closingArtworkId = useRef<string | null>(null);
 
   // Sync with URL query parameter ?artwork=art-xxx or ?art=art-xxx
   useEffect(() => {
     const artworkQueryId = searchParams.get('artwork') || searchParams.get('art');
+    if (!artworkQueryId) {
+      closingArtworkId.current = null;
+      return;
+    }
+
+    // Closing also changes the URL. Ignore the previous query value while that
+    // router update is in flight so it cannot immediately reopen the modal.
+    if (closingArtworkId.current === artworkQueryId) return;
+
     if (artworkQueryId && (!activeArtworkModal || activeArtworkModal.id !== artworkQueryId)) {
       const match = artworks.find(
         (a) => a.id === artworkQueryId || a.accessionNo.toLowerCase() === artworkQueryId.toLowerCase()
@@ -59,12 +70,21 @@ export const ArtworkLightbox: React.FC = () => {
 
   // Handle closing modal and removing URL param
   const handleClose = useCallback(() => {
+    if (activeArtworkModal) closingArtworkId.current = activeArtworkModal.id;
     const nextParams = new URLSearchParams(searchParams);
     nextParams.delete('artwork');
     nextParams.delete('art');
     setSearchParams(nextParams, { replace: true });
     closeArtworkModal();
-  }, [searchParams, setSearchParams, closeArtworkModal]);
+  }, [activeArtworkModal, searchParams, setSearchParams, closeArtworkModal]);
+
+  const handleOpenFullPage = () => {
+    // Navigate directly so clearing the modal query and changing routes happen
+    // as one router transition instead of competing updates.
+    closingArtworkId.current = artwork.id;
+    closeArtworkModal();
+    navigate(`/gallery/${artwork.id}`);
+  };
 
   // Keyboard navigation support: Left / Right / Escape
   useEffect(() => {
@@ -371,15 +391,15 @@ export const ArtworkLightbox: React.FC = () => {
                   <span>{isLiked ? 'Saved' : `Like (${artwork.likes})`}</span>
                 </button>
 
-                <Link
-                  to={`/gallery/${artwork.id}`}
-                  onClick={handleClose}
+                <button
+                  type="button"
+                  onClick={handleOpenFullPage}
                   className="btn-secondary min-h-[42px] py-2"
                   title="Open dedicated standalone page"
                 >
                   <Maximize2 className="w-4 h-4" />
                   <span>Full page</span>
-                </Link>
+                </button>
               </div>
             </div>
           </div>
