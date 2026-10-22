@@ -729,41 +729,73 @@ export async function uploadImage(
   file: File,
   folder?: string,
 ): Promise<{ publicUrl: string; width: number; height: number }> {
-  const maxBytes = 1 * 1024 * 1024;
+  const maxInputBytes = 20 * 1024 * 1024;
   const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
   if (!allowedTypes.has(file.type)) {
     throw new Error('Choose a JPEG, PNG, or WebP image.');
   }
-  if (file.size === 0 || file.size > maxBytes) {
-    throw new Error('Images must be 1 MB or smaller.');
+  if (file.size === 0 || file.size > maxInputBytes) {
+    throw new Error('Choose an image smaller than 20 MB to upload.');
   }
 
-  // Decode before uploading so corrupt files and extreme dimensions never
+  // Decode and optimize before upload so corrupt/oversized images do not
   // consume Storage quota. Always release the temporary browser object URL.
   const objectUrl = URL.createObjectURL(file);
-  const dims = await new Promise<{ width: number; height: number }>((resolve, reject) => {
+  const decoded = await new Promise<{ image: HTMLImageElement; width: number; height: number }>((resolve, reject) => {
     const img = new Image();
-    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    img.onload = () => resolve({ image: img, width: img.naturalWidth, height: img.naturalHeight });
     img.onerror = () => reject(new Error('The selected file is not a valid image.'));
     img.src = objectUrl;
   }).finally(() => URL.revokeObjectURL(objectUrl));
-  if (!dims.width || !dims.height || dims.width > 10_000 || dims.height > 10_000 || dims.width * dims.height > 40_000_000) {
-    throw new Error('Image dimensions are too large. Use an image under 40 megapixels.');
+  if (!decoded.width || !decoded.height || decoded.width > 10_000 || decoded.height > 10_000 || decoded.width * decoded.height > 24_000_000) {
+    throw new Error('Image dimensions are too large. Use an image under 24 megapixels.');
   }
 
-  const ext = file.type === 'image/jpeg' ? 'jpg' : file.type === 'image/png' ? 'png' : 'webp';
+  const targetBytes = 350 * 1024;
+  const hardLimitBytes = 1 * 1024 * 1024;
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('This browser cannot process the selected image.');
+
+  let maxDimension = 2000;
+  let optimized: Blob | null = null;
+  let outputWidth = 0;
+  let outputHeight = 0;
+  while (maxDimension >= 1000) {
+    const scale = Math.min(1, maxDimension / Math.max(decoded.width, decoded.height));
+    canvas.width = Math.max(1, Math.round(decoded.width * scale));
+    canvas.height = Math.max(1, Math.round(decoded.height * scale));
+    outputWidth = canvas.width;
+    outputHeight = canvas.height;
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(decoded.image, 0, 0, canvas.width, canvas.height);
+
+    for (const quality of [0.86, 0.8, 0.74, 0.68]) {
+      optimized = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/webp', quality));
+      if (optimized && optimized.size <= targetBytes) break;
+    }
+    if (optimized && optimized.size <= targetBytes) break;
+    maxDimension -= 250;
+  }
+  canvas.width = 0;
+  canvas.height = 0;
+
+  if (!optimized || optimized.size > hardLimitBytes) {
+    throw new Error('This image could not be compressed below 1 MB. Choose a smaller image.');
+  }
+
   const path = folder
-    ? `${folder}/${crypto.randomUUID()}.${ext}`
-    : `${crypto.randomUUID()}.${ext}`;
+    ? `${folder}/${crypto.randomUUID()}.webp`
+    : `${crypto.randomUUID()}.webp`;
 
   const { error: upError } = await supabase.storage
     .from(bucket)
-    .upload(path, file, { contentType: file.type, cacheControl: '31536000' });
+    .upload(path, optimized, { contentType: 'image/webp', cacheControl: '31536000' });
   if (upError) throw new Error(upError.message);
 
   const { data } = supabase.storage.from(bucket).getPublicUrl(path);
 
-  return { publicUrl: data.publicUrl, ...dims };
+  return { publicUrl: data.publicUrl, width: outputWidth, height: outputHeight };
 }
 
 // Re-export ApiRequestError shape so existing catch blocks still work
