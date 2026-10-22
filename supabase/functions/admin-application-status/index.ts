@@ -60,14 +60,15 @@ Deno.serve(async (request) => {
     }
   }
   const secretKey = getSecretKey();
-  const resendApiKey = Deno.env.get('RESEND_API_KEY');
-  const fromEmail = Deno.env.get('RESEND_FROM_EMAIL');
-
   if (!supabaseUrl || !publishableKey || !secretKey) {
     return json({ error: 'Supabase function credentials are not configured.' }, 503, origin);
   }
-  if (!resendApiKey || !fromEmail) {
-    return json({ error: 'Email delivery is not configured. Set RESEND_API_KEY and RESEND_FROM_EMAIL in Supabase secrets.' }, 503, origin);
+  const gmailRelayUrl = Deno.env.get('GMAIL_AUTOMATION_URL');
+  const gmailRelaySecret = Deno.env.get('GMAIL_AUTOMATION_SECRET');
+  const resendApiKey = Deno.env.get('RESEND_API_KEY');
+  const resendFromEmail = Deno.env.get('RESEND_FROM_EMAIL');
+  if (!(gmailRelayUrl && gmailRelaySecret) && !(resendApiKey && resendFromEmail)) {
+    return json({ error: 'Email delivery is not configured. Follow supabase/email-relay/SETUP.md to configure the Gmail automation.' }, 503, origin);
   }
 
   let parsedBody: unknown;
@@ -139,34 +140,67 @@ Deno.serve(async (request) => {
 
   const applicantName = text(application.full_name || application.name, 100);
   const email = buildEmail(status as 'approved' | 'rejected', applicantName, adminNotes);
-  let resendMessageId = '';
+  let messageId = '';
+  let alreadySent = false;
   try {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${resendApiKey}`,
-        'Content-Type': 'application/json',
-        'Idempotency-Key': `membership-${id}-${status}`,
-      },
-      body: JSON.stringify({
-        from: fromEmail,
-        to: [recipient],
-        reply_to: Deno.env.get('CLUB_EMAIL') ?? 'brushandbondgcect22@gmail.com',
-        subject: email.subject,
-        html: email.html,
-        text: email.text,
-      }),
-      signal: AbortSignal.timeout(10_000),
-    });
-    const providerResult = await response.json().catch(() => ({}));
-    if (!response.ok || typeof providerResult.id !== 'string') {
-      console.error('Email provider rejected notification:', response.status, providerResult.message ?? 'Unknown error');
-      return json({ error: 'The email could not be sent. The application status was not changed; you can safely retry.' }, 502, origin);
+    const replyTo = text(Deno.env.get('CLUB_EMAIL') || Deno.env.get('GMAIL_SENDER_EMAIL') || 'brushandbondgcect22@gmail.com', 254).toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(replyTo)) {
+      return json({ error: 'Set CLUB_EMAIL or GMAIL_SENDER_EMAIL to a valid reply address.' }, 503, origin);
     }
-    resendMessageId = providerResult.id;
+    if (gmailRelayUrl && gmailRelaySecret) {
+      const relayUrl = new URL(gmailRelayUrl);
+      if (relayUrl.protocol !== 'https:' || relayUrl.hostname !== 'script.google.com' || !relayUrl.pathname.startsWith('/macros/s/')) {
+        return json({ error: 'GMAIL_AUTOMATION_URL must be the HTTPS Google Apps Script Web App URL.' }, 503, origin);
+      }
+      const response = await fetch(relayUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          secret: gmailRelaySecret,
+          idempotencyKey: `membership-${id}-${status}`,
+          to: recipient,
+          replyTo,
+          subject: email.subject,
+          html: email.html,
+          text: email.text,
+        }),
+        signal: AbortSignal.timeout(20_000),
+      });
+      const relayResult = await response.json().catch(() => ({}));
+      if (!response.ok || relayResult.ok !== true) {
+        console.error('Gmail automation rejected notification:', response.status, relayResult.error ?? 'Unknown error');
+        return json({ error: 'Gmail could not accept the notification. The application status was not changed.' }, 502, origin);
+      }
+      alreadySent = relayResult.alreadySent === true;
+    } else {
+      // Keep an existing Resend configuration working until Gmail setup is complete.
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${resendApiKey}`,
+          'Content-Type': 'application/json',
+          'Idempotency-Key': `membership-${id}-${status}`,
+        },
+        body: JSON.stringify({
+          from: resendFromEmail,
+          to: [recipient],
+          reply_to: replyTo,
+          subject: email.subject,
+          html: email.html,
+          text: email.text,
+        }),
+        signal: AbortSignal.timeout(10_000),
+      });
+      const providerResult = await response.json().catch(() => ({}));
+      if (!response.ok || typeof providerResult.id !== 'string') {
+        console.error('Resend rejected notification:', response.status, providerResult.message ?? 'Unknown error');
+        return json({ error: 'The email could not be sent. The application status was not changed; you can retry.' }, 502, origin);
+      }
+      messageId = providerResult.id;
+    }
   } catch (error) {
-    console.error('Email provider request failed:', error instanceof Error ? error.message : 'Unknown error');
-    return json({ error: 'The email service could not be reached. The application status was not changed; you can safely retry.' }, 502, origin);
+    console.error('Email notification failed:', error instanceof Error ? error.message : 'Unknown error');
+    return json({ error: 'The email service could not confirm delivery. The application status was not changed. The Gmail relay deduplicates retries; check the Gmail Sent folder if the request timed out.' }, 502, origin);
   }
 
   const { data: updated, error: updateError } = await admin
@@ -178,8 +212,8 @@ Deno.serve(async (request) => {
     .maybeSingle();
   if (updateError || !updated) {
     console.error('Email sent but application status update failed:', updateError?.message ?? 'The application was reviewed concurrently.');
-    return json({ error: 'The email was sent, but the application status could not be saved. Retry the action; the email provider will deduplicate it.' }, 409, origin);
+    return json({ error: 'The email was sent, but the application status could not be saved. Retry the action; the mail provider will deduplicate it.' }, 409, origin);
   }
 
-  return json({ success: true, notificationSent: true, messageId: resendMessageId, application: updated }, 200, origin);
+  return json({ success: true, notificationSent: true, alreadySent, messageId: messageId || undefined, application: updated }, 200, origin);
 });
