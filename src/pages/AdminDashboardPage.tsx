@@ -24,10 +24,9 @@ export const AdminDashboardPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
     try {
       setOverview(await adminAnalyticsApi.getOverview());
+      setError(null);
     } catch (cause) {
       setOverview(null);
       setError(cause instanceof Error ? cause.message : 'Could not load dashboard data.');
@@ -36,7 +35,16 @@ export const AdminDashboardPage: React.FC = () => {
     }
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  const refresh = () => {
+    setIsLoading(true);
+    setError(null);
+    void load();
+  };
+
+  useEffect(() => {
+    const task = window.setTimeout(() => { void load(); }, 0);
+    return () => window.clearTimeout(task);
+  }, [load]);
 
   return (
     <ProtectedAdminRoute>
@@ -47,7 +55,7 @@ export const AdminDashboardPage: React.FC = () => {
             <h1 className="text-2xl font-bold text-[var(--ink)]">Dashboard</h1>
             <p className="mt-1 text-sm text-[var(--muted)]">Live totals from Supabase.</p>
           </div>
-          <button type="button" onClick={() => void load()} disabled={isLoading} className="btn-secondary">
+          <button type="button" onClick={refresh} disabled={isLoading} className="btn-secondary">
             <RefreshCw className="h-4 w-4" /> Refresh
           </button>
         </div>

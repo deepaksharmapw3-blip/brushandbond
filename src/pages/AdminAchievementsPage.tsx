@@ -38,11 +38,10 @@ export const AdminAchievementsPage: React.FC = () => {
   const [notice, setNotice] = useState<string | null>(null);
 
   const loadAchievements = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
     try {
       const result = await achievementApi.getAll();
       setItems(result.achievements as AchievementItem[]);
+      setError(null);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not load achievements.');
     } finally {
@@ -50,7 +49,16 @@ export const AdminAchievementsPage: React.FC = () => {
     }
   }, []);
 
-  useEffect(() => { void loadAchievements(); }, [loadAchievements]);
+  const refreshAchievements = () => {
+    setIsLoading(true);
+    setError(null);
+    void loadAchievements();
+  };
+
+  useEffect(() => {
+    const task = window.setTimeout(() => { void loadAchievements(); }, 0);
+    return () => window.clearTimeout(task);
+  }, [loadAchievements]);
 
   const startCreate = () => {
     setEditingId(null);
@@ -125,7 +133,7 @@ export const AdminAchievementsPage: React.FC = () => {
             <p className="mt-1 text-sm text-[var(--muted)]">Create, edit, and remove published achievement records.</p>
           </div>
           <div className="flex gap-2">
-            <button type="button" onClick={() => void loadAchievements()} className="btn-secondary" aria-label="Refresh achievements"><RefreshCw className="h-4 w-4" /> Refresh</button>
+            <button type="button" onClick={refreshAchievements} className="btn-secondary" aria-label="Refresh achievements"><RefreshCw className="h-4 w-4" /> Refresh</button>
             <button type="button" onClick={startCreate} className="btn-primary"><Plus className="h-4 w-4" /> Add achievement</button>
           </div>
         </div>
