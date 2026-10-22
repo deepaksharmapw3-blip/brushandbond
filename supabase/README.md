@@ -40,7 +40,10 @@ since anyone can host a site there.
    `SUPABASE_SERVICE_ROLE_KEY` function secrets. Public contact, membership,
    and event-registration inserts are accepted only through this endpoint;
    it applies persistent per-IP limits (5 contact messages per 15 minutes,
-   3 membership applications per hour, and 8 event registrations per 15 minutes).
+   100 membership applications per hour, and 100 event registrations per 15 minutes).
+   The higher membership and event limits accommodate legitimate submissions
+   from campus networks where many people share one public IP; the event's
+   database capacity guard remains the final limit on seats.
 6. Create the admin account yourself in the dashboard under
    **Authentication → Users**.
 7. Copy that user's UUID, then provision the explicit admin profile in the SQL

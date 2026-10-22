@@ -73,8 +73,11 @@ Deno.serve(async (request) => {
 
   const limits: Record<string, { max: number; seconds: number }> = {
     contact: { max: 5, seconds: 15 * 60 },
-    membership: { max: 3, seconds: 60 * 60 },
-    'event-registration': { max: 8, seconds: 15 * 60 },
+    // Membership and event forms can be submitted by a large campus group
+    // behind one shared NAT address. Match the database RPC's hard cap so a
+    // single shared IP can submit for up to 100 people in the relevant window.
+    membership: { max: 100, seconds: 60 * 60 },
+    'event-registration': { max: 100, seconds: 15 * 60 },
   };
   const type = typeof body.type === 'string' ? body.type : '';
   const policy = limits[type];
