@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight, Mail, MapPin } from 'lucide-react';
 import { InstagramIcon } from '../common/Icons';
+import { CLUB_EMAIL } from '../../lib/contact';
 
 export const Footer: React.FC = () => {
   return (
@@ -36,12 +37,12 @@ export const Footer: React.FC = () => {
               <span className="text-[var(--line)]">•</span>
 
               <a
-                href="mailto:brushandbond.gcect@gmail.com"
+                href={`mailto:${CLUB_EMAIL}`}
                 className="inline-flex items-center gap-1.5 text-xs font-mono text-[var(--muted)] hover:text-[var(--accent)] transition-colors"
                 aria-label="Email Brush and Bond"
               >
                 <Mail className="w-3.5 h-3.5" />
-                <span>brushandbond.gcect@gmail.com</span>
+                <span>{CLUB_EMAIL}</span>
               </a>
             </div>
           </div>
@@ -135,7 +136,7 @@ export const Footer: React.FC = () => {
                 </li>
                 <li>
                   <a
-                    href="mailto:brushandbond.gcect@gmail.com"
+                    href={`mailto:${CLUB_EMAIL}`}
                     className="hover:text-[var(--accent)] transition-colors block truncate"
                   >
                     Email
