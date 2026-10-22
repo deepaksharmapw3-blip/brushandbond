@@ -2,7 +2,7 @@
  * Membership Application Service
  * Brush and Bond — GCECT Art Club
  * 
- * Membership application submission through the persistent server API.
+ * Membership application submission through the Supabase public-submission Edge Function.
  */
 
 export type AreaOfInterest =
@@ -42,7 +42,7 @@ export interface MembershipApplicationResult {
 /**
  * Submits a membership application to the Brush and Bond registry.
  *
- * The server validates the submission and commits it to SQLite before returning success.
+ * The Edge Function and database enforce submission validation and rate limits.
  */
 export async function submitMembershipApplication(
   data: MembershipApplicationData
@@ -77,7 +77,11 @@ export async function submitMembershipApplication(
     portfolioUrl: data.portfolioUrl?.trim(),
     whyJoin: data.reasonToJoin.trim(),
   });
-  const saved = result.application;
+  const saved = result.application as {
+    fullName: string; department: string; academicYear: string; email: string;
+    artInterests: string; portfolioUrl?: string; whyJoin: string; id: string;
+    submittedAt: string; status: StoredMembershipApplication['status'];
+  };
   const record: StoredMembershipApplication = {
     name: saved.fullName,
     department: saved.department,

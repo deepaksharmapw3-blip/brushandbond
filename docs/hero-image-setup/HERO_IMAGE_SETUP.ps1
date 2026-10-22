@@ -10,6 +10,11 @@ param(
     [string]$ImagePath = "public/images/hero-building.jpg"
 )
 
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
+if (-not [System.IO.Path]::IsPathRooted($ImagePath)) {
+    $ImagePath = Join-Path $repoRoot $ImagePath
+}
+
 Write-Host "🎨 Brush and Bond Hero Image Optimization" -ForegroundColor Cyan
 Write-Host "=========================================`n"
 

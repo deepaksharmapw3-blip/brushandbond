@@ -4,7 +4,7 @@ import { dirname, extname, isAbsolute, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash, randomBytes, scryptSync, timingSafeEqual, randomUUID } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
-import { mockArtworks, mockEvents, mockArtists, mockAchievements, mockTeamMembers, mockHeadlineNumbers } from '../src/data/mockData.ts';
+import { getReadiness } from './health.js';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const dataDir = resolve(root, 'data');
@@ -70,33 +70,6 @@ db.exec(`
 `);
 if (!db.prepare('PRAGMA table_info(registrations)').all().some((column) => column.name === 'visitor_id')) {
   db.exec('ALTER TABLE registrations ADD COLUMN visitor_id TEXT');
-}
-
-const seedCollections = { artworks: mockArtworks, events: mockEvents, artists: mockArtists, achievements: mockAchievements, headlineNumbers: mockHeadlineNumbers, team: mockTeamMembers };
-const wasSeeded = db.prepare('SELECT value FROM metadata WHERE key = ?');
-const rowCount = db.prepare('SELECT count(*) AS count FROM records WHERE collection = ?');
-const addSeed = db.prepare('INSERT INTO records (id, collection, data, created_at, updated_at) VALUES (?, ?, ?, ?, ?)');
-const allowSampleContent = process.env.SEED_DEMO_DATA === 'true';
-if (allowSampleContent) {
-  for (const [collection, rows] of Object.entries(seedCollections)) {
-    const seedKey = `seeded:${collection}`;
-    if (wasSeeded.get(seedKey)) continue;
-    // Migrate the previous one-flag seed marker without restoring records an administrator removed.
-    if (wasSeeded.get('seeded') && rowCount.get(collection).count > 0) {
-      db.prepare('INSERT INTO metadata (key, value) VALUES (?, ?)').run(seedKey, '1');
-      continue;
-    }
-    const now = new Date().toISOString();
-    db.exec('BEGIN IMMEDIATE');
-    try {
-      for (const row of rows) addSeed.run(row.id, collection, JSON.stringify(collection === 'artworks' ? { ...row, _likesBaseline: Number(row.likes || 0) } : row), now, now);
-      db.prepare('INSERT INTO metadata (key, value) VALUES (?, ?)').run(seedKey, '1');
-      db.exec('COMMIT');
-    } catch (error) {
-      db.exec('ROLLBACK');
-      throw error;
-    }
-  }
 }
 
 const rateLimitBuckets = new Map();
@@ -568,13 +541,24 @@ async function handler(req, res) {
   const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
   if ((url.pathname === '/api' || url.pathname === '/api/health') && req.method === 'GET') {
     const monitoring = getMonitoringSnapshot();
-    const unhealthyBackupStates = ['failed', 'stale', 'no-backup-recorded', 'status-file-invalid'];
-    const healthy = monitoring.disk.status !== 'critical'
-      && !unhealthyBackupStates.includes(monitoring.backup.status)
-      && !(isProduction && !monitoring.backup.configured);
-    return send(res, healthy ? 200 : 503, {
-      success: healthy,
-      status: healthy ? 'ok' : 'degraded',
+    const readiness = getReadiness(monitoring, isProduction);
+    return send(res, 200, {
+      success: true,
+      status: 'ok',
+      service: 'Brush and Bond API',
+      storage: 'sqlite',
+      health: '/api/health',
+      readiness: { ...readiness, endpoint: '/api/ready' },
+      disk: { status: monitoring.disk.status, database: monitoring.disk.database.status, uploads: monitoring.disk.uploads.status },
+      backup: { status: monitoring.backup.status, completedAt: monitoring.backup.completedAt || null },
+    });
+  }
+  if (url.pathname === '/api/ready' && req.method === 'GET') {
+    const monitoring = getMonitoringSnapshot();
+    const readiness = getReadiness(monitoring, isProduction);
+    return send(res, readiness.ready ? 200 : 503, {
+      success: readiness.ready,
+      status: readiness.status,
       service: 'Brush and Bond API',
       storage: 'sqlite',
       health: '/api/health',

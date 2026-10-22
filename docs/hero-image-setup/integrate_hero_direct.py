@@ -45,7 +45,7 @@ def optimize_image(input_path, output_path, width, quality):
         return None
 
 def main():
-    project_root = Path(__file__).parent
+    project_root = Path(__file__).resolve().parents[2]
     images_dir = project_root / "public" / "images"
     images_dir.mkdir(parents=True, exist_ok=True)
     

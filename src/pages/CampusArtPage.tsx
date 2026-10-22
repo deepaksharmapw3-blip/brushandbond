@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import {
   Compass,
@@ -35,9 +35,10 @@ export const CampusArtPage: React.FC = () => {
 
   // Active group filter from URL or state
   const groupParam = searchParams.get('group') as CampusArtGroupId | null;
-  const [activeGroupFilter, setActiveGroupFilter] = useState<string>(
-    groupParam && CAMPUS_ART_GROUPS.some((g) => g.id === groupParam) ? groupParam : 'all'
-  );
+  const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>('all');
+  const activeGroupFilter = groupParam && CAMPUS_ART_GROUPS.some((g) => g.id === groupParam)
+    ? groupParam
+    : selectedGroupFilter;
 
   // Search query & view mode
   const [searchQuery, setSearchQuery] = useState('');
@@ -56,15 +57,8 @@ export const CampusArtPage: React.FC = () => {
   // Copied link state
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // Sync with searchParams
-  useEffect(() => {
-    if (groupParam && CAMPUS_ART_GROUPS.some((g) => g.id === groupParam)) {
-      setActiveGroupFilter(groupParam);
-    }
-  }, [groupParam]);
-
   const handleGroupSelect = (groupId: string) => {
-    setActiveGroupFilter(groupId);
+    setSelectedGroupFilter(groupId);
     if (groupId === 'all') {
       searchParams.delete('group');
       setSearchParams(searchParams);
@@ -547,7 +541,7 @@ export const CampusArtPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    setActiveGroupFilter('all');
+                    setSelectedGroupFilter('all');
                     setSearchQuery('');
                   }}
                   className="btn-secondary"

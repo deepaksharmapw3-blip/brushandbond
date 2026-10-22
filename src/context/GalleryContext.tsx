@@ -72,7 +72,7 @@ export const GalleryProvider: React.FC<{ children: React.ReactNode }> = ({ child
       try {
         const { artworkApi, eventApi, artistApi, achievementApi, headlineNumberApi } = await import('../services/api');
         const [artworkResult, eventResult, artistResult, achievementResult, headlineResult] = await Promise.all([
-          artworkApi.getAll(), eventApi.getAll(), artistApi.getAll(), achievementApi.getAll(), headlineNumberApi.getAll(),
+          artworkApi.getAll({ limit: 500 }), eventApi.getAll(), artistApi.getAll(), achievementApi.getAll(), headlineNumberApi.getAll(),
         ]);
         if (!active) return;
         setArtworks((artworkResult.artworks || []).map((art) => ({
@@ -277,6 +277,7 @@ export const GalleryProvider: React.FC<{ children: React.ReactNode }> = ({ child
   );
 };
 
+// oxlint-disable-next-line react/only-export-components -- Keep the gallery provider and its hook as one context API.
 export const useGallery = () => {
   const context = useContext(GalleryContext);
   if (!context) {

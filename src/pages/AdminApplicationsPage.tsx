@@ -9,8 +9,6 @@ import {
   ExternalLink,
   Mail,
   Phone,
-  FileText,
-  Clock,
   Sparkles,
 } from 'lucide-react';
 import { SEO } from '../components/common/SEO';
@@ -22,6 +20,7 @@ import { applicationApi } from '../services/api';
 export const AdminApplicationsPage: React.FC = () => {
   const [applications, setApplications] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -31,6 +30,7 @@ export const AdminApplicationsPage: React.FC = () => {
 
   const fetchApplications = async () => {
     setIsLoading(true);
+    setLoadError(null);
     try {
       const res = await applicationApi.getAll();
       if (res.success && Array.isArray(res.applications)) {
@@ -38,21 +38,25 @@ export const AdminApplicationsPage: React.FC = () => {
       }
     } catch (err: any) {
       console.warn('Failed to load applications:', err.message);
+      setLoadError(err.message || 'Could not load membership applications.');
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
+    // oxlint-disable-next-line react/set-state-in-effect -- This starts an async read; state changes follow the API response.
     fetchApplications();
   }, []);
 
   const handleUpdateStatus = async (id: number, status: 'APPROVED' | 'REJECTED') => {
     setActionLoadingId(id);
     try {
-      await applicationApi.updateStatus(id, status);
+      const result = await applicationApi.updateStatus(id, status);
       setToast({
-        message: `Application ${status.toLowerCase()} successfully! ${status === 'APPROVED' ? 'Member enrolled into club registry.' : ''}`,
+        message: result.notificationSent
+          ? `Application ${status.toLowerCase()} and notification email sent.`
+          : `Application ${status.toLowerCase()} successfully. The notification email was already processed.`,
         type: 'success',
       });
       fetchApplications();
@@ -77,11 +81,9 @@ export const AdminApplicationsPage: React.FC = () => {
   };
 
   const filteredApplications = applications.filter((app) => {
-    const matchesSearch =
-      app.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      app.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      app.department.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      app.rollNumber.toLowerCase().includes(searchQuery.toLowerCase());
+    const query = searchQuery.trim().toLowerCase();
+    const matchesSearch = [app.fullName, app.name, app.email, app.department, app.rollNumber, app.roll_number]
+      .some((value) => String(value ?? '').toLowerCase().includes(query));
     const matchesStatus = statusFilter === 'ALL' || app.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -138,7 +140,19 @@ export const AdminApplicationsPage: React.FC = () => {
         </div>
 
         {/* Applications List */}
-        {filteredApplications.length > 0 ? (
+        {loadError ? (
+          <div role="alert" className="rounded-xl border border-red-300 bg-red-50 p-5 text-sm text-red-800">
+            <p className="font-semibold">Could not load membership applications.</p>
+            <p className="mt-1 break-words">{loadError}</p>
+            <button
+              type="button"
+              onClick={() => void fetchApplications()}
+              className="mt-3 rounded-lg bg-red-700 px-3 py-1.5 font-semibold text-white hover:bg-red-800"
+            >
+              Try again
+            </button>
+          </div>
+        ) : filteredApplications.length > 0 ? (
           <div className="space-y-4">
             {filteredApplications.map((app) => (
               <motion.div
@@ -151,10 +165,12 @@ export const AdminApplicationsPage: React.FC = () => {
                   {/* Left: Applicant details */}
                   <div className="space-y-2 flex-1">
                     <div className="flex items-center gap-3 flex-wrap">
-                      <h3 className="font-bold text-base text-[var(--ink)]">{app.fullName}</h3>
-                      <span className="text-xs px-2 py-0.5 rounded-md bg-[var(--paper)] border border-[var(--line)] text-[var(--muted)] font-mono">
-                        {app.rollNumber}
-                      </span>
+                      <h3 className="font-bold text-base text-[var(--ink)]">{app.fullName || app.name || 'Name not provided'}</h3>
+                      {(app.rollNumber || app.roll_number) && (
+                        <span className="text-xs px-2 py-0.5 rounded-md bg-[var(--paper)] border border-[var(--line)] text-[var(--muted)] font-mono">
+                          {app.rollNumber || app.roll_number}
+                        </span>
+                      )}
                       <AdminBadge
                         variant={
                           app.status === 'APPROVED'
@@ -169,28 +185,30 @@ export const AdminApplicationsPage: React.FC = () => {
                     </div>
 
                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--muted)]">
-                      <span>🏛️ {app.department} ({app.academicYear})</span>
+                      <span>🏛️ {app.department || 'Department not provided'}{app.academicYear || app.year ? ` (${app.academicYear || app.year})` : ''}</span>
                       <span className="flex items-center gap-1">
                         <Mail className="w-3.5 h-3.5" />
                         <a href={`mailto:${app.email}`} className="hover:underline text-[var(--ink)]">
                           {app.email}
                         </a>
                       </span>
-                      <span className="flex items-center gap-1">
-                        <Phone className="w-3.5 h-3.5" />
-                        <span>{app.phone}</span>
-                      </span>
+                      {app.phone && (
+                        <span className="flex items-center gap-1">
+                          <Phone className="w-3.5 h-3.5" />
+                          <span>{app.phone}</span>
+                        </span>
+                      )}
                     </div>
 
                     {/* Art Interests & Statement */}
                     <div className="mt-3 p-3 bg-[var(--paper)] rounded-lg text-xs space-y-1.5 border border-[var(--line)]">
                       <p className="font-semibold text-[var(--ink)] flex items-center gap-1.5">
                         <Sparkles className="w-3.5 h-3.5 text-[var(--accent)]" />
-                        Wings of Interest: <span className="font-normal text-[var(--muted)]">{app.artInterests}</span>
+                        Wings of Interest: <span className="font-normal text-[var(--muted)]">{app.artInterests || app.interest || 'Not provided'}</span>
                       </p>
                       <p className="text-[var(--ink)] leading-relaxed">
                         <strong className="text-[var(--muted)]">Why join: </strong>
-                        {app.whyJoin}
+                        {app.whyJoin || app.reason || 'Not provided'}
                       </p>
                       {app.portfolioUrl && (
                         <div className="pt-1">
@@ -215,7 +233,7 @@ export const AdminApplicationsPage: React.FC = () => {
                     </span>
 
                     <div className="flex items-center gap-1.5">
-                      {app.status !== 'APPROVED' && (
+                      {app.status === 'PENDING' && (
                         <button
                           onClick={() => handleUpdateStatus(app.id, 'APPROVED')}
                           disabled={actionLoadingId === app.id}
@@ -227,7 +245,7 @@ export const AdminApplicationsPage: React.FC = () => {
                         </button>
                       )}
 
-                      {app.status !== 'REJECTED' && (
+                      {app.status === 'PENDING' && (
                         <button
                           onClick={() => handleUpdateStatus(app.id, 'REJECTED')}
                           disabled={actionLoadingId === app.id}

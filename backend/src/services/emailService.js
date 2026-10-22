@@ -2,10 +2,6 @@
  * Email Service
  * Handles all email operations for Brush and Bond
  * Supports approval notifications, rejection notices, and other communications
- * 
- * Supports multiple transport modes:
- * 1. Production SMTP (Gmail, SendGrid, AWS SES, etc.)
- * 2. Ethereal (Free test service - no setup needed)
  */
 
 const nodemailer = require('nodemailer');
@@ -13,81 +9,37 @@ const nodemailer = require('nodemailer');
 class EmailService {
   constructor() {
     this.transporter = null;
-    this.testMode = false;
     this.initializeTransporter();
   }
 
   /**
    * Initialize email transporter with credentials from environment
-   * Falls back to Ethereal test service if production config is missing
    */
-  async initializeTransporter() {
-    // Check for production SMTP configuration
+  initializeTransporter() {
+    // Check required environment variables
     const requiredEnvs = ['EMAIL_HOST', 'EMAIL_PORT', 'EMAIL_USER', 'EMAIL_PASSWORD', 'EMAIL_FROM'];
     const missing = requiredEnvs.filter(env => !process.env[env]);
 
-    if (missing.length === 0) {
-      // Production SMTP is configured
-      try {
-        this.transporter = nodemailer.createTransport({
-          host: process.env.EMAIL_HOST,
-          port: parseInt(process.env.EMAIL_PORT, 10),
-          secure: process.env.EMAIL_SECURE === 'true',
-          auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASSWORD,
-          },
-        });
-
-        // Verify connection
-        this.transporter.verify((error, success) => {
-          if (error) {
-            console.warn('⚠️  SMTP Connection failed. Falling back to test service.');
-            console.warn('   Error:', error.message);
-            console.warn('   Using Ethereal (test service) instead.');
-            this.initializeEtherealTransport();
-          } else {
-            console.log('✅ Email service initialized (Production SMTP)');
-          }
-        });
-        return;
-      } catch (error) {
-        console.warn('⚠️  Failed to initialize production email:', error.message);
-      }
+    if (missing.length > 0) {
+      console.warn(`⚠️  Email service disabled. Missing config: ${missing.join(', ')}`);
+      console.warn('   Set these in .env to enable email notifications');
+      return;
     }
 
-    // If production config is missing or failed, use Ethereal test service
-    console.log('ℹ️  Production email not configured.');
-    console.log('   Initializing test email service (Ethereal)...');
-    await this.initializeEtherealTransport();
-  }
-
-  /**
-   * Initialize Ethereal (free test email service)
-   * No configuration needed - works immediately!
-   */
-  async initializeEtherealTransport() {
     try {
-      // Create test account
-      const testAccount = await nodemailer.createTestAccount();
-
       this.transporter = nodemailer.createTransport({
-        host: 'smtp.ethereal.email',
-        port: 587,
-        secure: false,
+        host: process.env.EMAIL_HOST,
+        port: parseInt(process.env.EMAIL_PORT, 10),
+        secure: process.env.EMAIL_SECURE === 'true', // true for 465, false for other ports
         auth: {
-          user: testAccount.user,
-          pass: testAccount.pass,
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASSWORD,
         },
       });
 
-      this.testMode = true;
-      console.log('✅ Email service initialized (Test Mode - Ethereal)');
-      console.log('   ℹ️  Using Ethereal test service for email preview');
-      console.log('   📧 Emails sent in test mode can be previewed online');
+      console.log('✅ Email service initialized');
     } catch (error) {
-      console.error('❌ Failed to initialize test email service:', error.message);
-      this.transporter = null;
+      console.error('❌ Failed to initialize email service:', error.message);
     }
   }
 
@@ -100,7 +52,13 @@ class EmailService {
 
   /**
    * Send approval email to new member
-   * In test mode, prints preview URL instead of actually sending
+   * @param {Object} memberData - Applicant/member data
+   * @param {string} memberData.fullName - Member's full name
+   * @param {string} memberData.email - Member's email address
+   * @param {Object} clubInfo - Club information
+   * @param {string} clubInfo.description - Club description/mission
+   * @param {string} clubInfo.instagramUrl - Club Instagram URL
+   * @param {string} clubInfo.contactEmail - Club contact email
    */
   async sendApprovalEmail(memberData, clubInfo = {}) {
     if (!this.isAvailable()) {
@@ -126,17 +84,8 @@ class EmailService {
       };
 
       const result = await this.transporter.sendMail(mailOptions);
-
-      if (this.testMode) {
-        const previewUrl = nodemailer.getTestMessageUrl(result);
-        console.log(`✅ Test email created for ${email}`);
-        console.log(`📧 Preview: ${previewUrl}`);
-        console.log(`   (Copy this URL to see how the email looks)`);
-      } else {
-        console.log(`✅ Approval email sent to ${email}`);
-      }
-
-      return { success: true, messageId: result.messageId, testMode: this.testMode, previewUrl: nodemailer.getTestMessageUrl(result) };
+      console.log(`✅ Approval email sent to ${email}`);
+      return { success: true, messageId: result.messageId };
     } catch (error) {
       console.error(`❌ Failed to send approval email to ${memberData.email}:`, error.message);
       return { success: false, error: error.message };
@@ -145,7 +94,9 @@ class EmailService {
 
   /**
    * Send rejection email to applicant
-   * In test mode, prints preview URL instead of actually sending
+   * @param {Object} memberData - Applicant data
+   * @param {string} adminNotes - Rejection reason from admin
+   * @param {Object} clubInfo - Club information
    */
   async sendRejectionEmail(memberData, adminNotes = '', clubInfo = {}) {
     if (!this.isAvailable()) {
@@ -169,17 +120,8 @@ class EmailService {
       };
 
       const result = await this.transporter.sendMail(mailOptions);
-
-      if (this.testMode) {
-        const previewUrl = nodemailer.getTestMessageUrl(result);
-        console.log(`✅ Test email created for ${email}`);
-        console.log(`📧 Preview: ${previewUrl}`);
-        console.log(`   (Copy this URL to see how the email looks)`);
-      } else {
-        console.log(`✅ Rejection email sent to ${email}`);
-      }
-
-      return { success: true, messageId: result.messageId, testMode: this.testMode, previewUrl: nodemailer.getTestMessageUrl(result) };
+      console.log(`✅ Rejection email sent to ${email}`);
+      return { success: true, messageId: result.messageId };
     } catch (error) {
       console.error(`❌ Failed to send rejection email to ${memberData.email}:`, error.message);
       return { success: false, error: error.message };

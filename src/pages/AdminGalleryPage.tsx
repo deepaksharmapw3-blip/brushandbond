@@ -1,22 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Image,
-  Plus,
   Trash2,
   Upload,
   Grid3X3,
   Search,
   X,
-  CheckCircle2,
-  AlertCircle,
-  ExternalLink,
 } from 'lucide-react';
 import { SEO } from '../components/common/SEO';
 import { ProtectedAdminRoute } from '../components/admin/ProtectedAdminRoute';
 import { AdminLayout } from '../components/admin/AdminLayout';
 import { AdminToast, ConfirmDialog, AdminEmptyState } from '../components/admin/AdminUtils';
-import { artworkApi, artistApi } from '../services/api';
+import { artworkApi, artistApi, uploadImage } from '../services/api';
+
+const ARTWORKS_PER_PAGE = 24;
 
 export const AdminGalleryPage: React.FC = () => {
   const [artworks, setArtworks] = useState<any[]>([]);
@@ -24,6 +21,7 @@ export const AdminGalleryPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
+  const [currentPage, setCurrentPage] = useState(1);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedArtwork, setSelectedArtwork] = useState<any | null>(null);
@@ -41,9 +39,8 @@ export const AdminGalleryPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchArtworks = async () => {
-    setIsLoading(true);
     try {
-      const res = await artworkApi.getAll();
+      const res = await artworkApi.getAll({ limit: 500 });
       if (res.success && Array.isArray(res.artworks)) {
         setArtworks(res.artworks);
       }
@@ -64,6 +61,7 @@ export const AdminGalleryPage: React.FC = () => {
   };
 
   useEffect(() => {
+    // oxlint-disable-next-line react/set-state-in-effect -- These start async reads; state changes follow the API responses.
     fetchArtworks();
     fetchArtists();
   }, []);
@@ -92,29 +90,52 @@ export const AdminGalleryPage: React.FC = () => {
 
     setIsSubmitting(true);
     try {
+      // Map category to Supabase enum values
+      const categoryMap: Record<string, string> = {
+        SKETCHES: 'sketches',
+        PAINTINGS: 'paintings',
+        DIGITAL_ART: 'digitalart',
+        PHOTOGRAPHY: 'photography',
+        CALLIGRAPHY: 'calligraphy',
+        DOODLES: 'doodles',
+      };
+      const mappedCategory = categoryMap[category] ?? category.toLowerCase();
+
+      // Generate a slug from the title
+      const slug = title.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+        + '-' + Date.now();
+
+      const currentYear = new Date().getFullYear();
+
+      let finalImageUrl = imageUrl.trim();
+      let width = 800;
+      let height = 600;
+
       if (imageFile) {
-        const formData = new FormData();
-        formData.append('title', title.trim());
-        formData.append('category', category);
-        formData.append('image', imageFile);
-        if (artistId) formData.append('artistId', artistId);
-        if (description) formData.append('description', description);
-        if (tags) formData.append('tags', tags);
-        formData.append('featured', String(featured));
-        await artworkApi.create(formData);
-      } else {
-        await artworkApi.create({
-          title: title.trim(),
-      category: category.toLowerCase(),
-          imageUrl: imageUrl.trim(),
-          artistId: artistId ? parseInt(artistId, 10) : undefined,
-          description: description ? description.trim() : undefined,
-          tags: tags ? tags.trim() : undefined,
-          featured,
-        });
+        // Upload to Supabase Storage first
+        const uploaded = await uploadImage('artworks', imageFile, String(currentYear));
+        finalImageUrl = uploaded.publicUrl;
+        if (uploaded.width) width = uploaded.width;
+        if (uploaded.height) height = uploaded.height;
       }
 
+      await artworkApi.create({
+        title: title.trim(),
+        slug,
+        category: mappedCategory,
+        image_url: finalImageUrl,
+        width,
+        height,
+        alt: title.trim(),
+        art_year: currentYear,
+        artist_id: artistId || null,
+        description: description.trim() || null,
+        featured,
+        is_published: true,
+      });
+
       setToast({ message: 'Artwork uploaded successfully to Gallery!', type: 'success' });
+      setCurrentPage(1);
       setIsUploadOpen(false);
       resetForm();
       fetchArtworks();
@@ -147,6 +168,12 @@ export const AdminGalleryPage: React.FC = () => {
       categoryFilter === 'All' || String(art.category).toUpperCase() === categoryFilter.toUpperCase();
     return matchesSearch && matchesCategory;
   });
+  const pageCount = Math.max(1, Math.ceil(filteredArtworks.length / ARTWORKS_PER_PAGE));
+  const safePage = Math.min(currentPage, pageCount);
+  const visibleArtworks = filteredArtworks.slice(
+    (safePage - 1) * ARTWORKS_PER_PAGE,
+    safePage * ARTWORKS_PER_PAGE,
+  );
 
   return (
     <ProtectedAdminRoute>
@@ -180,13 +207,19 @@ export const AdminGalleryPage: React.FC = () => {
               type="text"
               placeholder="Search by title, artist, or tag..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
               className="w-full pl-10 pr-4 py-2 bg-[var(--surface)] border border-[var(--line)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)] text-[var(--ink)]"
             />
           </div>
           <select
             value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
+            onChange={(e) => {
+              setCategoryFilter(e.target.value);
+              setCurrentPage(1);
+            }}
             className="px-4 py-2 bg-[var(--surface)] border border-[var(--line)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)] text-[var(--ink)]"
           >
             <option value="All">All Categories</option>
@@ -200,7 +233,7 @@ export const AdminGalleryPage: React.FC = () => {
         {/* Gallery Grid */}
         {filteredArtworks.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {filteredArtworks.map((artwork) => (
+            {visibleArtworks.map((artwork) => (
               <motion.div
                 key={artwork.id}
                 initial={{ opacity: 0, scale: 0.97 }}
@@ -209,8 +242,10 @@ export const AdminGalleryPage: React.FC = () => {
               >
                 <div className="aspect-square bg-[var(--paper)] overflow-hidden relative">
                   <img
-                    src={artwork.imageUrl}
+                    src={artwork.image_url || artwork.imageUrl}
                     alt={artwork.title}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                   {artwork.featured && (
@@ -259,6 +294,30 @@ export const AdminGalleryPage: React.FC = () => {
               setIsUploadOpen(true);
             }}
           />
+        )}
+
+        {filteredArtworks.length > ARTWORKS_PER_PAGE && (
+          <nav className="mt-6 flex items-center justify-center gap-4" aria-label="Artwork pages">
+            <button
+              type="button"
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              disabled={safePage === 1}
+              className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <span className="text-sm text-[var(--muted)]" aria-live="polite">
+              Page {safePage} of {pageCount}
+            </span>
+            <button
+              type="button"
+              onClick={() => setCurrentPage((page) => Math.min(pageCount, page + 1))}
+              disabled={safePage === pageCount}
+              className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Next
+            </button>
+          </nav>
         )}
 
         {/* ── UPLOAD ARTWORK MODAL ── */}

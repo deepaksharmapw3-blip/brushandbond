@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertCircle, CheckCircle2, X, Trash2, Edit, Plus } from 'lucide-react';
+import { AlertCircle, CheckCircle2, X, Plus } from 'lucide-react';
 
 /* ============================================================
    TOAST NOTIFICATIONS
@@ -216,8 +216,6 @@ export interface AdminTableActionsProps {
 }
 
 export const AdminTableActions: React.FC<AdminTableActionsProps> = ({ actions }) => {
-  const [isOpen, setIsOpen] = React.useState(false);
-
   return (
     <div className="flex items-center gap-1">
       {actions.map((action) => {

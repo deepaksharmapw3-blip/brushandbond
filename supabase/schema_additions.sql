@@ -1,0 +1,10 @@
+-- RETIRED: do not run this legacy script.
+--
+-- Its former artwork_likes policies exposed visitor identifiers and allowed
+-- anonymous deletion. Artwork likes are now installed securely by the
+-- ordered migration:
+--   supabase/migrations/20261021010000_artwork_likes_privacy.sql
+--
+-- Apply migrations with `supabase db push` (or run every migration in
+-- filename order in the SQL Editor). Existing projects should apply the new
+-- migration; fresh projects receive it as part of the complete sequence.

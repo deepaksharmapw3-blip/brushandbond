@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { AlertCircle, Lock, Mail, LogIn } from 'lucide-react';
 import { SEO } from '../components/common/SEO';
@@ -7,10 +7,19 @@ import { useAdminAuth } from '../context/AdminAuthContext';
 
 export const AdminLoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { login, isLoading } = useAdminAuth();
+  const { login, isAuthenticated, isLoading, authError, retrySessionCheck } = useAdminAuth();
+  const location = useLocation();
+  const requestedLocation = (location.state as {
+    from?: { pathname?: string; search?: string; hash?: string };
+  } | null)?.from;
+  const returnTo = requestedLocation?.pathname
+    && (requestedLocation.pathname === '/admin' || requestedLocation.pathname.startsWith('/admin/'))
+    && requestedLocation.pathname !== '/admin/login'
+    ? `${requestedLocation.pathname}${requestedLocation.search ?? ''}${requestedLocation.hash ?? ''}`
+    : '/admin';
 
-  const [email, setEmail] = useState('admin@gcectart.club');
-  const [password, setPassword] = useState('Admin@ArtClub2026');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -21,17 +30,12 @@ export const AdminLoginPage: React.FC = () => {
 
     try {
       await login(email, password);
-      navigate('/admin', { replace: true });
+      navigate(returnTo, { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const handleAutofill = (autofillEmail: string, autofillPass: string) => {
-    setEmail(autofillEmail);
-    setPassword(autofillPass);
   };
 
   if (isLoading) {
@@ -44,6 +48,8 @@ export const AdminLoginPage: React.FC = () => {
       </div>
     );
   }
+
+  if (isAuthenticated) return <Navigate to="/admin" replace />;
 
   return (
     <>
@@ -67,6 +73,15 @@ export const AdminLoginPage: React.FC = () => {
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Studio Admin</h1>
             <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">Brush and Bond Executive Portal</p>
           </div>
+
+          {authError && (
+            <div role="alert" className="mb-5 flex items-center justify-between gap-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100">
+              <span>{authError}</span>
+              <button type="button" onClick={retrySessionCheck} className="shrink-0 font-semibold underline underline-offset-2">
+                Retry
+              </button>
+            </div>
+          )}
 
           {/* Error Alert */}
           {error && (
@@ -129,31 +144,6 @@ export const AdminLoginPage: React.FC = () => {
             </button>
           </form>
 
-          {/* Quick Autofill Credentials */}
-          <div className="border-t border-slate-200 dark:border-slate-700 pt-6">
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 text-center font-medium">FIXED ADMIN CREDENTIALS (CLICK TO AUTOFILL)</p>
-            <div className="space-y-2">
-              <button
-                type="button"
-                onClick={() => handleAutofill('admin@gcectart.club', 'Admin@ArtClub2026')}
-                className="w-full text-left p-3 bg-white dark:bg-slate-800 border-2 border-blue-500/40 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 transition-colors text-sm shadow-xs cursor-pointer"
-              >
-                <div className="flex items-center justify-between">
-                  <p className="font-bold text-slate-900 dark:text-white">GCECT Art Club Admin</p>
-                  <span className="text-[10px] font-mono bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded">Fixed</span>
-                </div>
-                <p className="text-slate-600 dark:text-slate-400 text-xs mt-0.5">admin@gcectart.club • Admin@ArtClub2026</p>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleAutofill('admin@brushandbond.local', 'admin123')}
-                className="w-full text-left p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 transition-colors text-sm cursor-pointer"
-              >
-                <p className="font-medium text-slate-900 dark:text-white">Demo Admin Account</p>
-                <p className="text-slate-600 dark:text-slate-400 text-xs">admin@brushandbond.local • admin123</p>
-              </button>
-            </div>
-          </div>
         </motion.div>
       </div>
     </>

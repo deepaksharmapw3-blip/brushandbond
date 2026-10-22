@@ -6,12 +6,8 @@ import {
   Trash2,
   Edit2,
   Search,
-  ExternalLink,
   X,
-  Upload,
-  Shield,
   Star,
-  Award,
 } from 'lucide-react';
 import { SEO } from '../components/common/SEO';
 import { ProtectedAdminRoute } from '../components/admin/ProtectedAdminRoute';
@@ -56,7 +52,6 @@ export const AdminTeamPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchTeam = async () => {
-    setIsLoading(true);
     try {
       const res = await teamApi.getAll();
       if (res.success && Array.isArray(res.team)) {
@@ -70,6 +65,7 @@ export const AdminTeamPage: React.FC = () => {
   };
 
   useEffect(() => {
+    // oxlint-disable-next-line react/set-state-in-effect -- This starts an async read; state changes follow the API response.
     fetchTeam();
   }, []);
 

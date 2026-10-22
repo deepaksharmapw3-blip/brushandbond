@@ -16,42 +16,42 @@ const DEFAULT_POSTS: InstagramPost[] = [
     imageUrl: '/artworks/studio-workshop.jpg',
     likes: 248,
     caption: 'Throwing 36 hours straight. Studio 204 smells like damp terracotta and tea.',
-    permalink: 'https://instagram.com/brushandbond',
+    permalink: 'https://www.instagram.com/brushandbond.gcect/',
   },
   {
     id: 'post-2',
     imageUrl: '/artworks/campus-art/mural-painting-progress.jpg',
     likes: 312,
     caption: 'Scaffolding up at the north courtyard wall. Paint under our fingernails.',
-    permalink: 'https://instagram.com/brushandbond',
+    permalink: 'https://www.instagram.com/brushandbond.gcect/',
   },
   {
     id: 'post-3',
     imageUrl: '/artworks/campus-art/festival-clay-pandal.jpg',
     likes: 420,
     caption: '450 unglazed terracotta pots lit by evening bulbs. Saraswati Puja at GCECT.',
-    permalink: 'https://instagram.com/brushandbond',
+    permalink: 'https://www.instagram.com/brushandbond.gcect/',
   },
   {
     id: 'post-4',
     imageUrl: '/artworks/campus-art/wall-canteen-hub.jpg',
     likes: 195,
     caption: 'Eat. Code. Sleep. Repeat. Canteen walls finished before finals.',
-    permalink: 'https://instagram.com/brushandbond',
+    permalink: 'https://www.instagram.com/brushandbond.gcect/',
   },
   {
     id: 'post-5',
     imageUrl: '/artworks/circuits-and-clay.jpg',
     likes: 289,
     caption: 'Copper traces embedded in glazed stoneware. Tech meets craft.',
-    permalink: 'https://instagram.com/brushandbond',
+    permalink: 'https://www.instagram.com/brushandbond.gcect/',
   },
   {
     id: 'post-6',
     imageUrl: '/artworks/terracotta_sculpture_1792344138019.jpg',
     likes: 350,
     caption: 'The Centenary Totem fresh from the reduction kiln firing.',
-    permalink: 'https://instagram.com/brushandbond',
+    permalink: 'https://www.instagram.com/brushandbond.gcect/',
   },
 ];
 
@@ -63,7 +63,7 @@ export interface InstagramGridProps {
 
 export const InstagramGrid: React.FC<InstagramGridProps> = ({
   posts = DEFAULT_POSTS,
-  handle = '@brushandbond',
+  handle = '@brushandbond.gcect',
   className = '',
 }) => {
   return (
@@ -80,7 +80,7 @@ export const InstagramGrid: React.FC<InstagramGridProps> = ({
         </div>
 
         <a
-          href="https://instagram.com/brushandbond"
+          href="https://www.instagram.com/brushandbond.gcect/"
           target="_blank"
           rel="noopener noreferrer"
           className="text-xs font-mono text-[var(--accent)] hover:underline inline-flex items-center gap-1 font-semibold"
@@ -94,7 +94,7 @@ export const InstagramGrid: React.FC<InstagramGridProps> = ({
         {posts.slice(0, 6).map((post) => (
           <a
             key={post.id}
-            href={post.permalink || 'https://instagram.com/brushandbond'}
+            href={post.permalink || 'https://www.instagram.com/brushandbond.gcect/'}
             target="_blank"
             rel="noopener noreferrer"
             className="group relative aspect-square rounded-[4px] overflow-hidden bg-[var(--paper)] border border-[var(--line)] block shadow-xs"

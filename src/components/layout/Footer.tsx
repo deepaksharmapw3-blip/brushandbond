@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight, Mail, MapPin } from 'lucide-react';
 import { InstagramIcon } from '../common/Icons';
+import { CLUB_EMAIL } from '../../lib/contact';
 
 export const Footer: React.FC = () => {
   return (
@@ -23,25 +24,25 @@ export const Footer: React.FC = () => {
 
             <div className="pt-1 flex items-center gap-3">
               <a
-                href="https://instagram.com/brushandbond"
+                href="https://www.instagram.com/brushandbond.gcect/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 text-xs font-mono text-[var(--muted)] hover:text-[var(--accent)] transition-colors"
-                aria-label="Instagram @brushandbond"
+                aria-label="Instagram @brushandbond.gcect"
               >
                 <InstagramIcon size={14} />
-                <span>@brushandbond</span>
+                <span>@brushandbond.gcect</span>
               </a>
 
               <span className="text-[var(--line)]">•</span>
 
               <a
-                href="mailto:brushandbond.gcect@gmail.com"
+                href={`mailto:${CLUB_EMAIL}`}
                 className="inline-flex items-center gap-1.5 text-xs font-mono text-[var(--muted)] hover:text-[var(--accent)] transition-colors"
                 aria-label="Email Brush and Bond"
               >
                 <Mail className="w-3.5 h-3.5" />
-                <span>brushandbond.gcect@gmail.com</span>
+                <span>{CLUB_EMAIL}</span>
               </a>
             </div>
           </div>
@@ -124,7 +125,7 @@ export const Footer: React.FC = () => {
               <ul className="space-y-2 text-xs sm:text-sm text-[var(--muted)] font-sans">
                 <li>
                   <a
-                    href="https://instagram.com/brushandbond"
+                    href="https://www.instagram.com/brushandbond.gcect/"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="hover:text-[var(--accent)] transition-colors inline-flex items-center gap-1 group"
@@ -135,7 +136,7 @@ export const Footer: React.FC = () => {
                 </li>
                 <li>
                   <a
-                    href="mailto:brushandbond.gcect@gmail.com"
+                    href={`mailto:${CLUB_EMAIL}`}
                     className="hover:text-[var(--accent)] transition-colors block truncate"
                   >
                     Email
