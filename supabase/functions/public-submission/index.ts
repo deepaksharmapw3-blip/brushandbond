@@ -217,6 +217,13 @@ Deno.serve(async (request) => {
       registeredCount: count ?? 0,
     }, 200, origin);
   } catch (error) {
+    const databaseError = error as { code?: string; message?: string };
+    if (databaseError.code === 'P0001' && databaseError.message === 'EVENT_CAPACITY_REACHED') {
+      return json({ error: 'This event has reached capacity.' }, 409, origin);
+    }
+    if (databaseError.code === 'P0001' && databaseError.message === 'REGISTRATION_CLOSED') {
+      return json({ error: 'Registration is closed for this event.' }, 409, origin);
+    }
     console.error('Public submission failed:', error);
     return json({ error: 'We could not save your submission. Please try again.' }, 500, origin);
   }

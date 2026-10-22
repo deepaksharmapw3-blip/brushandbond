@@ -20,78 +20,81 @@ interface AdminAuthContextType {
 
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
 
+const resolveUser = async (supabaseUserId: string, email: string) => {
+  const { data: profile, error } = await supabase
+    .from('profiles')
+    .select('role, full_name')
+    .eq('id', supabaseUserId)
+    .single();
+  if (error || !profile || profile.role !== 'admin') return null;
+  return {
+    id: supabaseUserId,
+    email,
+    name: profile.full_name ?? email,
+    role: 'admin' as const,
+  };
+};
+
 export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AdminUser | null>(null);
+  const [authIdentity, setAuthIdentity] = useState<{ id: string; email: string } | null>(null);
+  const [hasSessionSnapshot, setHasSessionSnapshot] = useState(false);
+  const [profileCheckNonce, setProfileCheckNonce] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  const resolveUser = async (supabaseUserId: string, email: string) => {
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('role, full_name')
-      .eq('id', supabaseUserId)
-      .single();
-    if (error || !profile || profile.role !== 'admin') return null;
-    return {
-      id: supabaseUserId,
-      email,
-      name: profile.full_name ?? email,
-      role: 'admin' as const,
-    };
-  };
-
-  // Bootstrap: check existing session on mount
+  // Only copy the auth identity in this callback. Supabase warns that awaiting
+  // another Supabase request here can deadlock the client's auth lock. The
+  // profile lookup below runs in a React effect after the callback returns.
   useEffect(() => {
-    let mounted = true;
-
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!mounted) return;
-      if (session?.user) {
-        const resolved = await resolveUser(session.user.id, session.user.email ?? '');
-        if (mounted) setUser(resolved);
-      } else {
-        setUser(null);
-      }
-      setIsLoading(false);
-    }).catch(() => {
-      if (mounted) {
-        setAuthError('Could not reach Supabase. Check your connection and retry.');
-        setIsLoading(false);
-      }
-    });
-
-    // Subscribe to auth state changes (token refresh, sign-out from another tab, etc.)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!mounted) return;
-      if (session?.user) {
-        const resolved = await resolveUser(session.user.id, session.user.email ?? '');
-        setUser(resolved);
-      } else {
-        setUser(null);
-      }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const authUser = session?.user;
+      setAuthIdentity(authUser ? { id: authUser.id, email: authUser.email ?? '' } : null);
+      setAuthError(null);
+      setHasSessionSnapshot(true);
     });
 
     return () => {
-      mounted = false;
       subscription.unsubscribe();
     };
   }, []);
 
+  // Resolve the admin profile outside the auth callback. The active flag keeps
+  // a stale request from restoring a user after sign-out or account switching.
+  useEffect(() => {
+    if (!hasSessionSnapshot) return;
+
+    let active = true;
+    if (!authIdentity) {
+      setUser(null);
+      setAuthError(null);
+      setIsLoading(false);
+      return () => { active = false; };
+    }
+
+    setIsLoading(true);
+    resolveUser(authIdentity.id, authIdentity.email)
+      .then((resolved) => {
+        if (!active) return;
+        setUser(resolved);
+        setAuthError(null);
+      })
+      .catch(() => {
+        if (!active) return;
+        setUser(null);
+        setAuthError('Could not reach Supabase. Check your connection and retry.');
+      })
+      .finally(() => {
+        if (active) setIsLoading(false);
+      });
+
+    return () => { active = false; };
+  }, [authIdentity, hasSessionSnapshot, profileCheckNonce]);
+
   const retrySessionCheck = () => {
     setAuthError(null);
     setIsLoading(true);
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        const resolved = await resolveUser(session.user.id, session.user.email ?? '');
-        setUser(resolved);
-      } else {
-        setUser(null);
-      }
-      setIsLoading(false);
-    }).catch(() => {
-      setAuthError('Could not reach Supabase. Check your connection and retry.');
-      setIsLoading(false);
-    });
+    setProfileCheckNonce((nonce) => nonce + 1);
   };
 
   const login = async (email: string, password: string) => {

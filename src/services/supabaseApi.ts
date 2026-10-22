@@ -19,6 +19,8 @@ const rowAliases: Record<string, string> = {
   event_date: 'date',
   event_time: 'time',
   event_name: 'title',
+  max_capacity: 'capacity',
+  capacityValue: 'capacity',
   registered_count: 'registeredCount',
   image_url: 'imageUrl',
   cover_url: 'imageUrl',
@@ -50,6 +52,13 @@ function normalizeRow<T>(value: T): T {
   // camelCase field is present, never let it disagree with the backend value.
   if (typeof normalized.registration_open === 'boolean') {
     normalized.registrationOpen = normalized.registration_open;
+  }
+  // Admin event creation stores the current seat limit in max_capacity;
+  // event cards and detail pages use the normalized capacity field.
+  if (typeof normalized.max_capacity === 'number') {
+    normalized.capacity = normalized.max_capacity;
+  } else if (typeof normalized.capacityValue === 'number' && typeof normalized.capacity !== 'number') {
+    normalized.capacity = normalized.capacityValue;
   }
   // The snake_case database column is canonical. Some legacy rows still have
   // a stale `registeredCount` value, which must not mask the trigger-maintained count.
