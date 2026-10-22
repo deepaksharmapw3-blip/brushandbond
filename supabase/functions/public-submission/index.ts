@@ -140,8 +140,9 @@ Deno.serve(async (request) => {
     if (type === 'artwork-like') {
       const artworkId = text(data.artworkId, 64);
       const visitorToken = text(data.visitorToken, 120);
+      const liked = data.liked;
       const [visitorId, signature, extra] = visitorToken.split('.');
-      if (!validUuid(artworkId) || !validUuid(visitorId ?? '') || !signature || extra !== undefined) {
+      if (!validUuid(artworkId) || !validUuid(visitorId ?? '') || !signature || extra !== undefined || (liked !== undefined && typeof liked !== 'boolean')) {
         return json({ error: 'Artwork or visitor identity is invalid.' }, 400, origin);
       }
       const expectedSignature = await signVisitorId(visitorId, serviceRoleKey);
@@ -149,10 +150,16 @@ Deno.serve(async (request) => {
         return json({ error: 'Visitor identity is invalid. Refresh the page and try again.' }, 401, origin);
       }
 
-      const { data: likeResult, error: likeError } = await admin.rpc('toggle_artwork_like', {
-        p_artwork_id: artworkId,
-        p_visitor_id: visitorId,
-      });
+      // Older cached clients omit `liked`; keep their toggle request working
+      // while new clients use the idempotent set-state RPC.
+      const { data: likeResult, error: likeError } = await admin.rpc(
+        typeof liked === 'boolean' ? 'set_artwork_like' : 'toggle_artwork_like',
+        {
+          p_artwork_id: artworkId,
+          p_visitor_id: visitorId,
+          ...(typeof liked === 'boolean' ? { p_is_liked: liked } : {}),
+        },
+      );
       if (likeError?.code === 'P0002') return json({ error: 'Artwork not found.' }, 404, origin);
       if (likeError) throw likeError;
       const row = Array.isArray(likeResult) ? likeResult[0] : likeResult;

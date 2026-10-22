@@ -264,11 +264,11 @@ export const artworkApi = {
     return { success: true, message: 'Artwork deleted.' };
   },
 
-  like: async (id: number | string, _liked: boolean) => {
+  like: async (id: number | string, liked: boolean) => {
     for (let attempt = 0; attempt < 2; attempt++) {
       const visitorToken = await getArtworkVisitorToken();
       const { data, error } = await supabase.functions.invoke('public-submission', {
-        body: { type: 'artwork-like', data: { artworkId: id, visitorToken } },
+        body: { type: 'artwork-like', data: { artworkId: id, visitorToken, liked } },
       });
       if (error) {
         const message = await getFunctionError(error);
