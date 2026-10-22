@@ -729,25 +729,39 @@ export async function uploadImage(
   file: File,
   folder?: string,
 ): Promise<{ publicUrl: string; width: number; height: number }> {
-  const ext = 'webp';
+  const maxBytes = 10 * 1024 * 1024;
+  const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
+  if (!allowedTypes.has(file.type)) {
+    throw new Error('Choose a JPEG, PNG, or WebP image.');
+  }
+  if (file.size === 0 || file.size > maxBytes) {
+    throw new Error('Images must be smaller than 10 MB.');
+  }
+
+  // Decode before uploading so corrupt files and extreme dimensions never
+  // consume Storage quota. Always release the temporary browser object URL.
+  const objectUrl = URL.createObjectURL(file);
+  const dims = await new Promise<{ width: number; height: number }>((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    img.onerror = () => reject(new Error('The selected file is not a valid image.'));
+    img.src = objectUrl;
+  }).finally(() => URL.revokeObjectURL(objectUrl));
+  if (!dims.width || !dims.height || dims.width > 10_000 || dims.height > 10_000 || dims.width * dims.height > 40_000_000) {
+    throw new Error('Image dimensions are too large. Use an image under 40 megapixels.');
+  }
+
+  const ext = file.type === 'image/jpeg' ? 'jpg' : file.type === 'image/png' ? 'png' : 'webp';
   const path = folder
     ? `${folder}/${crypto.randomUUID()}.${ext}`
     : `${crypto.randomUUID()}.${ext}`;
 
   const { error: upError } = await supabase.storage
     .from(bucket)
-    .upload(path, file, { contentType: 'image/webp', cacheControl: '31536000' });
+    .upload(path, file, { contentType: file.type, cacheControl: '31536000' });
   if (upError) throw new Error(upError.message);
 
   const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-
-  // Read dimensions from the file
-  const dims = await new Promise<{ width: number; height: number }>((resolve) => {
-    const img = new Image();
-    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
-    img.onerror = () => resolve({ width: 0, height: 0 });
-    img.src = URL.createObjectURL(file);
-  });
 
   return { publicUrl: data.publicUrl, ...dims };
 }
