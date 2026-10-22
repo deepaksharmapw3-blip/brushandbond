@@ -3,6 +3,7 @@ import { ToastProvider } from './context/ToastContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { GalleryProvider } from './context/GalleryContext';
 import { AdminAuthProvider } from './context/AdminAuthContext';
+import { RequireAdmin } from './components/admin/RequireAdmin';
 import { useGallery } from './context/GalleryContext';
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
@@ -123,17 +124,19 @@ function AppContent() {
             <Route path="/contact" element={<ContactPage />} />
 
             {/* Admin portal */}
-            <Route path="/admin" element={<AdminDashboardPage />} />
             <Route path="/admin/login" element={<AdminLoginPage />} />
-            <Route path="/admin/events" element={<AdminEventsPage />} />
-            <Route path="/admin/gallery" element={<AdminGalleryPage />} />
-            <Route path="/admin/artists" element={<AdminArtistsPage />} />
-            <Route path="/admin/team" element={<AdminTeamPage />} />
-            <Route path="/admin/members" element={<AdminMembersPage />} />
-            <Route path="/admin/messages" element={<AdminMessagesPage />} />
-            <Route path="/admin/announcements" element={<AdminAnnouncementsPage />} />
-            <Route path="/admin/achievements" element={<AdminAchievementsPage />} />
-            <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
+            <Route path="/admin" element={<RequireAdmin />}>
+              <Route index element={<AdminDashboardPage />} />
+              <Route path="events" element={<AdminEventsPage />} />
+              <Route path="gallery" element={<AdminGalleryPage />} />
+              <Route path="artists" element={<AdminArtistsPage />} />
+              <Route path="team" element={<AdminTeamPage />} />
+              <Route path="members" element={<AdminMembersPage />} />
+              <Route path="messages" element={<AdminMessagesPage />} />
+              <Route path="announcements" element={<AdminAnnouncementsPage />} />
+              <Route path="achievements" element={<AdminAchievementsPage />} />
+              <Route path="analytics" element={<AdminAnalyticsPage />} />
+            </Route>
 
             {/* Friendly 404 Catch-All */}
             <Route path="*" element={<NotFoundPage />} />

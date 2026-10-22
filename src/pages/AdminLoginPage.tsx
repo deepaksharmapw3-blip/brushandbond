@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { AlertCircle, Lock, Mail, LogIn } from 'lucide-react';
 import { SEO } from '../components/common/SEO';
@@ -7,7 +7,16 @@ import { useAdminAuth } from '../context/AdminAuthContext';
 
 export const AdminLoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { login, isLoading, authError, retrySessionCheck } = useAdminAuth();
+  const { login, isAuthenticated, isLoading, authError, retrySessionCheck } = useAdminAuth();
+  const location = useLocation();
+  const requestedLocation = (location.state as {
+    from?: { pathname?: string; search?: string; hash?: string };
+  } | null)?.from;
+  const returnTo = requestedLocation?.pathname
+    && (requestedLocation.pathname === '/admin' || requestedLocation.pathname.startsWith('/admin/'))
+    && requestedLocation.pathname !== '/admin/login'
+    ? `${requestedLocation.pathname}${requestedLocation.search ?? ''}${requestedLocation.hash ?? ''}`
+    : '/admin';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,7 +30,7 @@ export const AdminLoginPage: React.FC = () => {
 
     try {
       await login(email, password);
-      navigate('/admin', { replace: true });
+      navigate(returnTo, { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
@@ -39,6 +48,8 @@ export const AdminLoginPage: React.FC = () => {
       </div>
     );
   }
+
+  if (isAuthenticated) return <Navigate to="/admin" replace />;
 
   return (
     <>
