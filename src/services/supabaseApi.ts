@@ -19,6 +19,7 @@ const rowAliases: Record<string, string> = {
   event_date: 'date',
   event_time: 'time',
   event_name: 'title',
+  registered_count: 'registeredCount',
   image_url: 'imageUrl',
   cover_url: 'imageUrl',
   banner_url: 'imageUrl',
@@ -49,6 +50,11 @@ function normalizeRow<T>(value: T): T {
   // camelCase field is present, never let it disagree with the backend value.
   if (typeof normalized.registration_open === 'boolean') {
     normalized.registrationOpen = normalized.registration_open;
+  }
+  // The snake_case database column is canonical. Some legacy rows still have
+  // a stale `registeredCount` value, which must not mask the trigger-maintained count.
+  if (typeof normalized.registered_count === 'number') {
+    normalized.registeredCount = normalized.registered_count;
   }
   return normalized as unknown as T;
 }
