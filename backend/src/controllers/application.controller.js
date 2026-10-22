@@ -1,4 +1,13 @@
 const prisma = require("../config/prisma");
+const emailService = require("../services/emailService");
+
+// Club information for email templates
+const CLUB_INFO = {
+  name: "GCECT Art Club - Brush and Bond",
+  description: "We are a vibrant community of artists and creatives dedicated to celebrating art in all forms. From traditional paintings to digital art, sculptures to photography, we celebrate diverse artistic expressions. Join us for workshops, exhibitions, collaborations, and events that celebrate creativity and foster artistic growth.",
+  instagramUrl: process.env.CLUB_INSTAGRAM_URL || "https://instagram.com/brushandbond",
+  contactEmail: process.env.CLUB_EMAIL || "brushandbond@gcect.edu",
+};
 
 // POST /api/applications (Public: Join the Club)
 const submitApplication = async (req, res, next) => {
@@ -158,7 +167,7 @@ const updateApplicationStatus = async (req, res, next) => {
       },
     });
 
-    // If APPROVED, auto-enroll into members table if not already existing
+    // If APPROVED, auto-enroll into members table and send approval email
     if (normalizedStatus === "APPROVED") {
       const existingMember = await prisma.members.findUnique({
         where: { email: application.email },
@@ -176,6 +185,31 @@ const updateApplicationStatus = async (req, res, next) => {
           },
         });
       }
+
+      // Send approval email asynchronously
+      const emailResult = await emailService.sendApprovalEmail(
+        {
+          fullName: application.fullName,
+          email: application.email,
+        },
+        CLUB_INFO
+      );
+
+      console.log(`📧 Approval email result for ${application.email}:`, emailResult);
+    }
+
+    // If REJECTED, send rejection email
+    if (normalizedStatus === "REJECTED") {
+      const emailResult = await emailService.sendRejectionEmail(
+        {
+          fullName: application.fullName,
+          email: application.email,
+        },
+        adminNotes || "Thank you for your interest in Brush and Bond.",
+        CLUB_INFO
+      );
+
+      console.log(`📧 Rejection email result for ${application.email}:`, emailResult);
     }
 
     res.json({
