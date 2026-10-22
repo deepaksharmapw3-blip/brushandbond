@@ -6,13 +6,16 @@ const escapeHtml = (value) => value.replace(/[&<>"']/g, (character) => ({
   "'": '&#39;',
 }[character] ?? character));
 
+const CLUB_EMAIL = 'Brushandbondgcect22@gmail.com';
+const INSTAGRAM_URL = 'https://www.instagram.com/brushandbond.gcect/';
+
 export const buildEmail = (status, name, notes = '') => {
   const firstName = escapeHtml(name.trim().split(/\s+/)[0] || 'artist');
   if (status === 'approved') {
     return {
       subject: 'Welcome to Brush and Bond! Your application is approved',
-      html: `<!doctype html><html><body style="font-family:Arial,sans-serif;color:#252525;line-height:1.6"><h1>Welcome to Brush and Bond, ${firstName}!</h1><p>Your application to join Brush and Bond has been approved.</p><p>We are excited to welcome you to our community of artists and creative minds. Watch for updates about upcoming workshops, exhibitions, and collaborative projects.</p><p>Questions? Reply to this email and we will be happy to help.</p></body></html>`,
-      text: `Welcome to Brush and Bond, ${name.trim().split(/\s+/)[0] || 'artist'}! Your application has been approved. We are excited to welcome you to our community.`,
+      html: `<!doctype html><html><body style="font-family:Arial,sans-serif;color:#252525;line-height:1.6"><main style="max-width:600px;margin:0 auto;padding:24px"><p>Hello ${firstName},</p><h1>Welcome to Brush and Bond!</h1><p>Your application to join Brush and Bond has been approved. We are delighted to welcome you to the club.</p><h2>About the club</h2><p>Brush and Bond is the official art club of the Government College of Engineering and Ceramic Technology. We are a creative community where students explore art, experiment with new forms of expression, and celebrate creativity across campus.</p><h2>What happens next?</h2><ul><li>Keep an eye on your inbox for updates about workshops, exhibitions, and club activities.</li><li>Follow us on <a href="${INSTAGRAM_URL}" style="color:#7c3aed">Instagram</a> to see our latest artwork and announcements.</li></ul><h2>Questions?</h2><p>Reply to this email or contact us at <a href="mailto:${CLUB_EMAIL}">${CLUB_EMAIL}</a>.</p><p>We look forward to creating with you!</p><p>Warmly,<br>Brush and Bond<br>GCECT Art Club</p></main></body></html>`,
+      text: `Hello ${name.trim().split(/\s+/)[0] || 'artist'},\n\nWelcome to Brush and Bond! Your application to join the club has been approved. We are delighted to welcome you.\n\nABOUT THE CLUB\nBrush and Bond is the official art club of the Government College of Engineering and Ceramic Technology. We are a creative community where students explore art, experiment with new forms of expression, and celebrate creativity across campus.\n\nWHAT HAPPENS NEXT?\nKeep an eye on your inbox for updates about workshops, exhibitions, and club activities. Follow us on Instagram for artwork and announcements: ${INSTAGRAM_URL}\n\nQUESTIONS?\nReply to this email or contact us at ${CLUB_EMAIL}.\n\nWe look forward to creating with you!\nBrush and Bond\nGCECT Art Club`,
     };
   }
 
