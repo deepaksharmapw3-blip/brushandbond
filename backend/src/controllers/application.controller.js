@@ -1,5 +1,5 @@
 const prisma = require("../config/prisma");
-const emailService = require("../services/emailServiceResend");
+const emailService = require("../services/emailServiceGmailAPI");
 
 // Club information for email templates
 const CLUB_INFO = {

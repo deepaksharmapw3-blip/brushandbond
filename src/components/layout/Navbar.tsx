@@ -63,15 +63,19 @@ export const Navbar: React.FC = () => {
         }`}
       >
         <div className="gallery-container h-20 flex items-center justify-between">
-          {/* Left: Wordmark "Brush and Bond" */}
+          {/* Left: Logo & Wordmark "Brush and Bond" */}
           <Link
             to="/"
-            className="group flex items-center gap-2.5 focus:outline-none"
+            className="group flex items-center gap-2.5 focus:outline-none hover:opacity-80 transition-opacity"
             onClick={() => setMobileMenuOpen(false)}
             aria-label="Brush and Bond Homepage"
           >
-            <span className="w-2.5 h-2.5 rounded-full bg-[var(--accent)] inline-block transition-transform duration-300 group-hover:scale-125" />
-            <span className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-[var(--ink)]">
+            <img 
+              src="/images/logo.jpg" 
+              alt="Brush and Bond Logo" 
+              className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover hover:scale-105 transition-transform duration-300"
+            />
+            <span className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-[var(--ink)] hidden sm:block">
               Brush and Bond
             </span>
           </Link>
@@ -168,14 +172,18 @@ export const Navbar: React.FC = () => {
             aria-modal="true"
             aria-label="Navigation Menu"
           >
-            {/* Top Bar: Wordmark and Close Button */}
+            {/* Top Bar: Logo, Wordmark and Close Button */}
             <div className="flex items-center justify-between border-b border-[var(--line)] pb-5 shrink-0">
               <Link
                 to="/"
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2.5"
               >
-                <span className="w-2.5 h-2.5 rounded-full bg-[var(--accent)]" />
+                <img 
+                  src="/images/logo.jpg" 
+                  alt="Brush and Bond Logo" 
+                  className="w-10 h-10 rounded-full object-cover"
+                />
                 <span className="font-display text-2xl font-bold tracking-tight text-[var(--ink)]">
                   Brush and Bond
                 </span>

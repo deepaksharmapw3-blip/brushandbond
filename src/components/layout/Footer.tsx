@@ -8,10 +8,14 @@ export const Footer: React.FC = () => {
     <footer className="border-t border-[var(--line)] bg-[var(--paper)] transition-colors mt-20 sm:mt-28">
       <div className="gallery-container py-14 sm:py-18">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-10 lg:gap-14 items-start">
-          {/* Identity: Wordmark & Short Tagline */}
+          {/* Identity: Logo, Wordmark & Short Tagline */}
           <div className="md:col-span-5 space-y-3.5">
-            <Link to="/" className="inline-flex items-center gap-2 group">
-              <span className="w-2.5 h-2.5 rounded-full bg-[var(--accent)] inline-block transition-transform duration-300 group-hover:scale-125" />
+            <Link to="/" className="inline-flex items-center gap-3 group">
+              <img 
+                src="/images/logo.jpg" 
+                alt="Brush and Bond Logo" 
+                className="w-14 h-14 rounded-full object-cover group-hover:scale-105 transition-transform duration-300 shadow-sm"
+              />
               <span className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-[var(--ink)]">
                 Brush and Bond
               </span>

@@ -141,15 +141,26 @@ class ResendEmailService {
     .container {
       max-width: 600px;
       margin: 0 auto;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: white;
       border-radius: 12px;
       overflow: hidden;
       box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     }
+    .logo-header {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      padding: 30px 20px;
+      text-align: center;
+    }
+    .logo-header img {
+      max-width: 150px;
+      height: auto;
+      margin-bottom: 15px;
+      border-radius: 8px;
+    }
     .header {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
-      padding: 40px 20px;
+      padding: 30px 20px;
       text-align: center;
     }
     .header h1 {
@@ -237,8 +248,11 @@ class ResendEmailService {
 </head>
 <body>
   <div class="container">
+    <div class="logo-header">
+      <img src="https://brushandbond.netlify.app/images/logo.jpg" alt="Brush and Bond Logo" style="max-width: 150px; height: auto; border-radius: 8px;">
+    </div>
+    
     <div class="header">
-      <div class="emoji">🎨</div>
       <h1>Welcome to ${clubName}!</h1>
       <p>Your Application Has Been Approved</p>
     </div>
@@ -315,6 +329,17 @@ class ResendEmailService {
       overflow: hidden;
       box-shadow: 0 5px 15px rgba(0,0,0,0.1);
     }
+    .logo-header {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      padding: 30px 20px;
+      text-align: center;
+    }
+    .logo-header img {
+      max-width: 150px;
+      height: auto;
+      margin-bottom: 15px;
+      border-radius: 8px;
+    }
     .header {
       background: linear-gradient(135deg, #ee7752 0%, #e73c7e 100%);
       color: white;
@@ -367,6 +392,10 @@ class ResendEmailService {
 </head>
 <body>
   <div class="container">
+    <div class="logo-header">
+      <img src="https://brushandbond.netlify.app/images/logo.jpg" alt="Brush and Bond Logo" style="max-width: 150px; height: auto; border-radius: 8px;">
+    </div>
+    
     <div class="header">
       <h1>Application Update</h1>
     </div>
