@@ -60,12 +60,12 @@ export const ArtworkLightbox: React.FC = () => {
 
   // Handle closing modal and removing URL param
   const handleClose = useCallback(() => {
+    closeArtworkModal();
     const nextParams = new URLSearchParams(searchParams);
     nextParams.delete('artwork');
     nextParams.delete('art');
     setSearchParams(nextParams, { replace: true });
-    closeArtworkModal();
-  }, [searchParams, setSearchParams, closeArtworkModal]);
+  }, [closeArtworkModal, searchParams, setSearchParams]);
 
   // Keyboard navigation support: Left / Right / Escape
   useEffect(() => {
@@ -105,10 +105,15 @@ export const ArtworkLightbox: React.FC = () => {
   };
 
   return (
-    <AnimatePresence>
+    <AnimatePresence mode="wait">
+      {activeArtworkModal && (
       <div
         className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 md:p-8 bg-black/85 backdrop-blur-md overflow-y-auto"
-        onClick={handleClose}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            handleClose();
+          }
+        }}
         role="dialog"
         aria-modal="true"
         aria-label={artwork.title}
@@ -197,8 +202,13 @@ export const ArtworkLightbox: React.FC = () => {
               <button
                 type="button"
                 onClick={(e) => {
+                  e.preventDefault();
                   e.stopPropagation();
                   handleClose();
+                }}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
                 }}
                 className="w-8 h-8 flex items-center justify-center rounded-full bg-[var(--surface)] border border-[var(--line)] text-[var(--ink)] hover:border-[var(--ink)] hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition-all font-bold active:scale-95"
                 aria-label="Close artwork details (Escape)"
@@ -394,6 +404,7 @@ export const ArtworkLightbox: React.FC = () => {
           </div>
         </motion.div>
       </div>
+      )}
     </AnimatePresence>
   );
 };
