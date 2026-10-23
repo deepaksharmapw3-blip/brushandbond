@@ -250,7 +250,7 @@ export const CampusArtPage: React.FC = () => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search murals, walls, festivals, installations, artists..."
+                placeholder="Search creative walls, festivals, installations, artists..."
                 className="w-full bg-[var(--surface)] border border-[var(--line)] pl-9 pr-8 py-2 text-xs sm:text-sm rounded-[6px] text-[var(--ink)] focus:outline-none focus:border-[var(--accent)] placeholder:text-[var(--muted)]"
               />
               {searchQuery && (
@@ -536,7 +536,7 @@ export const CampusArtPage: React.FC = () => {
                   No documented campus artworks match this search.
                 </h3>
                 <p className="text-sm text-[var(--muted)] max-w-md mx-auto font-sans">
-                  Try searching for a different keyword such as "mural", "canteen", "terracotta", "festival", or "sculpture".
+                  Try searching for a different keyword such as "wall", "terracotta", "festival", or "sculpture".
                 </p>
                 <button
                   type="button"
@@ -581,7 +581,7 @@ export const CampusArtPage: React.FC = () => {
                 The Historical Evolution of Art at GCECT (1941 - 2026)
               </h3>
               <p className="text-sm sm:text-base text-[var(--muted)] font-sans max-w-[65ch]">
-                Chronological record documenting how artistic expression evolved from early Bengal ceramic kiln craftsmanship into contemporary collaborative murals and digital archives.
+                Chronological record documenting how artistic expression evolved from early Bengal ceramic kiln craftsmanship into contemporary creative projects and digital archives.
               </p>
             </div>
 
@@ -631,7 +631,7 @@ export const CampusArtPage: React.FC = () => {
               Do you have archival photos of past campus art?
             </h3>
             <p className="text-sm sm:text-base opacity-90 font-sans leading-relaxed">
-              Whether you are an alumnus who painted a festival pavilion in 2012, or a current student who created a stairwell mural, help us build the definitive digital record of GCECT's artistic history.
+              Whether you are an alumnus who created a festival pavilion in 2012 or a current student documenting a creative project, help us build the definitive digital record of GCECT's artistic history.
             </p>
           </div>
 

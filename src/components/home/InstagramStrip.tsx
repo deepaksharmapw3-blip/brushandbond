@@ -51,13 +51,6 @@ const defaultPosts: InstagramPost[] = [
     likes: 176,
     comments: 15,
   },
-  {
-    id: 'post-6',
-    imageUrl: '/artworks/courtyard-mural.jpg',
-    caption: '36 volunteer hours and 40-foot brick wall. Our collective courtyard mural is complete.',
-    likes: 420,
-    comments: 52,
-  },
 ];
 
 export const InstagramStrip: React.FC<InstagramStripProps> = ({

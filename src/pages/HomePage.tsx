@@ -32,7 +32,7 @@ export const HomePage: React.FC = () => {
     <div className="space-y-[clamp(64px,10vw,130px)] pb-0">
       <SEO
         title="Brush and Bond — GCECT Art Club & The Canvas Archive"
-        description="Official art club of the Government College of Engineering and Ceramic Technology (GCECT), est. 2024. Explore student artwork, campus murals, upcoming exhibitions, and salons. Creativity connects."
+        description="Official art club of the Government College of Engineering and Ceramic Technology (GCECT), est. 2024. Explore student artwork, creative campus projects, upcoming exhibitions, and salons. Creativity connects."
         canonicalPath="/"
       />
       

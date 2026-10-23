@@ -17,7 +17,7 @@ export type MediumCategory =
   | 'Architectural Photography'
   | 'Sumi Ink Calligraphy'
   | 'Micron Pen Doodle'
-  | 'Outdoor Wall Mural';
+  | 'Outdoor Wall Art';
 
 export interface Artwork {
   id: string;

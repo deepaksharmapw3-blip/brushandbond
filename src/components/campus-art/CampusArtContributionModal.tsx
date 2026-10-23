@@ -15,7 +15,7 @@ export const CampusArtContributionModal: React.FC<CampusArtContributionModalProp
   isOpen,
   onClose,
   onSuccess,
-  initialGroup = 'campus-murals',
+  initialGroup = 'creative-walls',
 }) => {
   const { showSuccess, showWarning } = useToast();
 
@@ -56,7 +56,7 @@ export const CampusArtContributionModal: React.FC<CampusArtContributionModalProp
         approxYear: formData.approxYear,
         location: formData.location || 'GCECT Campus',
         description: formData.description,
-        imageUrl: formData.imageUrl || '/artworks/campus-art/mural-courtyard-wide.jpg',
+        imageUrl: formData.imageUrl || undefined,
         submittedAt: new Date().toISOString(),
       };
 
@@ -106,7 +106,7 @@ export const CampusArtContributionModal: React.FC<CampusArtContributionModalProp
                 Contribute Campus Art Record
               </h2>
               <p className="text-xs sm:text-sm text-[var(--muted)] font-sans">
-                Help document murals, festival decors, creative walls, and past installations created by students across GCECT's history.
+                Help document creative projects, festival decorations, and past installations created by students across GCECT's history.
               </p>
             </div>
 
@@ -216,7 +216,6 @@ export const CampusArtContributionModal: React.FC<CampusArtContributionModalProp
                       onChange={(e) => setFormData({ ...formData, artGroup: e.target.value as CampusArtGroupId })}
                       className="w-full bg-[var(--paper)] border border-[var(--line)] px-3.5 py-2 text-sm rounded-[6px] text-[var(--ink)] focus:outline-none focus:border-[var(--accent)] cursor-pointer font-semibold"
                     >
-                      <option value="campus-murals">Campus murals</option>
                       <option value="creative-walls">Creative walls</option>
                       <option value="festival-decorations">Festival decorations</option>
                       <option value="club-collaborations">Club collaborations</option>

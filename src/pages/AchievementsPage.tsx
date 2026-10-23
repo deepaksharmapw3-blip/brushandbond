@@ -615,7 +615,7 @@ export const AchievementsPage: React.FC = () => {
                   type="text"
                   value={formData.imageUrl || ''}
                   onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                  placeholder="e.g. /artworks/courtyard-mural.jpg (leave blank if no photo)"
+                  placeholder="e.g. /artworks/achievement.jpg (leave blank if no photo)"
                   className="w-full bg-[var(--paper)] border border-[var(--line)] px-3 py-2 text-xs rounded-[6px] text-[var(--ink)] focus:outline-none focus:border-[var(--accent)]"
                 />
                 <span className="text-[11px] font-mono text-[var(--muted)] mt-1 block">

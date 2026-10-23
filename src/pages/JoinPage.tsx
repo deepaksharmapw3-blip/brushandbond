@@ -86,7 +86,7 @@ export const JoinPage: React.FC = () => {
     {
       title: 'Show your work',
       description:
-        'Get featured in our annual Genesis college exhibition, campus wall murals, and archived permanently in The Canvas online gallery with your own artist profile.',
+        'Get featured in our annual Genesis college exhibition and archived permanently in The Canvas online gallery with your own artist profile.',
       icon: Sparkles,
       accentColor: 'text-blue-500 bg-blue-500/10 border-blue-500/20',
     },
@@ -112,12 +112,6 @@ export const JoinPage: React.FC = () => {
       title: 'Kiln firing & reduction',
       caption: 'Ceramic lab firings',
       rotate: 'rotate-1',
-    },
-    {
-      src: '/artworks/courtyard-mural.jpg',
-      title: 'Genesis courtyard mural',
-      caption: 'Collaborative wall painting',
-      rotate: '-rotate-1',
     },
     {
       src: '/artworks/oil-twilight.jpg',
@@ -790,7 +784,7 @@ export const JoinPage: React.FC = () => {
                   </div>
 
                   <p className="text-xs text-[var(--muted)]">
-                    Sneak peek into our pottery wheels, late-night campus mural painting, and open studios.
+                    Sneak peek into our pottery wheels, studio sessions, and open studios.
                   </p>
 
                   {/* Photo Strip Horizontal Scroll / Filmstrip */}
@@ -818,31 +812,6 @@ export const JoinPage: React.FC = () => {
                         </div>
                       </div>
                     ))}
-                  </div>
-
-                  {/* Wide panoramic card */}
-                  <div className="group relative bg-[var(--paper)] border border-[var(--line)] rounded-lg p-2.5 shadow-xs transition-all duration-300 hover:shadow-md">
-                    <div className="h-32 w-full overflow-hidden rounded-md bg-[var(--line)]">
-                      <img
-                        src="/artworks/courtyard-mural.jpg"
-                        alt="Genesis 2024 mural painting"
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        loading="lazy"
-                      />
-                    </div>
-                    <div className="pt-2 flex items-center justify-between">
-                      <div>
-                        <p className="font-display text-xs font-bold text-[var(--ink)]">
-                          Genesis 2024 Courtyard Mural
-                        </p>
-                        <p className="text-[10px] font-mono text-[var(--muted)]">
-                          Ceramic Tech & CSE students painting together
-                        </p>
-                      </div>
-                      <span className="font-mono text-[10px] bg-[var(--accent)]/10 text-[var(--accent)] px-2 py-0.5 rounded-full font-bold">
-                        Annual Event
-                      </span>
-                    </div>
                   </div>
 
                   {/* Studio 204 location badge */}

@@ -14,7 +14,7 @@ import { CampusArtLightbox } from '../campus-art/CampusArtLightbox';
 import type { CampusArtPhoto } from '../../types/campusArt';
 
 export const ArtAroundGcectSection: React.FC = () => {
-  const [activeGroupId, setActiveGroupId] = useState<string>('campus-murals');
+  const [activeGroupId, setActiveGroupId] = useState<string>('creative-walls');
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxPhotos, setLightboxPhotos] = useState<CampusArtPhoto[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
@@ -51,7 +51,7 @@ export const ArtAroundGcectSection: React.FC = () => {
 
           <p className="text-base sm:text-lg text-[var(--muted)] leading-relaxed font-sans max-w-[65ch]">
             Art at GCECT is woven into the very fabric of our engineering campus.
-            Explore our permanent digital record documenting murals, creative corridors, festival pavilions,
+            Explore our permanent digital record documenting creative corridors, festival pavilions,
             and kiln sculptures created by student engineers across generations.
           </p>
         </div>
@@ -237,7 +237,7 @@ export const ArtAroundGcectSection: React.FC = () => {
             A Living Digital Record of GCECT's Artistic History
           </h3>
           <p className="text-xs sm:text-sm text-[var(--muted)] max-w-[65ch] font-sans">
-            Every mural, chalkboard corridor, festive clay structure, and student sculpture is archived with photographic provenance and curatorial records for posterity.
+            Every chalkboard corridor, festive clay structure, and student sculpture is archived with photographic provenance and curatorial records for posterity.
           </p>
         </div>
 

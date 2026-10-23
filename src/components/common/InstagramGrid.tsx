@@ -19,24 +19,10 @@ const DEFAULT_POSTS: InstagramPost[] = [
     permalink: 'https://www.instagram.com/brushandbond.gcect/',
   },
   {
-    id: 'post-2',
-    imageUrl: '/artworks/campus-art/mural-painting-progress.jpg',
-    likes: 312,
-    caption: 'Scaffolding up at the north courtyard wall. Paint under our fingernails.',
-    permalink: 'https://www.instagram.com/brushandbond.gcect/',
-  },
-  {
     id: 'post-3',
     imageUrl: '/artworks/campus-art/festival-clay-pandal.jpg',
     likes: 420,
     caption: '450 unglazed terracotta pots lit by evening bulbs. Saraswati Puja at GCECT.',
-    permalink: 'https://www.instagram.com/brushandbond.gcect/',
-  },
-  {
-    id: 'post-4',
-    imageUrl: '/artworks/campus-art/wall-canteen-hub.jpg',
-    likes: 195,
-    caption: 'Eat. Code. Sleep. Repeat. Canteen walls finished before finals.',
     permalink: 'https://www.instagram.com/brushandbond.gcect/',
   },
   {

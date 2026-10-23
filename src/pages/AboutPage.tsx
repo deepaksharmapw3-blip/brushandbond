@@ -18,7 +18,7 @@ export const AboutPage: React.FC = () => {
     {
       title: 'Grow together',
       description:
-        'No prior fine-arts training is ever required. Through weekly sketch walks, live technique workshops, collaborative murals, and honest peer critiques, engineers become confident, expressive visual storytellers.',
+        'No prior fine-arts training is ever required. Through weekly sketch walks, live technique workshops, collaborative projects, and honest peer critiques, engineers become confident, expressive visual storytellers.',
     },
   ];
 
@@ -66,12 +66,6 @@ export const AboutPage: React.FC = () => {
       alt: 'Students throwing clay on pottery wheels in Studio 204',
       caption: 'Studio 204 open wheel session',
       className: 'md:col-span-8 md:row-span-2 aspect-[16/10]',
-    },
-    {
-      src: '/artworks/courtyard-mural.jpg',
-      alt: '40-foot collaborative courtyard wall mural',
-      caption: 'Courtyard collaborative fresco',
-      className: 'md:col-span-4 aspect-square',
     },
     {
       src: '/artworks/kiln-archways.jpg',
@@ -221,7 +215,7 @@ export const AboutPage: React.FC = () => {
             Inside Studio 204 and across campus
           </h2>
           <p className="text-sm text-[var(--muted)] font-sans">
-            Glimpses of weekly pottery wheel sessions, plein-air sketch crawls, and collaborative wall paintings.
+            Glimpses of weekly pottery wheel sessions and plein-air sketch crawls.
           </p>
         </div>
 

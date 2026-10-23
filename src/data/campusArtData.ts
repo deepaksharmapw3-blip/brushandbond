@@ -6,53 +6,7 @@ import type {
 } from '../types/campusArt';
 
 export const CAMPUS_ART_PHOTOS: Record<string, CampusArtPhoto> = {
-  // 1. Campus Murals Photos
-  'mural-courtyard-wide': {
-    id: 'photo-mur-01',
-    url: '/artworks/campus-art/mural-courtyard-wide.jpg',
-    title: 'Kiln, Silicon & Synapse — Wide Courtyard View',
-    caption:
-      'The 40-foot monumental acrylic fresco across the north facade of Studio 204. Artisan hands emerge from glowing terracotta, intertwined with cyan circuit traces and Bengal folk filigree.',
-    type: 'wide',
-    year: 2024,
-    photographer: 'Ritaban Roy (IT, Batch of 2026)',
-    location: 'Studio 204 Courtyard Facade',
-  },
-  'mural-painting-progress': {
-    id: 'photo-mur-02',
-    url: '/artworks/campus-art/mural-painting-progress.jpg',
-    title: 'Students on Scaffolding — Painting in Progress',
-    caption:
-      'A candid documentary snapshot of student artists across CSE and Ceramic departments on ladders and scaffolding, mixing pigments during the three-week mural sprint.',
-    type: 'progress',
-    year: 2024,
-    photographer: 'Sayantika Bose (IT, Batch of 2027)',
-    location: 'Studio 204 North Wall Scaffolding',
-  },
-  'mural-courtyard-archive': {
-    id: 'photo-mur-03',
-    url: '/artworks/campus-art/mural-courtyard-archive.jpg',
-    title: 'Kiln & Silicon — Archival Color Proof',
-    caption:
-      'Archival master capture documenting the impasto brushwork, weatherproof silicone sealing, and raking morning light across Bengal brickwork.',
-    type: 'detail',
-    year: 2024,
-    photographer: 'Arpan Chakraborty (Ceramics, Batch of 2025)',
-    location: 'Studio 204 Exterior Courtyard',
-  },
-
   // 2. Creative Walls Photos
-  'wall-canteen-hub': {
-    id: 'photo-wall-01',
-    url: '/artworks/campus-art/wall-canteen-hub.jpg',
-    title: 'Canteen Chronicle Wall — "Kolkata Chai & Bonds for Life"',
-    caption:
-      'Vibrant pop-art and line illustration mural inside the student canteen. Depicts earthen bhar chai cups, late-night code sprints, and everyday campus camaraderie.',
-    type: 'wide',
-    year: 2024,
-    photographer: 'Anamika Sen (CSE, Batch of 2026)',
-    location: 'Student Canteen Central Dining Hall',
-  },
   'wall-chalk-stairwell': {
     id: 'photo-wall-02',
     url: '/artworks/campus-art/wall-chalk-stairwell.jpg',
@@ -64,18 +18,6 @@ export const CAMPUS_ART_PHOTOS: Record<string, CampusArtPhoto> = {
     photographer: 'Ritaban Roy (IT, Batch of 2026)',
     location: 'Academic Block 2 Stairwell Landing',
   },
-  'wall-mechanics-doodle': {
-    id: 'photo-wall-03',
-    url: '/artworks/mechanics-doodle.jpg',
-    title: 'Micro-Mechanical Doodle Panel — Studio 204',
-    caption:
-      'High-density micron pen and ink doodle panel covering the entrance vestibule of Studio 204. Explores clockwork ceramics and gear trains.',
-    type: 'detail',
-    year: 2024,
-    photographer: 'Sounak Bannerjee (CSE, Batch of 2026)',
-    location: 'Studio 204 Entrance Vestibule',
-  },
-
   // 3. Festival Decorations Photos
   'festival-clay-pandal': {
     id: 'photo-fest-01',
@@ -161,68 +103,7 @@ export const CAMPUS_ART_PHOTOS: Record<string, CampusArtPhoto> = {
 };
 
 export const CAMPUS_ART_PROJECTS: CampusArtProject[] = [
-  // Murals
-  {
-    id: 'mural-01',
-    accessionNo: 'GCECT-ARC-MUR-001',
-    title: 'Kiln, Silicon & Synapse',
-    groupId: 'campus-murals',
-    groupName: 'Campus murals',
-    year: 2024,
-    academicSession: '2023-24',
-    location: 'Studio 204 North Exterior Courtyard Wall',
-    campusZone: 'Courtyard',
-    medium: 'Weatherproof Acrylic Fresco on Lime-Plastered Bengal Brick',
-    dimensions: '12m × 4.5m (54 sq. meters)',
-    status: 'Permanent Monument',
-    leadArtists: ['Subhajit Mukherjee', 'Anamika Sen', '42 Student Volunteers'],
-    contributingDepartments: ['Ceramic Technology', 'Computer Science & Engineering', 'Information Technology'],
-    shortDescription:
-      'The defining landmark fresco of the college, juxtaposing monumental artisan hands molding hot terracotta with pulsating cyan neural networks.',
-    fullNarrative:
-      'Painted over 21 consecutive days in May 2024 under the sweltering Kolkata pre-monsoon heat, "Kiln, Silicon & Synapse" established the foundational identity of Brush and Bond. The mural spans the entire north exterior of Studio 204 facing the main brick courtyard. The central motif portrays two colossal artisan hands gently cradling an incandescent clay urn, while geometric circuit tracks, binary rivers, and traditional Bengal floral kalpas radiate outwards across the 80-year-old masonry. Sealed with three coats of hydrophobic silicone sealant to endure extreme monsoon downpours.',
-    curatorNote:
-      'This wall symbolizes the dual spirit of GCECT: our 1941 roots in ceramic material synthesis combined with our cutting-edge computer engineering. It remains the most photographed landmark on campus.',
-    historicalEra: 'Genesis Era (2024)',
-    tags: ['Landmark Mural', 'Studio 204', 'Courtyard', 'Fresco', 'Silicon & Clay'],
-    heroImage: '/artworks/campus-art/mural-courtyard-wide.jpg',
-    photoSet: [
-      CAMPUS_ART_PHOTOS['mural-courtyard-wide'],
-      CAMPUS_ART_PHOTOS['mural-painting-progress'],
-      CAMPUS_ART_PHOTOS['mural-courtyard-archive'],
-    ],
-  },
-
   // Creative Walls
-  {
-    id: 'wall-01',
-    accessionNo: 'GCECT-ARC-WAL-001',
-    title: 'The Canteen Chronicle Hub Wall',
-    groupId: 'creative-walls',
-    groupName: 'Creative walls',
-    year: 2024,
-    academicSession: '2024-25',
-    location: 'Central Student Canteen Dining Hall',
-    campusZone: 'Canteen',
-    medium: 'Dual-tone Acrylic, Posca Paint Markers, and Distemper Primer',
-    dimensions: '8.5m × 3.2m',
-    status: 'Active Creative Wall',
-    leadArtists: ['Ritaban Roy', 'Sayantika Bose', 'Canteen Core Committee'],
-    contributingDepartments: ['Information Technology', 'Computer Science & Engineering'],
-    shortDescription:
-      'An affectionate graphic celebration of college life, spicy samosas, earthen bhar chai, exam midnight oil, and shared student laughter.',
-    fullNarrative:
-      'Commissioned by the student body in August 2024 to revitalize the historic canteen hall, this mural acts as a visual love letter to student life. It features large-format illustrated typography ("Eat. Code. Sleep. Repeat.", "Bharer Chai, Bonds for Life"), caricature portraits of campus legends, diagrams of sorting algorithms drawn alongside steaming tea kettles, and a designated "Open Thought Wall" section where passing students leave daily sticky notes and sharpie sketches.',
-    curatorNote:
-      'The canteen wall preserves the informal folklore of the college. While galleries house formal works, this wall captures the vibrant heartbeat of daily student life.',
-    historicalEra: 'Expansion Era (2024-2025)',
-    tags: ['Canteen Wall', 'Student Life', 'Typography', 'Pop Art', 'Chai Culture'],
-    heroImage: '/artworks/campus-art/wall-canteen-hub.jpg',
-    photoSet: [
-      CAMPUS_ART_PHOTOS['wall-canteen-hub'],
-      CAMPUS_ART_PHOTOS['wall-mechanics-doodle'],
-    ],
-  },
   {
     id: 'wall-02',
     accessionNo: 'GCECT-ARC-WAL-002',
@@ -241,7 +122,7 @@ export const CAMPUS_ART_PROJECTS: CampusArtProject[] = [
     shortDescription:
       'A double-height slate wall where Fourier transforms and thermodynamics curves dissolve into delicate chalk portraits and Bengali verse.',
     fullNarrative:
-      'Originally a drab stairwell connecting the library to the IT computer labs, student artists primed the wall with high-durability chalkboard compound in January 2025. Every month, a rotating curation of students and professors sketch collaborative murals, combining differential equations with sprawling cosmic waves, portraits of Marie Curie and Meghnad Saha, and philosophical quotes on human knowledge.',
+      'Originally a drab stairwell connecting the library to the IT computer labs, student artists primed the wall with high-durability chalkboard compound in January 2025. Students and professors use it for chalk equations, portraits, and poetry.',
     curatorNote:
       'Chalk is ephemeral, but through digital photography we log each seasonal evolution into this archive, preserving ideas that would otherwise be wiped clean.',
     historicalEra: 'Living Archive (2025)',
@@ -404,39 +285,20 @@ export const CAMPUS_ART_PROJECTS: CampusArtProject[] = [
 
 export const CAMPUS_ART_GROUPS: CampusArtGroup[] = [
   {
-    id: 'campus-murals',
-    slug: 'campus-murals',
-    title: 'Campus murals',
-    badge: 'Monumental Facades',
-    shortDescription:
-      'Monumental outdoor frescos and architectural murals transforming Bengal brick facades into vibrant canvases of engineering, heritage, and human imagination.',
-    longDescription:
-      'Spanning exterior walls, courtyard facades, and historic brick surfaces, our campus murals turn everyday engineering walkways into grand open-air exhibitions. Created using weatherproof acrylics and traditional fresco techniques, they synthesize the fiery spirit of Bengal terracotta craftsmanship with modern circuit topologies.',
-    historicalSignificance:
-      'Since the inaugural painting of Studio 204’s north wall in May 2024, campus murals have served as the collective visual anchor of GCECT, unifying students across Ceramic, IT, and CSE disciplines on scaffolding under the sun.',
-    heroImage: '/artworks/campus-art/mural-courtyard-wide.jpg',
-    locationHighlight: 'Studio 204 Exterior Courtyard & Academic Quad',
-    projectCount: 1,
-    photoCount: 3,
-    projects: CAMPUS_ART_PROJECTS.filter((p) => p.groupId === 'campus-murals'),
-    curatorStatement:
-      'Our walls do not merely separate spaces; they tell our history. Every brushstroke on these historic bricks honors eight decades of technical labor.',
-  },
-  {
     id: 'creative-walls',
     slug: 'creative-walls',
     title: 'Creative walls',
     badge: 'Expressive Corridors',
     shortDescription:
-      'Expressive indoor feature walls, chalk thought-galleries, and student canteen chronicles capturing daily campus conversations, humor, and collective passion.',
+      'Expressive indoor feature walls and chalk thought-galleries capturing student ideas and campus life.',
     longDescription:
-      'Inside the classrooms, stairwells, and the central canteen, creative walls offer an ever-evolving canvas for student expression. From monumental slate walls where complex mathematical formulas dissolve into charcoal sketches, to lively pop-art canteen tributes celebrating Kolkata chai, these walls reflect the authentic rhythm of student life.',
+      'Inside classrooms and stairwells, creative walls offer an evolving canvas for student expression. On the slate wall, mathematical formulas meet sketches, poetry, and student ideas.',
     historicalSignificance:
       'Creative walls bridge academic rigor with spontaneous artistic play. By systematically documenting each iteration through high-resolution photography, our digital archive ensures ephemeral chalk and doodle art is preserved for future generations.',
-    heroImage: '/artworks/campus-art/wall-canteen-hub.jpg',
-    locationHighlight: 'Student Canteen & Academic Block 2 Stairwells',
-    projectCount: 2,
-    photoCount: 3,
+    heroImage: '/artworks/campus-art/wall-chalk-stairwell.jpg',
+    locationHighlight: 'Academic Block 2 Stairwell',
+    projectCount: 1,
+    photoCount: 1,
     projects: CAMPUS_ART_PROJECTS.filter((p) => p.groupId === 'creative-walls'),
     curatorStatement:
       'A chalkboard is wiped clean, but the creative spirit that generated it lives forever in this digital archive.',
@@ -502,28 +364,6 @@ export const CAMPUS_ART_GROUPS: CampusArtGroup[] = [
 
 export const CAMPUS_ART_LANDMARKS: CampusArtLandmark[] = [
   {
-    id: 'zone-courtyard',
-    name: 'Main Heritage Courtyard & Studio 204 Facade',
-    zone: 'Central Quadrangle',
-    building: 'Studio 204 Building',
-    description: 'The historic heart of GCECT, framed by 80-year-old red brick walls and the monumental 40-foot "Kiln, Silicon & Synapse" fresco.',
-    projectCount: 3,
-    topProjectId: 'mural-01',
-    topProjectTitle: 'Kiln, Silicon & Synapse',
-    heroImage: '/artworks/campus-art/mural-courtyard-wide.jpg',
-  },
-  {
-    id: 'zone-canteen',
-    name: 'Student Canteen Hall',
-    zone: 'Student Amenities Building',
-    building: 'Ground Floor Canteen',
-    description: 'Home of the vibrant "Canteen Chronicle Wall" celebrating chai culture, everyday humor, and student camaraderie.',
-    projectCount: 1,
-    topProjectId: 'wall-01',
-    topProjectTitle: 'The Canteen Chronicle Hub Wall',
-    heroImage: '/artworks/campus-art/wall-canteen-hub.jpg',
-  },
-  {
     id: 'zone-stairwell',
     name: 'Academic Block 2 Stairwell Landing',
     zone: 'Academic Block 2',
@@ -577,9 +417,9 @@ export const ARCHIVE_TIMELINE_ERAS = [
   },
   {
     era: '2024',
-    title: 'Genesis of Brush & Bond & The Monumental Fresco',
+    title: 'Brush & Bond Begins',
     description:
-      'Official founding of Brush and Bond. Over 40 students across CSE, IT, and Ceramics paint the 40-foot "Kiln, Silicon & Synapse" courtyard mural, pioneering cross-disciplinary art.',
+      'Brush and Bond is founded, bringing students together to share their artwork and build a creative community.',
     tag: 'Club Genesis',
     accentColor: '#2F3CFF',
   },
@@ -587,7 +427,7 @@ export const ARCHIVE_TIMELINE_ERAS = [
     era: '2025',
     title: 'Creative Walls, Tech-Art & Interactive Installations',
     description:
-      'Expansion into indoor creative walls, the Canteen Chronicle, the Stairwell Chalk Sanctuary, and "Terra-Code" capacitive ceramic touch installations with Geeks United.',
+      'The archive expands with student artwork, the Stairwell Chalk Sanctuary, and "Terra-Code" ceramic touch installations.',
     tag: 'Expansion',
     accentColor: '#10B981',
   },

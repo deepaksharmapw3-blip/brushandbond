@@ -1,5 +1,4 @@
 export type CampusArtGroupId =
-  | 'campus-murals'
   | 'creative-walls'
   | 'festival-decorations'
   | 'club-collaborations'

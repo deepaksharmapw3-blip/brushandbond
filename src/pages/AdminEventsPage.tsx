@@ -428,7 +428,7 @@ export const AdminEventsPage: React.FC = () => {
                         <option value="Exhibition">Exhibition</option>
                         <option value="Competition">Competition</option>
                         <option value="Carnival">Carnival</option>
-                        <option value="Outdoor">Outdoor / Mural</option>
+                        <option value="Outdoor">Outdoor art</option>
                       </select>
                     </div>
                   </div>
