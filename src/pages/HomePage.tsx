@@ -14,11 +14,12 @@ export const HomePage: React.FC = () => {
   const { artworks, events, artists, isLoadingSharedData, sharedDataError } = useGallery();
   const heroRef = useRef<HTMLElement | null>(null);
 
-  // 8 artworks for masonry preview
-  const canvasPreviewArtworks = artworks.slice(0, 8);
+  // Keep campus archive records on the dedicated archive page, not embedded on Home.
+  const canvasArtworks = artworks.filter((artwork) => artwork.category !== 'campus-art');
+  const canvasPreviewArtworks = canvasArtworks.slice(0, 8);
 
   // Featured artwork of the week
-  const featuredWeekArt = artworks.find((a) => a.id === 'art-002') || artworks[0];
+  const featuredWeekArt = canvasArtworks.find((a) => a.id === 'art-002') || canvasArtworks[0];
   const featuredWeekEvent = events.find((e) => e.slug === 'the-canvas-2026') || events[1] || events[0];
 
   // Next 3 events for upcoming events strip
