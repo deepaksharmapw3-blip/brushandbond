@@ -18,6 +18,14 @@ import {
 import { useGallery } from '../../context/GalleryContext';
 import { useToast } from '../../context/ToastContext';
 
+const matchesArtworkIdentifier = (
+  artwork: { id: string; accessionNo?: string | null },
+  identifier: string | undefined,
+) => artwork.id === identifier
+  || (typeof artwork.accessionNo === 'string'
+    && typeof identifier === 'string'
+    && artwork.accessionNo.toLowerCase() === identifier.toLowerCase());
+
 export const ArtworkLightbox: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -36,8 +44,7 @@ export const ArtworkLightbox: React.FC = () => {
   const dismissedArtworkId = useRef<string | null>(null);
   const routeArtworkId = location.pathname.split('/').filter(Boolean).at(-1);
   const isArtworkDetailRoute = /^\/(gallery|canvas)\/[^/]+\/?$/.test(location.pathname)
-    && artworks.some((artwork) => artwork.id === routeArtworkId
-      || artwork.accessionNo.toLowerCase() === routeArtworkId?.toLowerCase());
+    && artworks.some((artwork) => matchesArtworkIdentifier(artwork, routeArtworkId));
 
   // Sync with URL query parameter ?artwork=art-xxx or ?art=art-xxx
   useEffect(() => {
@@ -53,7 +60,7 @@ export const ArtworkLightbox: React.FC = () => {
     if (dismissedArtworkId.current === artworkQueryId) return;
     if (artworkQueryId && (!activeArtworkModal || activeArtworkModal.id !== artworkQueryId)) {
       const match = artworks.find(
-        (a) => a.id === artworkQueryId || a.accessionNo.toLowerCase() === artworkQueryId.toLowerCase()
+        (a) => matchesArtworkIdentifier(a, artworkQueryId)
       );
       if (match) {
         openArtworkModal(match);

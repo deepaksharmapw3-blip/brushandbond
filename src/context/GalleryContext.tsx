@@ -78,6 +78,9 @@ export const GalleryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         if (!active) return;
         setArtworks((artworkResult.artworks || []).map((art: any) => ({
           ...art,
+          // Legacy rows may have a NULL accession number; consumers treat this
+          // as searchable/display text, so keep the context value string-safe.
+          accessionNo: typeof art.accessionNo === 'string' ? art.accessionNo : '',
           year: resolveArtworkArchiveYear(art.year),
           category: art.category || 'campus-art',
           artistDept: art.artistDept || 'GCECT',
