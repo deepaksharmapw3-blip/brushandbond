@@ -1,5 +1,6 @@
 import React from 'react';
-import { ExternalLink, Instagram } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
+import { InstagramIcon } from '../common/Icons';
 
 interface InstagramStripProps {
   handle?: string;
@@ -34,7 +35,7 @@ export const InstagramStrip: React.FC<InstagramStripProps> = ({
       <div className="rounded-[6px] border border-[var(--line)] bg-[var(--surface)] px-6 py-8 sm:px-8 sm:py-10 flex flex-col sm:flex-row items-center justify-between gap-5">
         <div className="flex items-center gap-4 text-center sm:text-left">
           <span className="w-12 h-12 shrink-0 rounded-full border border-[var(--line)] bg-[var(--paper)] flex items-center justify-center text-[var(--accent)]">
-            <Instagram className="w-5 h-5" />
+            <InstagramIcon className="w-5 h-5" />
           </span>
           <p className="text-sm text-[var(--muted)] font-sans max-w-xl">
             Visit the official profile to see the club’s current posts.
