@@ -33,7 +33,7 @@ grant select (
 
 drop policy if exists campus_art_public_read_approved on public.campus_art_contributions;
 create policy campus_art_public_read_approved
-  on public.campus_art_contributions for select to anon, authenticated
+  on public.campus_art_contributions for select to anon
   using (status = 'approved');
 
 drop policy if exists campus_art_staff_manage on public.campus_art_contributions;
