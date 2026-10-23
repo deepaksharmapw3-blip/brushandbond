@@ -29,6 +29,19 @@ const portfolioValue = (value: unknown): string | null => {
     return null;
   }
 };
+const publicImageUrl = (value: unknown): string | null => {
+  const raw = text(value, 1000);
+  if (!raw) return '';
+  try {
+    const url = new URL(raw);
+    if ((url.protocol !== 'https:' && url.protocol !== 'http:') || url.username || url.password || !url.hostname.includes('.')) {
+      return null;
+    }
+    return url.href;
+  } catch {
+    return null;
+  }
+};
 const validUuid = (value: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 
@@ -111,6 +124,7 @@ Deno.serve(async (request) => {
     membership: { max: 100, seconds: 60 * 60 },
     'event-registration': { max: 100, seconds: 15 * 60 },
     'artwork-like': { max: 100, seconds: 15 * 60 },
+    'campus-art-contribution': { max: 5, seconds: 60 * 60 },
   };
   const type = typeof body.type === 'string' ? body.type : '';
   const rateLimitScope = type === 'artwork-like-identity' || type === 'artwork-like' ? 'artwork-like' : type;
@@ -174,6 +188,48 @@ Deno.serve(async (request) => {
       });
       if (error) throw error;
       return json({ success: true, message: 'Message sent!' }, 200, origin);
+    }
+
+    if (type === 'campus-art-contribution') {
+      const contributorName = text(data.contributorName, 100);
+      const email = emailValue(data.email);
+      const batchYear = text(data.batchYear, 40);
+      const department = text(data.department, 120);
+      const title = text(data.title, 180);
+      const approximateYear = text(data.approxYear, 32);
+      const location = text(data.location, 180);
+      const description = text(data.description, 3000);
+      const imageUrl = publicImageUrl(data.imageUrl);
+      if (
+        contributorName.length < 2
+        || (email && !validEmail(email))
+        || department.length < 2
+        || title.length < 2
+        || !approximateYear
+        || description.length < 10
+        || imageUrl === null
+      ) {
+        return json({ error: 'Please check the contribution form fields and try again.' }, 400, origin);
+      }
+
+      const { data: contribution, error } = await admin
+        .from('campus_art_contributions')
+        .insert({
+          contributor_name: contributorName,
+          email: email || null,
+          batch_year: batchYear || null,
+          department,
+          title,
+          approximate_year: approximateYear,
+          location: location || null,
+          description,
+          image_url: imageUrl || null,
+          status: 'pending',
+        })
+        .select('id, created_at')
+        .single();
+      if (error) throw error;
+      return json({ success: true, contribution }, 200, origin);
     }
 
     if (type === 'membership') {

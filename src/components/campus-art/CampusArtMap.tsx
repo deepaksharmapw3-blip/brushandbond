@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { MapPin, Sparkles } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 import { CAMPUS_ART_LANDMARKS } from '../../data/campusArtData';
 import type { CampusArtLandmark } from '../../types/campusArt';
 
@@ -38,10 +38,6 @@ export const CampusArtMap: React.FC<CampusArtMapProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-mono text-[var(--muted)] shrink-0 bg-[var(--paper)] px-3 py-1.5 rounded-full border border-[var(--line)]">
-          <Sparkles className="w-3.5 h-3.5 text-[var(--accent)]" />
-          <span>5 Documented Locations</span>
-        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">

@@ -2,20 +2,19 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send, AlertCircle, CheckCircle2, History } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
-import type { CampusArtGroupId, CampusArtContribution } from '../../types/campusArt';
+import type { CampusArtContribution } from '../../types/campusArt';
+import { campusArtContributionApi } from '../../services/api';
 
 interface CampusArtContributionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: (contribution: CampusArtContribution) => void;
-  initialGroup?: CampusArtGroupId;
 }
 
 export const CampusArtContributionModal: React.FC<CampusArtContributionModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
-  initialGroup = 'creative-walls',
 }) => {
   const { showSuccess, showWarning } = useToast();
 
@@ -24,7 +23,6 @@ export const CampusArtContributionModal: React.FC<CampusArtContributionModalProp
     email: '',
     batchYear: '',
     department: 'Ceramic Technology',
-    artGroup: initialGroup,
     title: '',
     approxYear: '2024',
     location: '',
@@ -35,7 +33,7 @@ export const CampusArtContributionModal: React.FC<CampusArtContributionModalProp
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.contributorName.trim() || !formData.title.trim() || !formData.description.trim()) {
       showWarning('Required fields missing', 'Please complete all required fields.');
@@ -43,28 +41,41 @@ export const CampusArtContributionModal: React.FC<CampusArtContributionModalProp
     }
 
     setIsSubmitting(true);
-
-    setTimeout(() => {
-      const newContribution: CampusArtContribution = {
-        id: `contrib-${Date.now()}`,
+    try {
+      const saved = await campusArtContributionApi.submit({
         contributorName: formData.contributorName,
         email: formData.email,
         batchYear: formData.batchYear,
         department: formData.department,
-        artGroup: formData.artGroup as CampusArtGroupId,
+        title: formData.title,
+        approxYear: formData.approxYear,
+        location: formData.location,
+        description: formData.description,
+        imageUrl: formData.imageUrl,
+      });
+      const newContribution: CampusArtContribution = {
+        id: saved.id,
+        contributorName: formData.contributorName,
+        email: formData.email,
+        batchYear: formData.batchYear,
+        department: formData.department,
         title: formData.title,
         approxYear: formData.approxYear,
         location: formData.location || 'GCECT Campus',
         description: formData.description,
         imageUrl: formData.imageUrl || undefined,
-        submittedAt: new Date().toISOString(),
+        submittedAt: saved.created_at,
+        status: 'pending',
       };
 
       setIsSubmitting(false);
       setSubmitted(true);
-      showSuccess('Archival record received!', 'Thank you for preserving GCECT history.');
+      showSuccess('Contribution submitted', 'An admin will review it before it appears in the public archive.');
       if (onSuccess) onSuccess(newContribution);
-    }, 700);
+    } catch (error) {
+      showWarning('Submission failed', error instanceof Error ? error.message : 'Please try again.');
+      setIsSubmitting(false);
+    }
   };
 
   const handleReset = () => {
@@ -74,7 +85,6 @@ export const CampusArtContributionModal: React.FC<CampusArtContributionModalProp
       email: '',
       batchYear: '',
       department: 'Ceramic Technology',
-      artGroup: initialGroup,
       title: '',
       approxYear: '2024',
       location: '',
@@ -106,7 +116,7 @@ export const CampusArtContributionModal: React.FC<CampusArtContributionModalProp
                 Contribute Campus Art Record
               </h2>
               <p className="text-xs sm:text-sm text-[var(--muted)] font-sans">
-                Help document creative projects, festival decorations, and past installations created by students across GCECT's history.
+                Share a record of GCECT campus art. Contributions are reviewed by an admin before they appear in the archive.
               </p>
             </div>
 
@@ -209,22 +219,6 @@ export const CampusArtContributionModal: React.FC<CampusArtContributionModalProp
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <label className="block text-xs font-mono text-[var(--muted)]">
-                      Artistic Group *
-                    </label>
-                    <select
-                      value={formData.artGroup}
-                      onChange={(e) => setFormData({ ...formData, artGroup: e.target.value as CampusArtGroupId })}
-                      className="w-full bg-[var(--paper)] border border-[var(--line)] px-3.5 py-2 text-sm rounded-[6px] text-[var(--ink)] focus:outline-none focus:border-[var(--accent)] cursor-pointer font-semibold"
-                    >
-                      <option value="creative-walls">Creative walls</option>
-                      <option value="festival-decorations">Festival decorations</option>
-                      <option value="club-collaborations">Club collaborations</option>
-                      <option value="student-installations">Student installations</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-mono text-[var(--muted)]">
                       Year / Approximate Era *
                     </label>
                     <input
@@ -297,7 +291,7 @@ export const CampusArtContributionModal: React.FC<CampusArtContributionModalProp
               <div className="flex items-start gap-2 p-3 bg-[var(--paper)] border border-[var(--line)] rounded-[6px] text-xs text-[var(--muted)] font-sans">
                 <AlertCircle className="w-4 h-4 text-[var(--accent)] shrink-0 mt-0.5" />
                 <span>
-                  All submissions are cross-referenced against historical archives by the curator team. Your contribution will be credited in the permanent digital record.
+                  Your record stays private while pending. An admin reviews it before publication and controls any later changes or removal.
                 </span>
               </div>
 

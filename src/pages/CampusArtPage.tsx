@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import {
   Compass,
@@ -24,6 +24,7 @@ import { CampusArtLightbox } from '../components/campus-art/CampusArtLightbox';
 import { CampusArtMap } from '../components/campus-art/CampusArtMap';
 import { CampusArtContributionModal } from '../components/campus-art/CampusArtContributionModal';
 import { useToast } from '../context/ToastContext';
+import { campusArtContributionApi } from '../services/api';
 import type {
   CampusArtGroupId,
   CampusArtPhoto,
@@ -53,6 +54,24 @@ export const CampusArtPage: React.FC = () => {
 
   // Contribution modal state
   const [contributionModalOpen, setContributionModalOpen] = useState(false);
+  const [approvedContributions, setApprovedContributions] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (searchParams.get('contribute') === '1') {
+      setContributionModalOpen(true);
+      const next = new URLSearchParams(searchParams);
+      next.delete('contribute');
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
+    let active = true;
+    campusArtContributionApi.getApproved()
+      .then((records) => { if (active) setApprovedContributions(records); })
+      .catch((error) => console.warn('Could not load approved campus archive contributions:', error));
+    return () => { active = false; };
+  }, []);
 
   // Copied link state
   const [copiedLink, setCopiedLink] = useState(false);
@@ -162,50 +181,12 @@ export const CampusArtPage: React.FC = () => {
           </div>
         </div>
 
-        {/* 2. Archival Quick Stats Ribbon */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-5 sm:p-6 rounded-[8px] bg-[var(--surface)] border border-[var(--line)] shadow-xs">
-          <div>
-            <span className="block font-display text-2xl sm:text-3xl font-extrabold text-[var(--ink)]">
-              5 Groups
-            </span>
-            <span className="text-xs font-mono text-[var(--muted)]">
-              Documented Categories
-            </span>
-          </div>
-
-          <div>
-            <span className="block font-display text-2xl sm:text-3xl font-extrabold text-[var(--ink)]">
-              18+ Sites
-            </span>
-            <span className="text-xs font-mono text-[var(--muted)]">
-              Campus Art Landmarks
-            </span>
-          </div>
-
-          <div>
-            <span className="block font-display text-2xl sm:text-3xl font-extrabold text-[var(--accent)]">
-              1941 - 2026
-            </span>
-            <span className="text-xs font-mono text-[var(--muted)]">
-              Historical Timeline
-            </span>
-          </div>
-
-          <div>
-            <span className="block font-display text-2xl sm:text-3xl font-extrabold text-[var(--ink)]">
-              100%
-            </span>
-            <span className="text-xs font-mono text-[var(--muted)]">
-              Student & Alumni Crafted
-            </span>
-          </div>
-        </div>
       </section>
 
       {/* 3. Sticky Archival Filter & View Mode Bar */}
       <div className="sticky top-20 z-30 bg-[var(--paper)]/95 backdrop-blur-md border-y border-[var(--line)] shadow-xs transition-colors">
         <div className="gallery-container py-3.5 space-y-3">
-          {/* Top Row: The Five Groups Chips */}
+          {/* Archive collection filters */}
           <div className="flex items-center justify-between gap-3 overflow-x-auto pb-1 scrollbar-none no-scrollbar">
             <div className="flex items-center gap-2 flex-nowrap shrink-0">
               <button
@@ -213,7 +194,7 @@ export const CampusArtPage: React.FC = () => {
                 onClick={() => handleGroupSelect('all')}
                 className={`filter-chip ${activeGroupFilter === 'all' ? 'active' : ''}`}
               >
-                <span>All 5 Groups</span>
+                <span>All records</span>
                 <span className="text-[11px] opacity-70 ml-1.5 font-mono">
                   ({CAMPUS_ART_PROJECTS.length})
                 </span>
@@ -316,7 +297,7 @@ export const CampusArtPage: React.FC = () => {
         {activeViewMode === 'groups' && (
           <div className="space-y-16">
             {displayedGroups.length > 0 ? (
-              displayedGroups.map((group, groupIdx) => {
+              displayedGroups.map((group) => {
                 const groupPhotos = group.projects.flatMap((p) => p.photoSet);
 
                 return (
@@ -330,7 +311,7 @@ export const CampusArtPage: React.FC = () => {
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--line)] pb-5">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2 text-xs font-mono text-[var(--accent)] font-semibold uppercase tracking-wider">
-                            <span>GROUP {groupIdx + 1} OF 5</span>
+                            <span>ARCHIVE COLLECTION</span>
                             <span>•</span>
                             <span>{group.badge}</span>
                           </div>
@@ -551,6 +532,33 @@ export const CampusArtPage: React.FC = () => {
               </div>
             )}
           </div>
+        )}
+
+        {activeViewMode === 'groups' && approvedContributions.length > 0 && (
+          <section className="mt-16 space-y-6" aria-labelledby="community-archive-title">
+            <div className="border-b border-[var(--line)] pb-4">
+              <p className="text-xs font-mono uppercase tracking-wider text-[var(--accent)]">Community archive</p>
+              <h2 id="community-archive-title" className="mt-1 font-display text-3xl font-bold text-[var(--ink)]">Contributed campus art</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {approvedContributions.map((record) => (
+                <article key={record.id} className="overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--surface)]">
+                  {record.imageUrl && <img src={record.imageUrl} alt={record.title} loading="lazy" className="w-full max-h-80 object-cover" />}
+                  <div className="space-y-3 p-5">
+                    <div className="flex items-start justify-between gap-3">
+                      <h3 className="font-display text-xl font-bold text-[var(--ink)]">{record.title}</h3>
+                      <span className="shrink-0 font-mono text-xs text-[var(--accent)]">{record.approxYear}</span>
+                    </div>
+                    <p className="text-sm leading-relaxed text-[var(--muted)]">{record.description}</p>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 border-t border-[var(--line)] pt-3 text-xs text-[var(--muted)]">
+                      {record.location && <span><MapPin className="mr-1 inline h-3.5 w-3.5" />{record.location}</span>}
+                      <span>{record.contributorName}{record.batchYear ? ` · ${record.batchYear}` : ''}</span>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
         )}
 
         {/* VIEW MODE 2: INTERACTIVE CAMPUS MAP */}

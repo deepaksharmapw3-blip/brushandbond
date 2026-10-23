@@ -67,16 +67,16 @@ export interface CampusArtGroup {
 export interface CampusArtContribution {
   id: string;
   contributorName: string;
-  email: string;
-  batchYear: string;
+  email?: string;
+  batchYear?: string;
   department: string;
-  artGroup: CampusArtGroupId;
   title: string;
   approxYear: string;
-  location: string;
+  location?: string;
   description: string;
   imageUrl?: string;
   submittedAt: string;
+  status: 'pending' | 'approved' | 'rejected';
 }
 
 export interface CampusArtLandmark {

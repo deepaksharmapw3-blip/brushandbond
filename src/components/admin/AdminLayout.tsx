@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   Award,
   TrendingUp,
+  Inbox,
 } from 'lucide-react';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 
@@ -40,6 +41,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Manage Artists', icon: Palette, path: '/admin/artists', section: 'artists' },
   { label: 'Manage Team', icon: Users, path: '/admin/team', section: 'team' },
   { label: 'Manage Applications', icon: UserCheck, path: '/admin/members', section: 'members' },
+  { label: 'Campus Submissions', icon: Inbox, path: '/admin/campus-art-submissions', section: 'campus-submissions' },
   { label: 'Contact Messages', icon: Mail, path: '/admin/messages', section: 'messages' },
   { label: 'Announcements', icon: Bell, path: '/admin/announcements', section: 'announcements' },
   { label: 'Achievements', icon: Award, path: '/admin/achievements', section: 'achievements' },

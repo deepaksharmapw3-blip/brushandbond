@@ -645,6 +645,63 @@ export const campusArtApi = {
   },
 };
 
+// ─── Public campus archive contributions (moderated by staff) ───────────────
+
+export const campusArtContributionApi = {
+  submit: async (payload: Record<string, unknown>) => {
+    const { data, error } = await supabase.functions.invoke('public-submission', {
+      body: { type: 'campus-art-contribution', data: payload },
+    });
+    if (error) throw new Error(await getFunctionError(error));
+    if (!data?.success) throw new Error(data?.error ?? 'Could not submit this archive record. Please try again.');
+    return data.contribution as { id: string; created_at: string };
+  },
+
+  getAll: async () => {
+    const { data, error } = await supabase
+      .from('campus_art_contributions')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw new Error(error.message);
+    return normalizeRow(data ?? []).map((row: any) => ({
+      ...row,
+      approxYear: row.approximate_year,
+      submittedAt: row.created_at,
+    }));
+  },
+
+  getApproved: async () => {
+    const { data, error } = await supabase
+      .from('campus_art_contributions')
+      .select('id, contributor_name, batch_year, department, title, approximate_year, location, description, image_url, created_at')
+      .eq('status', 'approved')
+      .order('created_at', { ascending: false });
+    if (error) throw new Error(error.message);
+    return normalizeRow(data ?? []).map((row: any) => ({
+      ...row,
+      approxYear: row.approximate_year,
+      submittedAt: row.created_at,
+    }));
+  },
+
+  updateStatus: async (id: string, status: 'approved' | 'rejected') => {
+    const reviewedAt = new Date().toISOString();
+    const { data, error } = await supabase
+      .from('campus_art_contributions')
+      .update({ status, reviewed_at: reviewedAt, updated_at: reviewedAt })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    return normalizeRow(data);
+  },
+
+  delete: async (id: string) => {
+    const { error } = await supabase.from('campus_art_contributions').delete().eq('id', id);
+    if (error) throw new Error(error.message);
+  },
+};
+
 // ─── Announcements ───────────────────────────────────────────────────────────
 
 export const announcementApi = {

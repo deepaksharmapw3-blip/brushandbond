@@ -37,6 +37,7 @@ const AdminTeamPage = lazy(() => import('./pages/AdminTeamPage').then(m => ({ de
 const AdminMessagesPage = lazy(() => import('./pages/AdminMessagesPage').then(m => ({ default: m.AdminMessagesPage })));
 const AdminAnnouncementsPage = lazy(() => import('./pages/AdminAnnouncementsPage').then(m => ({ default: m.AdminAnnouncementsPage })));
 const AdminAchievementsPage = lazy(() => import('./pages/AdminAchievementsPage').then(m => ({ default: m.AdminAchievementsPage })));
+const AdminCampusSubmissionsPage = lazy(() => import('./pages/AdminCampusSubmissionsPage').then(m => ({ default: m.AdminCampusSubmissionsPage })));
 const AdminAnalyticsPage = lazy(() => import('./pages/AdminAnalyticsPage').then(m => ({ default: m.AdminAnalyticsPage })));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
 
@@ -179,6 +180,7 @@ function AppContent() {
               <Route path="messages" element={<AdminMessagesPage />} />
               <Route path="announcements" element={<AdminAnnouncementsPage />} />
               <Route path="achievements" element={<AdminAchievementsPage />} />
+              <Route path="campus-art-submissions" element={<AdminCampusSubmissionsPage />} />
               <Route path="analytics" element={<AdminAnalyticsPage />} />
             </Route>
 
