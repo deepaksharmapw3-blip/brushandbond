@@ -50,6 +50,10 @@ function normalizeRow<T>(value: T): T {
   }
   // The Edge Function also checks this canonical database column. If a legacy
   // camelCase field is present, never let it disagree with the backend value.
+  // Artworks: the gallery reads `year`; fall back to art_year, then 2026.
+  if ('art_year' in normalized || 'artist_name' in normalized || 'accession_no' in normalized) {
+    if (normalized.year == null) normalized.year = normalized.art_year ?? 2026;
+  }
   if (typeof normalized.registration_open === 'boolean') {
     normalized.registrationOpen = normalized.registration_open;
   }

@@ -127,6 +127,7 @@ export const AdminGalleryPage: React.FC = () => {
         width,
         height,
         alt: title.trim(),
+        year: currentYear,
         art_year: currentYear,
         artist_id: artistId || null,
         description: description.trim() || null,
