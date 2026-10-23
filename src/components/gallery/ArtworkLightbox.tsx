@@ -73,8 +73,18 @@ export const ArtworkLightbox: React.FC = () => {
     const nextParams = new URLSearchParams(searchParams);
     nextParams.delete('artwork');
     nextParams.delete('art');
-    setSearchParams(nextParams, { replace: true });
-  }, [activeArtworkModal, closeArtworkModal, searchParams, setSearchParams]);
+    if (isArtworkDetailRoute) {
+      navigate('/gallery', { replace: true });
+      return;
+    }
+
+    const query = nextParams.toString();
+    navigate({
+      pathname: location.pathname,
+      search: query ? `?${query}` : '',
+      hash: location.hash,
+    }, { replace: true });
+  }, [closeArtworkModal, isArtworkDetailRoute, location.hash, location.pathname, navigate, searchParams]);
 
   // Keyboard navigation support: Left / Right / Escape
   useEffect(() => {
@@ -209,15 +219,7 @@ export const ArtworkLightbox: React.FC = () => {
               {/* Close Button */}
               <button
                 type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleClose();
-                }}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
+                onClick={handleClose}
                 className="w-8 h-8 flex items-center justify-center rounded-full bg-[var(--surface)] border border-[var(--line)] text-[var(--ink)] hover:border-[var(--ink)] hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition-all font-bold active:scale-95"
                 aria-label="Close artwork details (Escape)"
                 title="Close (Escape)"
