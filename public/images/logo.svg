@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title">
-  <title id="title">Brush and Bond</title>
-  <rect width="128" height="128" rx="28" fill="#2f3cff" />
-  <path d="M35 31h31c18 0 28 9 28 23 0 9-5 16-13 19 11 3 17 11 17 22 0 16-12 25-32 25H35V31Zm20 17v19h10c7 0 11-3 11-10 0-6-4-9-11-9H55Zm0 35v20h12c8 0 12-3 12-10s-4-10-12-10H55Z" fill="#fff" transform="translate(0 -8)" />
-  <circle cx="99" cy="31" r="8" fill="#a7adff" />
-</svg>

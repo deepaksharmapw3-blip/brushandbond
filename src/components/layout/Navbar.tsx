@@ -71,9 +71,9 @@ export const Navbar: React.FC = () => {
             aria-label="Brush and Bond Homepage"
           >
               <img
-                src="/images/logo.svg"
-              alt="Brush and Bond Logo" 
-              className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover hover:scale-105 transition-transform duration-300"
+              src="/images/logo.jpg"
+              alt="Official Brush and Bond logo"
+              className="w-10 h-10 sm:w-12 sm:h-12 rounded-md object-cover hover:scale-105 transition-transform duration-300"
             />
             <span className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-[var(--ink)] hidden sm:block">
               Brush and Bond
@@ -170,9 +170,9 @@ export const Navbar: React.FC = () => {
                 className="flex items-center gap-2.5"
               >
                 <img
-                  src="/images/logo.svg"
-                  alt="Brush and Bond Logo" 
-                  className="w-10 h-10 rounded-full object-cover"
+                  src="/images/logo.jpg"
+                  alt="Official Brush and Bond logo"
+                  className="w-10 h-10 rounded-md object-cover"
                 />
                 <span className="font-display text-2xl font-bold tracking-tight text-[var(--ink)]">
                   Brush and Bond

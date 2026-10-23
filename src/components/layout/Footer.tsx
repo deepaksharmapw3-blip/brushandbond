@@ -13,9 +13,9 @@ export const Footer: React.FC = () => {
           <div className="md:col-span-5 space-y-3.5">
             <Link to="/" className="inline-flex items-center gap-3 group">
               <img
-                src="/images/logo.svg"
-                alt="Brush and Bond Logo" 
-                className="w-14 h-14 rounded-full object-cover group-hover:scale-105 transition-transform duration-300 shadow-sm"
+              src="/images/logo.jpg"
+              alt="Official Brush and Bond logo"
+              className="w-14 h-14 rounded-md object-cover group-hover:scale-105 transition-transform duration-300 shadow-sm"
               />
               <span className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-[var(--ink)]">
                 Brush and Bond
