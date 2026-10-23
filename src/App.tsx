@@ -11,7 +11,7 @@ import { ArtworkLightbox } from './components/gallery/ArtworkLightbox';
 import { ScrollToTop } from './components/common/ScrollToTop';
 import { CampusArtPage } from './pages/CampusArtPage';
 
-import { lazy, Suspense } from 'react';
+import { Component, lazy, Suspense, type ErrorInfo, type ReactNode } from 'react';
 import { HomePage } from './pages/HomePage';
 
 const AboutPage = lazy(() => import('./pages/AboutPage').then(m => ({ default: m.AboutPage })));
@@ -46,6 +46,44 @@ const PageLoadingFallback = () => (
     <span className="text-xs font-mono text-[var(--muted)]">Accessioning gallery...</span>
   </div>
 );
+
+class CampusArchiveErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('Campus art archive failed to render:', error, info.componentStack);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <section className="gallery-container py-24 text-center" role="alert">
+          <h1 className="font-display text-3xl font-bold text-[var(--ink)]">
+            The campus archive could not load
+          </h1>
+          <p className="mt-3 text-[var(--muted)]">
+            Please try again. If the problem continues, return to the gallery and reopen the archive.
+          </p>
+          <div className="mt-6 flex justify-center gap-3">
+            <button type="button" className="btn-primary" onClick={() => this.setState({ hasError: false })}>
+              Try again
+            </button>
+            <a className="btn-secondary" href="/gallery">Return to gallery</a>
+          </div>
+        </section>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 function AppContent() {
   const location = useLocation();
@@ -96,11 +134,17 @@ function AppContent() {
 
             {/* Gallery & Campus Art routes */}
             <Route path="/gallery" element={<GalleryPage />} />
-            <Route path="/gallery/campus-art" element={<CampusArtPage />} />
+            <Route
+              path="/gallery/campus-art"
+              element={<CampusArchiveErrorBoundary key={location.pathname}><CampusArtPage /></CampusArchiveErrorBoundary>}
+            />
             <Route path="/gallery/:param" element={<GalleryRouteHandler />} />
             {/* Backward-compatible alias for /canvas */}
             <Route path="/canvas" element={<Navigate to="/gallery" replace />} />
-            <Route path="/canvas/campus-art" element={<CampusArtPage />} />
+            <Route
+              path="/canvas/campus-art"
+              element={<CampusArchiveErrorBoundary key={location.pathname}><CampusArtPage /></CampusArchiveErrorBoundary>}
+            />
             <Route path="/canvas/:param" element={<GalleryRouteHandler />} />
 
             {/* Events routes */}
