@@ -47,7 +47,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // another Supabase request here can deadlock the client's auth lock. The
   // profile lookup below runs in a React effect after the callback returns.
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: string, session: any) => {
       const authUser = session?.user;
       setAuthIdentity(authUser ? { id: authUser.id, email: authUser.email ?? '' } : null);
       setAuthError(null);
@@ -117,7 +117,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const logout = () => {
     setUser(null);
-    void supabase.auth.signOut().catch((err) => console.error('Sign-out error:', err));
+    void supabase.auth.signOut().catch((err: any) => console.error('Sign-out error:', err));
   };
 
   return (

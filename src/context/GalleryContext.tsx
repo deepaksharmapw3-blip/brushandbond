@@ -75,7 +75,7 @@ export const GalleryProvider: React.FC<{ children: React.ReactNode }> = ({ child
           artworkApi.getAll({ limit: 500 }), eventApi.getAll(), artistApi.getAll(), achievementApi.getAll(), headlineNumberApi.getAll(),
         ]);
         if (!active) return;
-        setArtworks((artworkResult.artworks || []).map((art) => ({
+        setArtworks((artworkResult.artworks || []).map((art: any) => ({
           ...art,
           category: art.category || 'campus-art',
           artistDept: art.artistDept || 'GCECT',
@@ -83,11 +83,11 @@ export const GalleryProvider: React.FC<{ children: React.ReactNode }> = ({ child
           medium: art.medium || 'Mixed Media',
         })));
         setEvents(eventResult.events || []);
-        setRegisteredEventIds(new Set((eventResult.events || []).filter((event) => event.isRegistered).map((event) => String(event.id))));
+        setRegisteredEventIds(new Set((eventResult.events || []).filter((event: any) => event.isRegistered).map((event: any) => String(event.id))));
         setArtists(artistResult.artists || []);
         setAchievements(achievementResult.achievements || []);
         setHeadlineNumbers(headlineResult.headlineNumbers || []);
-        setLikedArtworkIds(new Set((artworkResult.artworks || []).filter((art) => art.isLiked).map((art) => String(art.id))));
+        setLikedArtworkIds(new Set((artworkResult.artworks || []).filter((art: any) => art.isLiked).map((art: any) => String(art.id))));
         setSharedDataError(null);
       } catch (error) {
         console.error('Could not load the shared gallery data:', error);

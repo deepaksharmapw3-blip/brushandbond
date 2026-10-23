@@ -544,7 +544,7 @@ export const headlineNumberApi = {
     const { data, error } = await supabase.from('site_stats').select('key, value');
     if (error) throw new Error(error.message);
     // Map to the shape the old API returned: [{ id: key, label: key, value }]
-    const headlineNumbers = (data ?? []).map((r) => ({ id: r.key, label: r.key, value: String(r.value), description: '' }));
+    const headlineNumbers = (data ?? []).map((r: any) => ({ id: r.key, label: r.key, value: String(r.value), description: '' }));
     return { success: true, headlineNumbers };
   },
 
@@ -748,7 +748,7 @@ async function sumPublishedArtworkLikes() {
   // remain private. The public artwork aggregate is safe to use for analytics.
   const { data, error } = await supabase.from('artworks').select('likes');
   if (error) throw new Error(error.message);
-  return (data ?? []).reduce((total, artwork) => total + (artwork.likes ?? 0), 0);
+  return (data ?? []).reduce((total: number, artwork: any) => total + (artwork.likes ?? 0), 0);
 }
 
 export const adminAnalyticsApi = {
