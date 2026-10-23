@@ -65,7 +65,7 @@ export const ArtworkLightbox: React.FC = () => {
     nextParams.delete('artwork');
     nextParams.delete('art');
     setSearchParams(nextParams, { replace: true });
-  }, [closeArtworkModal, searchParams, setSearchParams]);
+  }, [activeArtworkModal, closeArtworkModal, searchParams, setSearchParams]);
 
   // Keyboard navigation support: Left / Right / Escape
   useEffect(() => {
@@ -89,12 +89,11 @@ export const ArtworkLightbox: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activeArtworkModal, prevArtwork, nextArtwork, handleClose]);
 
-  if (!activeArtworkModal) return null;
-
   const artwork = activeArtworkModal;
-  const isLiked = likedArtworkIds.has(artwork.id);
+  const isLiked = artwork ? likedArtworkIds.has(artwork.id) : false;
 
   const handleShare = () => {
+    if (!artwork) return;
     const shareUrl = `${window.location.origin}/gallery?artwork=${artwork.id}`;
     navigator.clipboard.writeText(shareUrl).then(() => {
       showSuccess(
@@ -106,7 +105,7 @@ export const ArtworkLightbox: React.FC = () => {
 
   return (
     <AnimatePresence mode="wait">
-      {activeArtworkModal && (
+      {artwork && (
       <div
         className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 md:p-8 bg-black/85 backdrop-blur-md overflow-y-auto"
         onClick={(e) => {
@@ -388,10 +387,8 @@ export const ArtworkLightbox: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    handleClose();
-                    setTimeout(() => {
-                      navigate(`/gallery/${artwork.id}`);
-                    }, 200);
+                    closeArtworkModal();
+                    navigate(`/gallery/${artwork.id}`);
                   }}
                   className="btn-secondary min-h-[42px] py-2 hover:bg-[var(--accent)]/10 active:scale-95 transition-all"
                   title="Open dedicated standalone page"
