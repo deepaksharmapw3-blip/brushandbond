@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { Link, useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -33,6 +33,7 @@ export const ArtworkLightbox: React.FC = () => {
   } = useGallery();
   const { showSuccess } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
+  const dismissedArtworkId = useRef<string | null>(null);
   const routeArtworkId = location.pathname.split('/').filter(Boolean).at(-1);
   const isArtworkDetailRoute = /^\/(gallery|canvas)\/[^/]+\/?$/.test(location.pathname)
     && artworks.some((artwork) => artwork.id === routeArtworkId
@@ -45,6 +46,11 @@ export const ArtworkLightbox: React.FC = () => {
       return;
     }
     const artworkQueryId = searchParams.get('artwork') || searchParams.get('art');
+    if (!artworkQueryId) {
+      dismissedArtworkId.current = null;
+      return;
+    }
+    if (dismissedArtworkId.current === artworkQueryId) return;
     if (artworkQueryId && (!activeArtworkModal || activeArtworkModal.id !== artworkQueryId)) {
       const match = artworks.find(
         (a) => a.id === artworkQueryId || a.accessionNo.toLowerCase() === artworkQueryId.toLowerCase()
@@ -69,6 +75,10 @@ export const ArtworkLightbox: React.FC = () => {
 
   // Handle closing modal and removing URL param
   const handleClose = useCallback(() => {
+    dismissedArtworkId.current = searchParams.get('artwork')
+      || searchParams.get('art')
+      || activeArtworkModal?.id
+      || null;
     closeArtworkModal();
     const nextParams = new URLSearchParams(searchParams);
     nextParams.delete('artwork');
@@ -84,7 +94,7 @@ export const ArtworkLightbox: React.FC = () => {
       search: query ? `?${query}` : '',
       hash: location.hash,
     }, { replace: true });
-  }, [closeArtworkModal, isArtworkDetailRoute, location.hash, location.pathname, navigate, searchParams]);
+  }, [activeArtworkModal, closeArtworkModal, isArtworkDetailRoute, location.hash, location.pathname, navigate, searchParams]);
 
   // Keyboard navigation support: Left / Right / Escape
   useEffect(() => {
