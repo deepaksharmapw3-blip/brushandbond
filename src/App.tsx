@@ -9,6 +9,7 @@ import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
 import { ArtworkLightbox } from './components/gallery/ArtworkLightbox';
 import { ScrollToTop } from './components/common/ScrollToTop';
+import { CampusArtPage } from './pages/CampusArtPage';
 
 import { lazy, Suspense } from 'react';
 import { HomePage } from './pages/HomePage';
@@ -16,7 +17,6 @@ import { HomePage } from './pages/HomePage';
 const AboutPage = lazy(() => import('./pages/AboutPage').then(m => ({ default: m.AboutPage })));
 const GalleryPage = lazy(() => import('./pages/GalleryPage').then(m => ({ default: m.GalleryPage })));
 const GalleryRouteHandler = lazy(() => import('./pages/GalleryRouteHandler').then(m => ({ default: m.GalleryRouteHandler })));
-const CampusArtPage = lazy(() => import('./pages/CampusArtPage').then(m => ({ default: m.CampusArtPage })));
 const EventsPage = lazy(() => import('./pages/EventsPage').then(m => ({ default: m.EventsPage })));
 const EventDetailPage = lazy(() => import('./pages/EventDetailPage').then(m => ({ default: m.EventDetailPage })));
 const ArtistsPage = lazy(() => import('./pages/ArtistsPage').then(m => ({ default: m.ArtistsPage })));
