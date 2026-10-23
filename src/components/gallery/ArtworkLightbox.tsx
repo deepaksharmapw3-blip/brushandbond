@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect } from 'react';
-import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -20,6 +20,7 @@ import { useToast } from '../../context/ToastContext';
 
 export const ArtworkLightbox: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const {
     artworks,
     activeArtworkModal,
@@ -32,9 +33,17 @@ export const ArtworkLightbox: React.FC = () => {
   } = useGallery();
   const { showSuccess } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
+  const routeArtworkId = location.pathname.split('/').filter(Boolean).at(-1);
+  const isArtworkDetailRoute = /^\/(gallery|canvas)\/[^/]+\/?$/.test(location.pathname)
+    && artworks.some((artwork) => artwork.id === routeArtworkId
+      || artwork.accessionNo.toLowerCase() === routeArtworkId?.toLowerCase());
 
   // Sync with URL query parameter ?artwork=art-xxx or ?art=art-xxx
   useEffect(() => {
+    if (isArtworkDetailRoute) {
+      if (activeArtworkModal) closeArtworkModal();
+      return;
+    }
     const artworkQueryId = searchParams.get('artwork') || searchParams.get('art');
     if (artworkQueryId && (!activeArtworkModal || activeArtworkModal.id !== artworkQueryId)) {
       const match = artworks.find(
@@ -44,11 +53,11 @@ export const ArtworkLightbox: React.FC = () => {
         openArtworkModal(match);
       }
     }
-  }, [searchParams, artworks, activeArtworkModal, openArtworkModal]);
+  }, [searchParams, artworks, activeArtworkModal, openArtworkModal, isArtworkDetailRoute, closeArtworkModal]);
 
   // When activeArtworkModal changes, keep URL in sync so modal is directly shareable
   useEffect(() => {
-    if (activeArtworkModal) {
+    if (activeArtworkModal && !isArtworkDetailRoute) {
       const currentParam = searchParams.get('artwork');
       if (currentParam !== activeArtworkModal.id) {
         const nextParams = new URLSearchParams(searchParams);
@@ -56,7 +65,7 @@ export const ArtworkLightbox: React.FC = () => {
         setSearchParams(nextParams, { replace: true });
       }
     }
-  }, [activeArtworkModal, searchParams, setSearchParams]);
+  }, [activeArtworkModal, searchParams, setSearchParams, isArtworkDetailRoute]);
 
   // Handle closing modal and removing URL param
   const handleClose = useCallback(() => {
@@ -388,7 +397,7 @@ export const ArtworkLightbox: React.FC = () => {
                   type="button"
                   onClick={() => {
                     closeArtworkModal();
-                    navigate(`/gallery/${artwork.id}`);
+                    navigate({ pathname: `/gallery/${artwork.id}`, search: '' });
                   }}
                   className="btn-secondary min-h-[42px] py-2 hover:bg-[var(--accent)]/10 active:scale-95 transition-all"
                   title="Open dedicated standalone page"
