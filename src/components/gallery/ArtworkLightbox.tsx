@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -19,6 +19,7 @@ import { useGallery } from '../../context/GalleryContext';
 import { useToast } from '../../context/ToastContext';
 
 export const ArtworkLightbox: React.FC = () => {
+  const navigate = useNavigate();
   const {
     artworks,
     activeArtworkModal,
@@ -195,8 +196,11 @@ export const ArtworkLightbox: React.FC = () => {
               {/* Close Button */}
               <button
                 type="button"
-                onClick={handleClose}
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-[var(--surface)] border border-[var(--line)] text-[var(--ink)] hover:border-[var(--ink)] transition-colors font-bold"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleClose();
+                }}
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-[var(--surface)] border border-[var(--line)] text-[var(--ink)] hover:border-[var(--ink)] hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition-all font-bold active:scale-95"
                 aria-label="Close artwork details (Escape)"
                 title="Close (Escape)"
               >
@@ -371,15 +375,20 @@ export const ArtworkLightbox: React.FC = () => {
                   <span>{isLiked ? 'Saved' : `Like (${artwork.likes})`}</span>
                 </button>
 
-                <Link
-                  to={`/gallery/${artwork.id}`}
-                  onClick={handleClose}
-                  className="btn-secondary min-h-[42px] py-2"
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleClose();
+                    setTimeout(() => {
+                      navigate(`/gallery/${artwork.id}`);
+                    }, 200);
+                  }}
+                  className="btn-secondary min-h-[42px] py-2 hover:bg-[var(--accent)]/10 active:scale-95 transition-all"
                   title="Open dedicated standalone page"
                 >
                   <Maximize2 className="w-4 h-4" />
                   <span>Full page</span>
-                </Link>
+                </button>
               </div>
             </div>
           </div>

@@ -16,6 +16,7 @@ import type { GalleryCategory, Artwork } from '../types';
 import { SEO } from '../components/common/SEO';
 import { useGallery } from '../context/GalleryContext';
 import { ArtworkCard } from '../components/gallery/ArtworkCard';
+import { resolveArtworkArchiveYear } from '../lib/artworkArchiveYear';
 
 interface CategoryMeta {
   slug: GalleryCategory | 'all';
@@ -67,7 +68,9 @@ export const GalleryPage: React.FC = () => {
 
   // Multi-year archive years list
   const availableYears = useMemo(() => {
-    const years = Array.from(new Set(artworks.map((a) => a.year))).sort((a, b) => b - a);
+    const years = Array.from(
+      new Set(artworks.map((a) => resolveArtworkArchiveYear(a.year)))
+    ).sort((a, b) => b - a);
     return ['all', ...years.map(String)];
   }, [artworks]);
 
@@ -94,7 +97,8 @@ export const GalleryPage: React.FC = () => {
 
         // Year filter
         const matchesYear =
-          selectedYear === 'all' || art.year.toString() === selectedYear;
+          selectedYear === 'all' ||
+          resolveArtworkArchiveYear(art.year).toString() === selectedYear;
 
         // Search query filter
         const query = searchQuery.toLowerCase().trim();
@@ -118,7 +122,9 @@ export const GalleryPage: React.FC = () => {
           return b.likes - a.likes;
         }
         // 'newest' default: by year and then createdAt date
-        if (b.year !== a.year) return b.year - a.year;
+        const yearA = resolveArtworkArchiveYear(a.year);
+        const yearB = resolveArtworkArchiveYear(b.year);
+        if (yearB !== yearA) return yearB - yearA;
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       });
   }, [artworks, activeCategorySlug, selectedYear, sortBy, searchQuery]);

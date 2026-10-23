@@ -10,6 +10,7 @@ import type {
   HeadlineNumber,
 } from '../types';
 import { useToast } from './ToastContext';
+import { resolveArtworkArchiveYear } from '../lib/artworkArchiveYear';
 
 interface GalleryContextType {
   artworks: Artwork[];
@@ -77,6 +78,7 @@ export const GalleryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         if (!active) return;
         setArtworks((artworkResult.artworks || []).map((art: any) => ({
           ...art,
+          year: resolveArtworkArchiveYear(art.year),
           category: art.category || 'campus-art',
           artistDept: art.artistDept || 'GCECT',
           tags: Array.isArray(art.tags) ? art.tags : [],
