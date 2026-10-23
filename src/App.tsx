@@ -49,7 +49,7 @@ const PageLoadingFallback = () => (
 
 function AppContent() {
   const location = useLocation();
-  const isAdminRoute = location.pathname.startsWith('/admin') && location.pathname !== '/admin/login';
+  const isAdminRoute = location.pathname.startsWith('/admin');
   const showPublicDataStatus = !location.pathname.startsWith('/admin');
   const { sharedDataError, isLoadingSharedData, retrySharedData } = useGallery();
 

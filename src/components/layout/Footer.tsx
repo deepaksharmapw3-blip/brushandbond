@@ -12,8 +12,8 @@ export const Footer: React.FC = () => {
           {/* Identity: Logo, Wordmark & Short Tagline */}
           <div className="md:col-span-5 space-y-3.5">
             <Link to="/" className="inline-flex items-center gap-3 group">
-              <img 
-                src="/images/logo.jpg" 
+              <img
+                src="/images/logo.svg"
                 alt="Brush and Bond Logo" 
                 className="w-14 h-14 rounded-full object-cover group-hover:scale-105 transition-transform duration-300 shadow-sm"
               />

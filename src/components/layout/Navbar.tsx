@@ -70,8 +70,8 @@ export const Navbar: React.FC = () => {
             onClick={() => setMobileMenuOpen(false)}
             aria-label="Brush and Bond Homepage"
           >
-            <img 
-              src="/images/logo.jpg" 
+              <img
+                src="/images/logo.svg"
               alt="Brush and Bond Logo" 
               className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover hover:scale-105 transition-transform duration-300"
             />
@@ -109,13 +109,12 @@ export const Navbar: React.FC = () => {
             </nav>
 
             <div className="flex items-center gap-3 pl-2 border-l border-[var(--line)]">
-              {/* Admin Portal Link */}
               <Link
                 to="/admin/login"
                 className="text-xs font-mono text-[var(--muted)] hover:text-[var(--accent)] transition-colors"
-                title="Admin Portal"
+                title="Curator Portal"
               >
-                Admin
+                Curator Portal
               </Link>
 
               {/* Join as small primary button */}
@@ -127,15 +126,6 @@ export const Navbar: React.FC = () => {
               >
                 Join
               </Button>
-
-              {/* Admin Portal Link */}
-              <Link
-                to="/admin"
-                className="text-xs font-semibold px-2.5 py-1.5 rounded-md border border-[var(--line)] text-[var(--muted)] hover:text-[var(--accent)] hover:border-[var(--accent)] transition-colors"
-                title="Go to Admin Dashboard"
-              >
-                Admin
-              </Link>
 
               {/* Theme toggle */}
               <ThemeToggle size="md" />
@@ -179,8 +169,8 @@ export const Navbar: React.FC = () => {
                 onClick={() => setMobileMenuOpen(false)}
                 className="flex items-center gap-2.5"
               >
-                <img 
-                  src="/images/logo.jpg" 
+                <img
+                  src="/images/logo.svg"
                   alt="Brush and Bond Logo" 
                   className="w-10 h-10 rounded-full object-cover"
                 />
@@ -245,7 +235,7 @@ export const Navbar: React.FC = () => {
                   onClick={() => setMobileMenuOpen(false)}
                   className="flex-1 text-xs font-mono text-[var(--muted)] hover:text-[var(--accent)] transition-colors px-4 py-2 border border-[var(--line)] rounded-full text-center"
                 >
-                  Admin Portal
+                  Curator Portal
                 </Link>
                 <Button
                   to="/join"
