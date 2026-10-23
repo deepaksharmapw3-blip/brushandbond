@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   Search,
@@ -44,7 +44,7 @@ export const GalleryPage: React.FC = () => {
   const [selectedYear, setSelectedYear] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'newest' | 'featured' | 'likes'>('newest');
   const [searchQuery, setSearchQuery] = useState('');
-  const [visibleCount, setVisibleCount] = useState<number>(PAGE_SIZE);
+  const [pagination, setPagination] = useState({ filterKey: '', count: PAGE_SIZE });
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
@@ -53,6 +53,17 @@ export const GalleryPage: React.FC = () => {
   const activeCategorySlug = CATEGORIES.some((c) => c.slug === rawParam)
     ? (rawParam as GalleryCategory)
     : 'all';
+  const filterKey = JSON.stringify([activeCategorySlug, selectedYear, sortBy, searchQuery]);
+  const visibleCount = pagination.filterKey === filterKey ? pagination.count : PAGE_SIZE;
+  const setVisibleCount = useCallback((update: number | ((current: number) => number)) => {
+    setPagination((current) => {
+      const currentCount = current.filterKey === filterKey ? current.count : PAGE_SIZE;
+      return {
+        filterKey,
+        count: typeof update === 'function' ? update(currentCount) : update,
+      };
+    });
+  }, [filterKey]);
 
   // Multi-year archive years list
   const availableYears = useMemo(() => {
@@ -112,11 +123,6 @@ export const GalleryPage: React.FC = () => {
       });
   }, [artworks, activeCategorySlug, selectedYear, sortBy, searchQuery]);
 
-  // Reset pagination when filters change
-  useEffect(() => {
-    setVisibleCount(PAGE_SIZE);
-  }, [activeCategorySlug, selectedYear, sortBy, searchQuery]);
-
   // Infinite scroll trigger with intersection observer
   useEffect(() => {
     const target = loadMoreRef.current;
@@ -137,7 +143,7 @@ export const GalleryPage: React.FC = () => {
 
     observer.observe(target);
     return () => observer.disconnect();
-  }, [visibleCount, filteredArtworks.length]);
+  }, [visibleCount, filteredArtworks.length, setVisibleCount]);
 
   const handleCategorySelect = (slug: string) => {
     if (slug === 'all') {

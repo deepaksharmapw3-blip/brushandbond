@@ -5,7 +5,6 @@ import { ArrowUpRight, ArrowRight, Sparkles } from 'lucide-react';
 import { SEO } from '../components/common/SEO';
 import { useGallery } from '../context/GalleryContext';
 import { ArtworkCard } from '../components/gallery/ArtworkCard';
-import { HeroPaintCanvas } from '../components/home/HeroPaintCanvas';
 import { HeroBackdrop } from '../components/home/HeroBackdrop';
 import { ClubNumbers } from '../components/home/ClubNumbers';
 import { EventRow } from '../components/home/EventRow';

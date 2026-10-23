@@ -1,0 +1,8 @@
+-- ============================================================
+-- DEPRECATED POLICY-ONLY SCRIPT.
+-- For a fresh or reproducible setup, apply all supabase/migrations/*.sql in
+-- filename order (CLI: `supabase db push`). The initial migration creates the
+-- schema AND these policies. Do not run this after the migrations, because it
+-- assumes pre-existing tables and its CREATE POLICY statements are not
+-- idempotent. See supabase/README.md for admin provisioning instructions.
+-- ============================================================

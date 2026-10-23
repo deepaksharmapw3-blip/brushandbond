@@ -29,7 +29,6 @@ export const StatCounter: React.FC<StatCounterProps> = ({
 
   useEffect(() => {
     if (typeof value !== 'number') {
-      setDisplayValue(value);
       return;
     }
 
@@ -80,7 +79,7 @@ export const StatCounter: React.FC<StatCounterProps> = ({
         }`}
       >
         <span>{prefix}</span>
-        <span>{displayValue}</span>
+        <span>{typeof value === 'number' ? displayValue : value}</span>
         <span>{suffix}</span>
       </div>
       <div className="font-sans font-semibold text-sm sm:text-base text-[var(--ink)]">

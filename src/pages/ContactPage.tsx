@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Mail, MapPin, Clock, Send, CheckCircle2, ExternalLink } from 'lucide-react';
 import { SEO } from '../components/common/SEO';
 import { useToast } from '../context/ToastContext';
+import { CLUB_EMAIL } from '../lib/contact';
 
 // ── Inline SVG brand icons ──
 const InstagramIcon: React.FC<{ size?: number }> = ({ size = 16 }) => (
@@ -33,6 +34,7 @@ export const ContactPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError('');
+
     try {
       const { contactApi } = await import('../services/api');
       await contactApi.submit({
@@ -229,7 +231,7 @@ export const ContactPage: React.FC = () => {
             <div className="space-y-3">
               {/* Club Email */}
               <a
-                href="mailto:brushandbond@gcect.ac.in"
+                href={`mailto:${CLUB_EMAIL}`}
                 className="flex items-center gap-3 text-sm text-[var(--ink)] hover:text-[var(--accent)] transition-colors group"
               >
                 <div className="w-9 h-9 rounded-full bg-[var(--accent)]/10 flex items-center justify-center shrink-0 group-hover:bg-[var(--accent)]/20 transition-colors">
@@ -237,14 +239,14 @@ export const ContactPage: React.FC = () => {
                 </div>
                 <div className="min-w-0">
                   <span className="text-[11px] font-mono text-[var(--muted)] block leading-tight">Email</span>
-                  <span className="font-mono text-sm font-semibold">brushandbond@gcect.ac.in</span>
+                  <span className="font-mono text-sm font-semibold">{CLUB_EMAIL}</span>
                 </div>
                 <ExternalLink className="w-3.5 h-3.5 text-[var(--muted)] ml-auto opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
               </a>
 
               {/* Instagram */}
               <a
-                href="https://instagram.com/brushandbond"
+                href="https://www.instagram.com/brushandbond.gcect/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-3 text-sm text-[var(--ink)] hover:text-[var(--accent)] transition-colors group"
@@ -254,7 +256,7 @@ export const ContactPage: React.FC = () => {
                 </div>
                 <div className="min-w-0">
                   <span className="text-[11px] font-mono text-[var(--muted)] block leading-tight">Instagram</span>
-                  <span className="font-mono text-sm font-semibold">@brushandbond</span>
+                  <span className="font-mono text-sm font-semibold">@brushandbond.gcect</span>
                 </div>
                 <ExternalLink className="w-3.5 h-3.5 text-[var(--muted)] ml-auto opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
               </a>

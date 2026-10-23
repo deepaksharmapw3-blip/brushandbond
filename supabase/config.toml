@@ -1,0 +1,22 @@
+project_id = "brushandbond"
+
+[api]
+enabled = true
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+major_version = 17
+
+[auth]
+enabled = true
+enable_signup = false
+enable_anonymous_sign_ins = false
+
+[functions.public-submission]
+verify_jwt = false
+
+# This function validates the bearer token against Supabase Auth itself.
+[functions.admin-application-status]
+verify_jwt = false
