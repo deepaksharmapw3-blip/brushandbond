@@ -1,0 +1,75 @@
+name: Supabase off-site backup
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 2 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-off-site-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install Storage backup dependencies
+        run: npm ci --ignore-scripts --omit=dev
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Validate required secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in SUPABASE_DB_URL SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY BACKUP_ENCRYPTION_KEY; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "Missing required GitHub Actions secret: $name" >&2
+              exit 1
+            fi
+          done
+          if [[ ! "$BACKUP_ENCRYPTION_KEY" =~ ^[a-fA-F0-9]{64}$ ]]; then
+            echo 'BACKUP_ENCRYPTION_KEY must be 64 hexadecimal characters (32 random bytes).' >&2
+            exit 1
+          fi
+
+      - name: Create logical database and Storage backup
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p backup/database backup/storage
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f backup/database/roles.sql --role-only
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f backup/database/schema.sql
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f backup/database/data.sql --use-copy --data-only \
+            -x storage.objects -x storage.s3_multipart_uploads -x storage.s3_multipart_uploads_parts \
+            -x storage.buckets_vectors -x storage.vector_indexes
+          node scripts/export-supabase-storage.mjs backup/storage
+          printf '{"createdAt":"%s","projectRef":"fxxolsjhlqlatwlqdwsq","format":1}\n' "$(date -u +%FT%TZ)" > backup/manifest.json
+          tar -czf backup.tar.gz backup
+          node scripts/backup-crypto.mjs encrypt backup.tar.gz backup.tar.gz.enc
+          rm -rf backup backup.tar.gz
+
+      - name: Upload encrypted backup (30-day retention)
+        uses: actions/upload-artifact@v4
+        with:
+          name: brushandbond-supabase-backup-${{ github.run_id }}
+          path: backup.tar.gz.enc
+          if-no-files-found: error
+          retention-days: 30
