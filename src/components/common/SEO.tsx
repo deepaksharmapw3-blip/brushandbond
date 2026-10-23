@@ -12,8 +12,8 @@ export interface SEOProps {
 const DEFAULT_TITLE = 'Brush and Bond — GCECT Art Club & The Canvas Archive';
 const DEFAULT_DESCRIPTION =
   'Official art club of the Government College of Engineering and Ceramic Technology (GCECT), est. 2024. Explore student artwork, campus murals, upcoming exhibitions, and salons.';
-const DEFAULT_IMAGE = 'https://brushandbond.gcect.ac.in/og-image.jpg';
-const BASE_URL = 'https://brushandbond.gcect.ac.in';
+const DEFAULT_IMAGE = 'https://brushandbond.vercel.app/og-image.jpg';
+const BASE_URL = 'https://brushandbond.vercel.app';
 
 /**
  * SEO Component

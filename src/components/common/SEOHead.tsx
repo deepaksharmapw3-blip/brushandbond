@@ -8,7 +8,7 @@ interface SEOHeadProps {
   ogType?: string;
 }
 
-const BASE_URL = 'https://brushandbond.gcect.ac.in';
+const BASE_URL = 'https://brushandbond.vercel.app';
 const DEFAULT_OG_IMAGE = `${BASE_URL}/og-image.jpg`;
 const SITE_NAME = 'Brush and Bond';
 

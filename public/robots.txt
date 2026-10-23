@@ -4,4 +4,4 @@ Allow: /
 Disallow: /admin
 Disallow: /admin/login
 
-Sitemap: https://brushandbond.gcect.ac.in/sitemap.xml
+Sitemap: https://brushandbond.vercel.app/sitemap.xml
