@@ -139,7 +139,7 @@ export const Navbar: React.FC = () => {
             <button
               type="button"
               onClick={() => setMobileMenuOpen(true)}
-              className="w-10 h-10 flex items-center justify-center border border-[var(--line)] text-[var(--ink)] rounded-full hover:border-[var(--ink)] transition-colors focus:outline-none"
+              className="w-11 h-11 flex items-center justify-center border border-[var(--line)] text-[var(--ink)] rounded-full hover:border-[var(--ink)] transition-colors focus:outline-none"
               aria-label="Open mobile navigation menu"
               aria-expanded={mobileMenuOpen}
             >
@@ -157,7 +157,7 @@ export const Navbar: React.FC = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
-            className="fixed inset-0 z-50 bg-[var(--paper)] text-[var(--ink)] flex flex-col justify-between p-6 sm:p-10 lg:hidden overflow-y-auto"
+            className="mobile-viewport fixed inset-0 z-50 bg-[var(--paper)] text-[var(--ink)] flex flex-col justify-between px-5 py-5 sm:p-10 lg:hidden overflow-y-auto overscroll-contain"
             role="dialog"
             aria-modal="true"
             aria-label="Navigation Menu"
@@ -182,7 +182,7 @@ export const Navbar: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen(false)}
-                className="w-10 h-10 flex items-center justify-center border border-[var(--line)] text-[var(--ink)] rounded-full hover:border-[var(--ink)] transition-colors"
+                className="w-11 h-11 flex items-center justify-center border border-[var(--line)] text-[var(--ink)] rounded-full hover:border-[var(--ink)] transition-colors shrink-0"
                 aria-label="Close navigation menu"
               >
                 <X className="w-5 h-5" />

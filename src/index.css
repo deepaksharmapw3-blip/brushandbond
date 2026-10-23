@@ -40,6 +40,8 @@
     font-family: var(--font-sans);
     background-color: var(--paper);
     color: var(--ink);
+    min-height: 100%;
+    -webkit-text-size-adjust: 100%;
   }
 
   body {
@@ -49,7 +51,10 @@
     font-size: 17px;
     line-height: 1.6;
     overflow-x: hidden;
+    overscroll-behavior-x: none;
   }
+
+  #root { min-height: 100vh; }
 
   /* Display & headings per Section 3.3 */
   h1, h2, h3, h4, h5, h6 {
@@ -93,6 +98,18 @@
     clip: auto;
     white-space: normal;
   }
+}
+
+/* Keep mobile overlays inside Android's changing browser viewport and away from system UI. */
+.mobile-viewport {
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@media (max-width: 640px) {
+  input, select, textarea { font-size: 16px; }
 }
 
 /* Fluid Typographic Scales */

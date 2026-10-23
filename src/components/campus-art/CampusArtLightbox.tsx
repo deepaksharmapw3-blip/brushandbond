@@ -80,7 +80,7 @@ export const CampusArtLightbox: React.FC<CampusArtLightboxProps> = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex flex-col bg-black/95 text-white backdrop-blur-md"
+        className="mobile-viewport fixed inset-0 z-50 flex flex-col bg-black/95 text-white backdrop-blur-md"
         role="dialog"
         aria-modal="true"
         aria-label="Campus Art Archival Photo Lightbox"
@@ -122,7 +122,7 @@ export const CampusArtLightbox: React.FC<CampusArtLightboxProps> = ({
         </div>
 
         {/* Center: Image Stage with Arrow Controls */}
-        <div className="relative flex-1 flex items-center justify-center p-4 sm:p-8 overflow-hidden">
+        <div className="relative flex-1 min-h-0 flex items-center justify-center p-3 sm:p-8 overflow-hidden">
           {/* Previous Button */}
           {photos.length > 1 && (
             <button
@@ -144,7 +144,7 @@ export const CampusArtLightbox: React.FC<CampusArtLightboxProps> = ({
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.25 }}
-              className="max-h-[68vh] sm:max-h-[72vh] max-w-full object-contain rounded-[4px] shadow-2xl border border-white/10"
+              className="max-h-[68vh] max-h-[68dvh] sm:max-h-[72vh] sm:max-h-[72dvh] max-w-full object-contain rounded-[4px] shadow-2xl border border-white/10"
             />
           </div>
 

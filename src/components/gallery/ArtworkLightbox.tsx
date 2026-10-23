@@ -143,7 +143,7 @@ export const ArtworkLightbox: React.FC = () => {
     <AnimatePresence mode="wait">
       {artwork && (
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 md:p-8 bg-black/85 backdrop-blur-md overflow-y-auto"
+        className="mobile-viewport fixed inset-0 z-50 flex items-start sm:items-center justify-center p-2 sm:p-5 md:p-8 bg-black/85 backdrop-blur-md overflow-y-auto overscroll-contain"
         onClick={(e) => {
           if (e.target === e.currentTarget) {
             handleClose();
@@ -189,25 +189,25 @@ export const ArtworkLightbox: React.FC = () => {
           exit={{ opacity: 0, scale: 0.97, y: 12 }}
           transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
           onClick={(e) => e.stopPropagation()}
-          className="relative w-full max-w-5xl bg-[var(--surface)] border border-[var(--line)] shadow-2xl rounded-[8px] overflow-hidden my-auto max-h-[92vh] flex flex-col"
+          className="relative w-full max-w-5xl bg-[var(--surface)] border border-[var(--line)] shadow-2xl rounded-[8px] overflow-hidden my-auto max-h-[92vh] max-h-[92dvh] flex flex-col"
         >
           {/* Top Control Bar Header */}
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-[var(--line)] bg-[var(--paper)]/60">
-            <div className="flex items-center gap-2 text-xs font-mono text-[var(--muted)]">
-              <span className="font-bold text-[var(--accent)]">{artwork.accessionNo}</span>
-              <span>•</span>
-              <span className="capitalize">{(artwork.category || 'art').replace('-', ' ')}</span>
-              <span>•</span>
-              <span>{artwork.year}</span>
+            <div className="flex min-w-0 items-center gap-1 sm:gap-2 text-[10px] sm:text-xs font-mono text-[var(--muted)] truncate">
+              <span className="font-bold text-[var(--accent)] truncate">{artwork.accessionNo}</span>
+              <span className="shrink-0">•</span>
+              <span className="capitalize truncate">{(artwork.category || 'art').replace('-', ' ')}</span>
+              <span className="shrink-0">•</span>
+              <span className="shrink-0">{artwork.year}</span>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-1 sm:gap-2">
               {/* Mobile Arrows in Header */}
               <div className="flex md:hidden items-center border border-[var(--line)] rounded-full overflow-hidden bg-[var(--surface)]">
                 <button
                   type="button"
                   onClick={prevArtwork}
-                  className="px-2.5 py-1 text-[var(--ink)] hover:text-[var(--accent)] border-r border-[var(--line)]"
+                  className="min-w-11 min-h-11 flex items-center justify-center text-[var(--ink)] hover:text-[var(--accent)] border-r border-[var(--line)]"
                   aria-label="Previous artwork"
                 >
                   <ChevronLeft className="w-4 h-4" />
@@ -215,7 +215,7 @@ export const ArtworkLightbox: React.FC = () => {
                 <button
                   type="button"
                   onClick={nextArtwork}
-                  className="px-2.5 py-1 text-[var(--ink)] hover:text-[var(--accent)]"
+                  className="min-w-11 min-h-11 flex items-center justify-center text-[var(--ink)] hover:text-[var(--accent)]"
                   aria-label="Next artwork"
                 >
                   <ChevronRight className="w-4 h-4" />
@@ -226,7 +226,7 @@ export const ArtworkLightbox: React.FC = () => {
               <button
                 type="button"
                 onClick={handleShare}
-                className="w-8 h-8 flex items-center justify-center rounded-full border border-[var(--line)] text-[var(--ink)] hover:border-[var(--ink)] transition-colors"
+                className="w-11 h-11 flex items-center justify-center rounded-full border border-[var(--line)] text-[var(--ink)] hover:border-[var(--ink)] transition-colors"
                 title="Share link"
                 aria-label="Copy direct share link"
               >
@@ -237,7 +237,7 @@ export const ArtworkLightbox: React.FC = () => {
               <button
                 type="button"
                 onClick={handleClose}
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-[var(--surface)] border border-[var(--line)] text-[var(--ink)] hover:border-[var(--ink)] hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition-all font-bold active:scale-95"
+                className="w-11 h-11 flex items-center justify-center rounded-full bg-[var(--surface)] border border-[var(--line)] text-[var(--ink)] hover:border-[var(--ink)] hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition-all font-bold active:scale-95"
                 aria-label="Close artwork details (Escape)"
                 title="Close (Escape)"
               >
@@ -247,14 +247,14 @@ export const ArtworkLightbox: React.FC = () => {
           </div>
 
           {/* Modal Main Content: Image & Metadata Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 overflow-y-auto flex-1">
+          <div className="grid grid-cols-1 lg:grid-cols-12 overflow-y-auto overscroll-contain flex-1 min-h-0">
             {/* Left Column: Large Image Display */}
             <div className="lg:col-span-7 bg-[var(--paper)] flex flex-col items-center justify-center p-4 sm:p-8 border-b lg:border-b-0 lg:border-r border-[var(--line)] relative min-h-[300px] sm:min-h-[460px]">
-              <div className="relative max-h-[70vh] flex items-center justify-center">
+              <div className="relative max-h-[70vh] max-h-[70dvh] flex items-center justify-center">
                 <img
                   src={artwork.imageUrl}
                   alt={artwork.title}
-                  className="max-h-[66vh] w-auto max-w-full object-contain rounded-[4px] shadow-sm select-none"
+                  className="max-h-[66vh] max-h-[66dvh] w-auto max-w-full object-contain rounded-[4px] shadow-sm select-none"
                 />
               </div>
 

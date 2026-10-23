@@ -79,7 +79,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeSectio
 
       {/* Sidebar - Always visible on desktop (lg:translate-x-0), toggled on mobile */}
       <aside
-        className={`fixed lg:sticky top-0 left-0 h-screen w-64 bg-[var(--surface)] border-r border-[var(--line)] flex flex-col z-50 transition-transform duration-200 ease-in-out shrink-0 ${
+        className={`fixed lg:sticky top-0 left-0 h-screen h-dvh w-[min(18rem,calc(100vw-2rem))] lg:w-64 bg-[var(--surface)] border-r border-[var(--line)] flex flex-col z-50 transition-transform duration-200 ease-in-out shrink-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
@@ -93,7 +93,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeSectio
           </div>
           <button
             onClick={() => setSidebarOpen(false)}
-            className="lg:hidden text-[var(--muted)] hover:text-[var(--ink)] p-1"
+            className="lg:hidden min-w-11 min-h-11 flex items-center justify-center text-[var(--muted)] hover:text-[var(--ink)] rounded-md"
             aria-label="Close Sidebar"
           >
             <X className="w-5 h-5" />
@@ -148,11 +148,11 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeSectio
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Navbar */}
-        <header className="h-16 bg-[var(--surface)] border-b border-[var(--line)] flex items-center justify-between px-4 sm:px-6 sticky top-0 z-30">
+        <header className="min-h-16 bg-[var(--surface)] border-b border-[var(--line)] flex items-center justify-between px-3 sm:px-6 sticky top-0 z-30 gap-2">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden text-[var(--ink)] p-1.5 rounded-md hover:bg-[var(--paper)]"
+              className="lg:hidden min-w-11 min-h-11 flex items-center justify-center text-[var(--ink)] rounded-md hover:bg-[var(--paper)] shrink-0"
               aria-label="Open Sidebar"
             >
               <Menu className="w-6 h-6" />
