@@ -27,11 +27,16 @@ export const CampusArtContributionModal: React.FC<CampusArtContributionModalProp
     approxYear: '2024',
     location: '',
     description: '',
-    imageUrl: '',
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+
+  const handleClose = () => {
+    setImageFile(null);
+    onClose();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,8 +56,8 @@ export const CampusArtContributionModal: React.FC<CampusArtContributionModalProp
         approxYear: formData.approxYear,
         location: formData.location,
         description: formData.description,
-        imageUrl: formData.imageUrl,
-      });
+      }, imageFile);
+      const imageUrl = saved.imageUrl ?? '';
       const newContribution: CampusArtContribution = {
         id: saved.id,
         contributorName: formData.contributorName,
@@ -63,7 +68,7 @@ export const CampusArtContributionModal: React.FC<CampusArtContributionModalProp
         approxYear: formData.approxYear,
         location: formData.location || 'GCECT Campus',
         description: formData.description,
-        imageUrl: formData.imageUrl || undefined,
+        imageUrl: imageUrl || undefined,
         submittedAt: saved.created_at,
         status: 'pending',
       };
@@ -80,6 +85,7 @@ export const CampusArtContributionModal: React.FC<CampusArtContributionModalProp
 
   const handleReset = () => {
     setSubmitted(false);
+    setImageFile(null);
     setFormData({
       contributorName: '',
       email: '',
@@ -89,7 +95,6 @@ export const CampusArtContributionModal: React.FC<CampusArtContributionModalProp
       approxYear: '2024',
       location: '',
       description: '',
-      imageUrl: '',
     });
     onClose();
   };
@@ -122,7 +127,7 @@ export const CampusArtContributionModal: React.FC<CampusArtContributionModalProp
 
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               className="p-1.5 rounded-full hover:bg-[var(--paper)] text-[var(--muted)] hover:text-[var(--ink)] transition-colors"
               aria-label="Close Modal"
             >
@@ -139,7 +144,7 @@ export const CampusArtContributionModal: React.FC<CampusArtContributionModalProp
                 Record Submitted to Archive
               </h3>
               <p className="text-sm text-[var(--muted)] max-w-md mx-auto font-sans leading-relaxed">
-                Thank you! Your documentation of &ldquo;{formData.title}&rdquo; has been received by the curatorial committee and queued for inclusion in the permanent digital record of the college.
+                Thank you! &ldquo;{formData.title}&rdquo; is saved as a pending submission. It will appear publicly after an admin reviews it.
               </p>
               <div className="pt-4">
                 <button
@@ -274,16 +279,16 @@ export const CampusArtContributionModal: React.FC<CampusArtContributionModalProp
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-mono text-[var(--muted)]">
-                    Archival Photograph Link / Cloud URL
-                  </label>
+                  <label htmlFor="campus-art-photo" className="block text-xs font-mono text-[var(--muted)]">Artwork photo (optional)</label>
                   <input
-                    type="url"
-                    value={formData.imageUrl}
-                    onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                    placeholder="https://drive.google.com/... or image link"
-                    className="w-full bg-[var(--paper)] border border-[var(--line)] px-3.5 py-2 text-sm rounded-[6px] text-[var(--ink)] focus:outline-none focus:border-[var(--accent)]"
+                    id="campus-art-photo"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={(event) => setImageFile(event.currentTarget.files?.[0] ?? null)}
+                    className="w-full rounded-[6px] border border-[var(--line)] bg-[var(--paper)] px-3.5 py-2 text-sm text-[var(--ink)] file:mr-3 file:rounded file:border-0 file:bg-[var(--accent)] file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-[var(--on-accent)]"
                   />
+                  <p className="text-xs text-[var(--muted)]">Choose a JPEG, PNG, or WebP image up to 1 MB. No Drive link or image URL needed.</p>
+                  {imageFile && <p className="text-xs text-[var(--accent)]">Selected: {imageFile.name}</p>}
                 </div>
               </div>
 
@@ -291,7 +296,7 @@ export const CampusArtContributionModal: React.FC<CampusArtContributionModalProp
               <div className="flex items-start gap-2 p-3 bg-[var(--paper)] border border-[var(--line)] rounded-[6px] text-xs text-[var(--muted)] font-sans">
                 <AlertCircle className="w-4 h-4 text-[var(--accent)] shrink-0 mt-0.5" />
                 <span>
-                  Your record stays private while pending. An admin reviews it before publication and controls any later changes or removal.
+                    Your record and photo stay out of the public archive until an admin approves them. Admins control approval and deletion.
                 </span>
               </div>
 
@@ -299,7 +304,7 @@ export const CampusArtContributionModal: React.FC<CampusArtContributionModalProp
               <div className="flex items-center justify-end gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={onClose}
+                  onClick={handleClose}
                   className="btn-secondary px-5 py-2.5 text-xs"
                 >
                   Cancel
@@ -311,7 +316,7 @@ export const CampusArtContributionModal: React.FC<CampusArtContributionModalProp
                   className="btn-primary px-6 py-2.5 text-xs font-semibold"
                 >
                   {isSubmitting ? (
-                    <span>Registering...</span>
+                    <span>Submitting...</span>
                   ) : (
                     <>
                       <span>Submit to Digital Record</span>

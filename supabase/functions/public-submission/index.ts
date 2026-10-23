@@ -88,21 +88,51 @@ Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders(origin) });
   if (request.method !== 'POST') return json({ error: 'Method not allowed.' }, 405, origin);
 
-  const rawBody = await request.text();
-  if (new TextEncoder().encode(rawBody).byteLength > 16_384) {
-    return json({ error: 'Submission is too large.' }, 413, origin);
-  }
-
   // Supabase's Cloudflare edge supplies this address. Never accept an IP from
   // the submitted JSON body or a caller-controlled forwarding header.
   const clientIp = request.headers.get('cf-connecting-ip');
   if (!clientIp) return json({ error: 'Could not identify the request source.' }, 503, origin);
 
   let body: { type?: unknown; data?: unknown };
-  try {
-    body = JSON.parse(rawBody);
-  } catch {
-    return json({ error: 'Invalid request body.' }, 400, origin);
+  let imageFile: File | null = null;
+  if (request.headers.get('content-type')?.toLowerCase().startsWith('multipart/form-data')) {
+    const contentLength = Number(request.headers.get('content-length') ?? 0);
+    if (contentLength > 1_100_000) return json({ error: 'Choose an image smaller than 1 MB.' }, 413, origin);
+    try {
+      const form = await request.formData();
+      const formData: Record<string, string> = {};
+      const allowedFields = new Set([
+        'contributorName', 'email', 'batchYear', 'department', 'title',
+        'approxYear', 'location', 'description',
+      ]);
+      let textBytes = 0;
+      let invalidForm = false;
+      for (const [key, value] of form.entries()) {
+        if (key === 'type') continue;
+        if (key === 'image' && value instanceof File) {
+          if (imageFile) invalidForm = true;
+          else imageFile = value;
+        } else if (allowedFields.has(key) && typeof value === 'string') {
+          textBytes += value.length;
+          if (textBytes > 8_000) invalidForm = true;
+          formData[key] = value;
+        } else invalidForm = true;
+      }
+      if (invalidForm) return json({ error: 'The upload form contains invalid or oversized fields.' }, 413, origin);
+      body = { type: form.get('type'), data: formData };
+    } catch {
+      return json({ error: 'Invalid upload form.' }, 400, origin);
+    }
+  } else {
+    const rawBody = await request.text();
+    if (new TextEncoder().encode(rawBody).byteLength > 16_384) {
+      return json({ error: 'Submission is too large.' }, 413, origin);
+    }
+    try {
+      body = JSON.parse(rawBody);
+    } catch {
+      return json({ error: 'Invalid request body.' }, 400, origin);
+    }
   }
   if (!body.data || typeof body.data !== 'object' || Array.isArray(body.data)) {
     return json({ error: 'Invalid submission.' }, 400, origin);
@@ -199,7 +229,7 @@ Deno.serve(async (request) => {
       const approximateYear = text(data.approxYear, 32);
       const location = text(data.location, 180);
       const description = text(data.description, 3000);
-      const imageUrl = publicImageUrl(data.imageUrl);
+      let imageUrl = publicImageUrl(data.imageUrl);
       if (
         contributorName.length < 2
         || (email && !validEmail(email))
@@ -208,8 +238,28 @@ Deno.serve(async (request) => {
         || !approximateYear
         || description.length < 10
         || imageUrl === null
+        || (imageFile !== null && Boolean(imageUrl))
       ) {
         return json({ error: 'Please check the contribution form fields and try again.' }, 400, origin);
+      }
+
+      let uploadedImagePath: string | null = null;
+      if (imageFile) {
+        const extensions: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
+        const extension = extensions[imageFile.type];
+        if (!extension || imageFile.size === 0 || imageFile.size > 1_048_576) {
+          return json({ error: 'Choose a JPEG, PNG, or WebP image smaller than 1 MB.' }, 400, origin);
+        }
+        uploadedImagePath = `campus-contributions/${crypto.randomUUID()}.${extension}`;
+        const { error: uploadError } = await admin.storage
+          .from('artworks')
+          .upload(uploadedImagePath, imageFile, {
+            contentType: imageFile.type,
+            cacheControl: '31536000',
+            upsert: false,
+          });
+        if (uploadError) throw uploadError;
+        imageUrl = admin.storage.from('artworks').getPublicUrl(uploadedImagePath).data.publicUrl;
       }
 
       const { data: contribution, error } = await admin
@@ -226,9 +276,12 @@ Deno.serve(async (request) => {
           image_url: imageUrl || null,
           status: 'pending',
         })
-        .select('id, created_at')
+        .select('id, created_at, image_url')
         .single();
-      if (error) throw error;
+      if (error) {
+        if (uploadedImagePath) await admin.storage.from('artworks').remove([uploadedImagePath]);
+        throw error;
+      }
       return json({ success: true, contribution }, 200, origin);
     }
 

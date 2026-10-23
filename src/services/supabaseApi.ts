@@ -648,13 +648,24 @@ export const campusArtApi = {
 // ─── Public campus archive contributions (moderated by staff) ───────────────
 
 export const campusArtContributionApi = {
-  submit: async (payload: Record<string, unknown>) => {
+  submit: async (payload: Record<string, unknown>, imageFile?: File | null) => {
+    let body: Record<string, unknown> | FormData = { type: 'campus-art-contribution', data: payload };
+    if (imageFile) {
+      const formData = new FormData();
+      formData.append('type', 'campus-art-contribution');
+      formData.append('image', imageFile);
+      Object.entries(payload).forEach(([key, value]) => formData.append(key, String(value ?? '')));
+      body = formData;
+    }
     const { data, error } = await supabase.functions.invoke('public-submission', {
-      body: { type: 'campus-art-contribution', data: payload },
+      body,
     });
     if (error) throw new Error(await getFunctionError(error));
     if (!data?.success) throw new Error(data?.error ?? 'Could not submit this archive record. Please try again.');
-    return data.contribution as { id: string; created_at: string };
+    return {
+      ...(data.contribution as { id: string; created_at: string }),
+      imageUrl: data.contribution?.image_url as string | undefined,
+    };
   },
 
   getAll: async () => {
@@ -697,8 +708,21 @@ export const campusArtContributionApi = {
   },
 
   delete: async (id: string) => {
+    const { data: record, error: readError } = await supabase
+      .from('campus_art_contributions')
+      .select('image_url')
+      .eq('id', id)
+      .maybeSingle();
+    if (readError) throw new Error(readError.message);
     const { error } = await supabase.from('campus_art_contributions').delete().eq('id', id);
     if (error) throw new Error(error.message);
+    const prefix = '/storage/v1/object/public/artworks/';
+    const imageUrl = record?.image_url;
+    if (typeof imageUrl === 'string' && imageUrl.includes(prefix)) {
+      const path = decodeURIComponent(imageUrl.split(prefix)[1].split('?')[0]);
+      const { error: storageError } = await supabase.storage.from('artworks').remove([path]);
+      if (storageError) throw new Error(`Record deleted, but its stored photo could not be removed: ${storageError.message}`);
+    }
   },
 };
 

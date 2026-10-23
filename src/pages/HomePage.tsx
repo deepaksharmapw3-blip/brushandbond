@@ -9,7 +9,6 @@ import { HeroBackdrop } from '../components/home/HeroBackdrop';
 import { ClubNumbers } from '../components/home/ClubNumbers';
 import { EventRow } from '../components/home/EventRow';
 import { InstagramStrip } from '../components/home/InstagramStrip';
-import { ArtAroundGcectSection } from '../components/home/ArtAroundGcectSection';
 
 export const HomePage: React.FC = () => {
   const { artworks, events, artists, isLoadingSharedData, sharedDataError } = useGallery();
@@ -363,17 +362,12 @@ export const HomePage: React.FC = () => {
       <ClubNumbers />
 
       {/* =========================================================
-          7. Art Around GCECT (Campus Art Archive Showcase)
-         ========================================================= */}
-      <ArtAroundGcectSection />
-
-      {/* =========================================================
-          8. Instagram Strip (Grid of 6 Posts)
+          7. Instagram Strip (Grid of 6 Posts)
          ========================================================= */}
       <InstagramStrip />
 
       {/* =========================================================
-          9. Join CTA Band (Full-Width Accent-Colored Band)
+          8. Join CTA Band (Full-Width Accent-Colored Band)
          ========================================================= */}
       <section className="w-full bg-[var(--accent)] text-[var(--on-accent)] py-16 sm:py-24 transition-colors">
         <div className="gallery-container text-center space-y-6 max-w-3xl mx-auto">
