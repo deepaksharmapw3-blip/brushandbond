@@ -217,42 +217,33 @@ publicly readable.
 
 # Membership application email notifications
 
-After a membership application is saved, `public-submission` sends the applicant
-a receipt from the club Gmail through the Google Apps Script relay. This email
-confirms receipt only; approval or rejection is sent separately by
-`admin-application-status`. The receipt has per-IP and per-recipient rate limits.
+Membership applications do not trigger an email immediately. When an admin
+approves or rejects an application, `admin-application-status` emails the
+applicant through the club Gmail relay before changing the application status.
 
-Both functions use the same Gmail relay secrets. Configure these in the Supabase
-Dashboard under **Edge Functions → Secrets**:
+Configure these Gmail relay secrets in the Supabase Dashboard under
+**Edge Functions → Secrets**:
 
 - `GMAIL_AUTOMATION_URL`: deployed Apps Script Web App URL ending in `/exec`.
 - `GMAIL_AUTOMATION_SECRET`: the random relay secret stored in Apps Script
   Script Properties as `RELAY_SECRET`.
-- `CLUB_EMAIL`: the club Gmail sender and reply-to address.
-
-Do not use a Gmail password or app password. Apps Script sends as the Google
-account that owns the relay; see [the relay setup](email-relay/SETUP.md). If the
-relay is not configured or Gmail's quota is exhausted, the application is still
-saved and the form reports that its receipt could not be delivered.
+- The approval function uses `brushandbondgcect22@gmail.com` for replies. The
+  Apps Script `SENDER_EMAIL` must also be this address. Do not use a Gmail
+  password or app password. Apps Script sends as the Google account that owns
+  the relay; see [the relay setup](email-relay/SETUP.md). If the relay is not
+  configured or Gmail's quota is exhausted, the admin action will fail and the
+  application status will remain pending so the admin can retry.
 
 Admin approval and rejection actions call the `admin-application-status` Edge
 Function. The function validates the Supabase session and admin profile,
-sends the notification through Gmail (or Resend when configured as fallback),
-then changes the application status.
-If email delivery fails, the status remains pending so an admin can safely
-retry. The function sends an idempotency key to Resend for retry protection.
-
-For Resend fallback only, configure these secrets in the Supabase Dashboard:
-
-- `RESEND_API_KEY`: a Resend API key with permission to send email.
-- `RESEND_FROM_EMAIL`: a sender address on a domain verified with Resend, for
-  example `Brush and Bond <notifications@example.org>`.
-- `CLUB_EMAIL`: optional reply-to address (defaults to the club email).
+sends the notification through the official Gmail relay, then changes the
+application status. If email delivery fails, the status remains pending so an
+admin can safely retry. The relay uses an idempotency key to prevent duplicate
+emails when approval is retried.
 
 For local development, copy `supabase/functions/.env.example` to
 `supabase/functions/.env` and fill in test credentials. Do not commit that
-file. Supabase CLI deployments can set the production values with
-`supabase secrets set RESEND_API_KEY=... RESEND_FROM_EMAIL=...`.
+file. Production values belong in the Supabase Edge Function secrets.
 
 Deploy the function with `supabase functions deploy admin-application-status`
 and make sure the frontend build containing the function invocation is

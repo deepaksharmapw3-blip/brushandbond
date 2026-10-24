@@ -458,7 +458,6 @@ export const applicationApi = {
     return {
       success: true,
       message: data.message,
-      confirmationEmailSent: data.confirmationEmailSent === true,
       application: {
         id: saved.id,
         fullName: saved.name,

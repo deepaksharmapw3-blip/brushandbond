@@ -6,7 +6,7 @@ const escapeHtml = (value) => value.replace(/[&<>"']/g, (character) => ({
   "'": '&#39;',
 }[character] ?? character));
 
-const CLUB_EMAIL = 'Brushandbondgcect22@gmail.com';
+const CLUB_EMAIL = 'brushandbondgcect22@gmail.com';
 const INSTAGRAM_URL = 'https://www.instagram.com/brushandbond.gcect/';
 
 export const buildEmail = (status, name, notes = '') => {

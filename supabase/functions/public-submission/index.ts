@@ -12,64 +12,6 @@ const text = (value: unknown, max: number) =>
 
 const emailValue = (value: unknown) => text(value, 254).toLowerCase();
 const validEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-const escapeHtml = (value: string) => {
-  const entities: Record<string, string> = {
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-  };
-  return value.replace(/[&<>"']/g, (character) => entities[character] ?? character);
-};
-
-async function sendMembershipConfirmation(input: {
-  id: string;
-  name: string;
-  email: string;
-  department: string;
-  year: string;
-}) {
-  const relayUrlValue = Deno.env.get('GMAIL_AUTOMATION_URL');
-  const relaySecret = Deno.env.get('GMAIL_AUTOMATION_SECRET');
-  if (!relayUrlValue || !relaySecret) return false;
-
-  const replyTo = emailValue(Deno.env.get('CLUB_EMAIL') || 'brushandbondgcect22@gmail.com');
-  if (!validEmail(replyTo)) return false;
-
-  let relayUrl: URL;
-  try {
-    relayUrl = new URL(relayUrlValue);
-  } catch {
-    return false;
-  }
-  if (relayUrl.protocol !== 'https:' || relayUrl.hostname !== 'script.google.com' || !relayUrl.pathname.startsWith('/macros/s/')) {
-    return false;
-  }
-
-  const safeName = escapeHtml(input.name);
-  const safeId = escapeHtml(input.id);
-  const subject = 'We received your Brush and Bond membership application';
-  const html = `<!doctype html><html><body style="margin:0;background:#f5f1ea;color:#15130f;font-family:Arial,sans-serif;line-height:1.6"><main style="max-width:600px;margin:24px auto;padding:28px;background:#fff;border:1px solid #d9d4c8;border-radius:8px"><p style="color:#2f3cff;font-size:12px;font-weight:bold;letter-spacing:2px;text-transform:uppercase">Brush and Bond · GCECT</p><h1 style="font-size:26px">Thanks for applying, ${safeName}.</h1><p>We have received your membership application. The club team will review it and contact you with an update.</p><p><strong>Application reference:</strong> ${safeId}</p><p>Please keep this email for your records. This confirms receipt of your application; it does not mean membership has been approved yet.</p><p>Questions? Reply to this email or write to <a href="mailto:${replyTo}">${replyTo}</a>.</p><p>Warmly,<br>Brush and Bond<br>GCECT Art Club</p></main></body></html>`;
-  const plainText = `Hello ${input.name},\n\nWe have received your Brush and Bond membership application. The club team will review it and contact you with an update.\n\nApplication reference: ${input.id}\nDepartment: ${input.department}\nYear: ${input.year}\n\nThis confirms receipt only; membership has not yet been approved.\n\nBrush and Bond · GCECT Art Club\n${replyTo}`;
-
-  try {
-    const response = await fetch(relayUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        secret: relaySecret,
-        idempotencyKey: `membership-${input.id}-received`,
-        to: input.email,
-        replyTo,
-        subject,
-        html,
-        text: plainText,
-      }),
-      signal: AbortSignal.timeout(15_000),
-    });
-    const result = await response.json().catch(() => ({}));
-    return response.ok && result.ok === true;
-  } catch {
-    return false;
-  }
-}
 // Accepts an http(s) link (scheme optional) or a social handle such as
 // "@name". Returns '' when empty and null when the value is not acceptable, so
 // javascript:/data: style strings never reach the database.
@@ -357,32 +299,15 @@ Deno.serve(async (request) => {
       if (name.length < 2 || !validEmail(email) || !department || !year || !interest || reason.length < 5) {
         return json({ error: 'Please check the application fields and try again.' }, 400, origin);
       }
-      // Limit confirmations per recipient as well as by source IP to reduce
-      // unwanted mail while allowing multiple students behind a campus NAT.
-      const recipientKey = await sha256(`membership-email:${email}`);
-      const { data: recipientAllowed, error: recipientLimitError } = await admin.rpc('consume_public_form_rate_limit', {
-        p_form_scope: 'membership',
-        p_client_key: recipientKey,
-        p_limit: 2,
-        p_window_seconds: 86400,
-      });
-      if (recipientLimitError) throw recipientLimitError;
-      if (!recipientAllowed) return json({ error: 'Too many applications were sent for this email address. Please try again tomorrow.' }, 429, origin);
-
       const { data: application, error } = await admin
         .from('membership_applications')
         .insert({ name, email, department, year, interest, portfolio: portfolio || null, reason, status: 'pending' })
         .select('id, created_at')
         .single();
       if (error) throw error;
-      const confirmationEmailSent = await sendMembershipConfirmation({ id: application.id, name, email, department, year });
-      if (!confirmationEmailSent) {
-        console.warn('Membership confirmation email was not delivered. Check Gmail relay configuration and quota.');
-      }
       return json({
         success: true,
         message: 'Application submitted!',
-        confirmationEmailSent,
         application: { ...application, name, email, department, year, interest, portfolio, reason },
       }, 200, origin);
     }

@@ -30,14 +30,12 @@ export interface StoredMembershipApplication extends MembershipApplicationData {
   id: string;
   submittedAt: string;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
-  confirmationEmailSent: boolean;
 }
 
 export interface MembershipApplicationResult {
   success: boolean;
   id: string;
   message: string;
-  confirmationEmailSent: boolean;
   application: StoredMembershipApplication;
 }
 
@@ -95,14 +93,12 @@ export async function submitMembershipApplication(
     id: saved.id,
     submittedAt: saved.submittedAt,
     status: saved.status,
-    confirmationEmailSent: result.confirmationEmailSent,
   };
 
   return {
     success: true,
     id: record.id,
     message: result.message,
-    confirmationEmailSent: result.confirmationEmailSent,
     application: record,
   };
 }

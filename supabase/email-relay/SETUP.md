@@ -7,7 +7,7 @@ This relay sends mail from the personal Gmail account that owns the Apps Script.
 1. Sign in to the Gmail account you want to send from, then open [Google Apps Script](https://script.google.com/home/start) and create a new project named `Brush and Bond Mail Relay`.
 2. Replace the contents of `Code.gs` with the contents of this repository's `supabase/email-relay/Code.gs`, then save.
 3. In **Project Settings → Script Properties**, add:
-   - `SENDER_EMAIL`: the same Gmail address you signed into. This relay checks that the script executes as this account.
+   - `SENDER_EMAIL`: `brushandbondgcect22@gmail.com`. This relay checks that the script executes as this account.
    - `RELAY_SECRET`: a private random value at least 32 bytes long. Generate one locally with Node.js: `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`. Do not put this value in source control, a browser app, or a chat.
 4. In the Apps Script editor, select `authorizeMail` and click **Run** once. Review and grant the requested mail-sending permission while signed into the intended Gmail account.
 5. Click **Deploy → New deployment → Web app**. Set **Execute as** to your account and **Who has access** to **Anyone**, then deploy and copy the URL ending in `/exec`. Google may ask you to confirm public access. Anyone can reach the endpoint, but requests without the secret are rejected.
@@ -21,13 +21,11 @@ Open the Supabase Dashboard for project `brushandbond` → **Edge Functions → 
 | --- | --- |
 | `GMAIL_AUTOMATION_URL` | The Apps Script Web App URL ending in `/exec` |
 | `GMAIL_AUTOMATION_SECRET` | The exact `RELAY_SECRET` value from Script Properties |
-| `CLUB_EMAIL` | The same Gmail account, used as the reply-to address |
-
-Save the secrets. Keep the secret identical in the two places and private. When both Gmail secrets exist, the approval function uses Gmail. An existing Resend configuration remains as a fallback until Gmail is configured.
+Save the secrets. Keep the secret identical in the two places and private. The approval function only changes an application to approved after Gmail accepts the message.
 
 ## 3. Deploy and verify
 
-The `admin-application-status` Edge Function uses this relay for approval and rejection messages. The `public-submission` Edge Function also uses it to send membership application receipts. After saving the secrets, verify delivery by submitting an application with an inbox you control, then confirm the receipt arrives from the club Gmail. You can also approve or reject that application to verify status notifications. The relay remembers successful message keys and returns the prior success on retries. If using this code with a different Supabase project, deploy both Edge Functions after setting their secrets.
+The `admin-application-status` Edge Function uses this relay for approval and rejection messages. After saving the secrets, approve a test application addressed to an inbox you control and confirm the message arrives from `brushandbondgcect22@gmail.com`. The relay remembers successful message keys and returns the prior success on retries. If using this code with a different Supabase project, deploy this Edge Function after setting its secrets.
 
 ## Limits and operations
 
