@@ -342,7 +342,7 @@ export const JoinPage: React.FC = () => {
                 </div>
 
                 <h2 className="section-title text-[var(--ink)] text-3xl sm:text-4xl">
-                  You're in. We'll email you the next steps.
+                  {submittedApp.confirmationEmailSent ? 'Application received. Check your email.' : 'Application received.'}
                 </h2>
 
                 <p className="text-base text-[var(--muted)] max-w-lg mx-auto leading-relaxed">
@@ -404,7 +404,7 @@ export const JoinPage: React.FC = () => {
                 <ol className="space-y-2 text-xs sm:text-sm text-[var(--muted)]">
                   <li className="flex items-start gap-2.5">
                     <span className="w-5 h-5 rounded-full bg-[var(--accent)]/10 text-[var(--accent)] font-mono text-xs flex items-center justify-center shrink-0 mt-0.5 font-bold">1</span>
-                    <span>Check your email for the club welcome pack and the WhatsApp community invite link.</span>
+                    <span>{submittedApp.confirmationEmailSent ? 'A receipt with your application reference has been sent to your registered email. The club team will email you after reviewing your application.' : 'Your application is saved. Email confirmation is temporarily unavailable; the club team can still review your application.'}</span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <span className="w-5 h-5 rounded-full bg-[var(--accent)]/10 text-[var(--accent)] font-mono text-xs flex items-center justify-center shrink-0 mt-0.5 font-bold">2</span>

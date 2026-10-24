@@ -27,7 +27,7 @@ Save the secrets. Keep the secret identical in the two places and private. When 
 
 ## 3. Deploy and verify
 
-The updated `admin-application-status` Edge Function is already deployed to the Brush and Bond Supabase project. After saving the secrets, sign in as an admin and approve or reject a test application addressed to an inbox you control. Confirm the email arrives from the Gmail account and that the application status changes. The relay remembers successful decision keys and returns the prior success on retries. If using this code with a different Supabase project, deploy this Edge Function after setting its secrets.
+The `admin-application-status` Edge Function uses this relay for approval and rejection messages. The `public-submission` Edge Function also uses it to send membership application receipts. After saving the secrets, verify delivery by submitting an application with an inbox you control, then confirm the receipt arrives from the club Gmail. You can also approve or reject that application to verify status notifications. The relay remembers successful message keys and returns the prior success on retries. If using this code with a different Supabase project, deploy both Edge Functions after setting their secrets.
 
 ## Limits and operations
 
