@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import nodemailer from 'nodemailer';
 import { buildEmail } from './email-template.mjs';
 
 const ALLOWED_ORIGINS = new Set([
@@ -63,10 +64,17 @@ Deno.serve(async (request) => {
   if (!supabaseUrl || !publishableKey || !secretKey) {
     return json({ error: 'Supabase function credentials are not configured.' }, 503, origin);
   }
+  const smtpUser = Deno.env.get('GMAIL_SMTP_USER')?.trim().toLowerCase() ?? '';
+  const smtpAppPassword = Deno.env.get('GMAIL_SMTP_APP_PASSWORD')?.replace(/\s/g, '') ?? '';
   const gmailRelayUrl = Deno.env.get('GMAIL_AUTOMATION_URL');
   const gmailRelaySecret = Deno.env.get('GMAIL_AUTOMATION_SECRET');
-  if (!(gmailRelayUrl && gmailRelaySecret)) {
-    return json({ error: 'Email delivery is not configured. Follow supabase/email-relay/SETUP.md to configure the Gmail automation.' }, 503, origin);
+  const hasSmtpSettings = Boolean(smtpUser || smtpAppPassword);
+  const hasRelaySettings = Boolean(gmailRelayUrl || gmailRelaySecret);
+  if ((hasSmtpSettings && !(smtpUser && smtpAppPassword)) || (!hasSmtpSettings && hasRelaySettings && !(gmailRelayUrl && gmailRelaySecret))) {
+    return json({ error: 'Email delivery settings are incomplete. Configure both GMAIL_SMTP_USER and GMAIL_SMTP_APP_PASSWORD, or both Gmail relay secrets.' }, 503, origin);
+  }
+  if (!hasSmtpSettings && !hasRelaySettings) {
+    return json({ error: 'Email delivery is not configured. Add the Gmail SMTP secrets in Supabase Edge Function secrets.' }, 503, origin);
   }
 
   let parsedBody: unknown;
@@ -141,33 +149,62 @@ Deno.serve(async (request) => {
   let alreadySent = false;
   try {
     const replyTo = 'brushandbondgcect22@gmail.com';
-    const relayUrl = new URL(gmailRelayUrl);
-    if (relayUrl.protocol !== 'https:' || relayUrl.hostname !== 'script.google.com' || !relayUrl.pathname.startsWith('/macros/s/')) {
-      return json({ error: 'GMAIL_AUTOMATION_URL must be the HTTPS Google Apps Script Web App URL.' }, 503, origin);
-    }
-    const response = await fetch(relayUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        secret: gmailRelaySecret,
-        idempotencyKey: `membership-${id}-${status}`,
+    if (hasSmtpSettings) {
+      if (smtpUser !== replyTo) {
+        return json({ error: 'GMAIL_SMTP_USER must be brushandbondgcect22@gmail.com so notifications come from the official club address.' }, 503, origin);
+      }
+      const transporter = nodemailer.createTransport({
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true,
+        auth: { user: smtpUser, pass: smtpAppPassword },
+        connectionTimeout: 15_000,
+        greetingTimeout: 10_000,
+        socketTimeout: 20_000,
+      });
+      const result = await transporter.sendMail({
+        from: { name: 'Brush and Bond', address: smtpUser },
         to: recipient,
         replyTo,
         subject: email.subject,
         html: email.html,
         text: email.text,
-      }),
-      signal: AbortSignal.timeout(20_000),
-    });
-    const relayResult = await response.json().catch(() => ({}));
-    if (!response.ok || relayResult.ok !== true) {
-      console.error('Gmail automation rejected notification:', response.status, relayResult.error ?? 'Unknown error');
-      return json({ error: 'Gmail could not accept the notification. The application status was not changed.' }, 502, origin);
+        messageId: `<membership-${id}-${status}@brushandbond.gmail.com>`,
+      });
+      await transporter.close();
+      if (!result.accepted.some((address) => String(address).toLowerCase() === recipient)) {
+        console.error('Gmail SMTP did not accept recipient:', result.rejected.join(', ') || 'No accepted recipient');
+        return json({ error: 'Gmail could not accept the notification. The application status was not changed.' }, 502, origin);
+      }
+    } else {
+      const relayUrl = new URL(gmailRelayUrl!);
+      if (relayUrl.protocol !== 'https:' || relayUrl.hostname !== 'script.google.com' || !relayUrl.pathname.startsWith('/macros/s/')) {
+        return json({ error: 'GMAIL_AUTOMATION_URL must be the HTTPS Google Apps Script Web App URL.' }, 503, origin);
+      }
+      const response = await fetch(relayUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          secret: gmailRelaySecret,
+          idempotencyKey: `membership-${id}-${status}`,
+          to: recipient,
+          replyTo,
+          subject: email.subject,
+          html: email.html,
+          text: email.text,
+        }),
+        signal: AbortSignal.timeout(20_000),
+      });
+      const relayResult = await response.json().catch(() => ({}));
+      if (!response.ok || relayResult.ok !== true) {
+        console.error('Gmail automation rejected notification:', response.status, relayResult.error ?? 'Unknown error');
+        return json({ error: 'Gmail could not accept the notification. The application status was not changed.' }, 502, origin);
+      }
+      alreadySent = relayResult.alreadySent === true;
     }
-    alreadySent = relayResult.alreadySent === true;
   } catch (error) {
     console.error('Email notification failed:', error instanceof Error ? error.message : 'Unknown error');
-    return json({ error: 'The email service could not confirm delivery. The application status was not changed. The Gmail relay deduplicates retries; check the Gmail Sent folder if the request timed out.' }, 502, origin);
+    return json({ error: 'Gmail could not confirm the notification. The application status was not changed. Check the Gmail Sent folder before retrying if the request timed out.' }, 502, origin);
   }
 
   const { data: updated, error: updateError } = await admin
