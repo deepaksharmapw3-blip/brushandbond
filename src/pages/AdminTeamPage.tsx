@@ -13,7 +13,7 @@ import { SEO } from '../components/common/SEO';
 import { ProtectedAdminRoute } from '../components/admin/ProtectedAdminRoute';
 import { AdminLayout } from '../components/admin/AdminLayout';
 import { AdminToast, ConfirmDialog, AdminEmptyState, AdminBadge } from '../components/admin/AdminUtils';
-import { teamApi } from '../services/api';
+import { teamApi, uploadImage } from '../services/api';
 
 type TierFilter = 'all' | 'faculty' | 'executive' | 'lead' | 'member';
 
@@ -45,6 +45,7 @@ export const AdminTeamPage: React.FC = () => {
   const [specialty, setSpecialty] = useState('');
   const [responsibilities, setResponsibilities] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [instagramUrl, setInstagramUrl] = useState('');
   const [linkedinUrl, setLinkedinUrl] = useState('');
   const [displayOrder, setDisplayOrder] = useState<number>(0);
@@ -80,6 +81,7 @@ export const AdminTeamPage: React.FC = () => {
     setSpecialty('');
     setResponsibilities('');
     setAvatarUrl('');
+    setAvatarFile(null);
     setInstagramUrl('');
     setLinkedinUrl('');
     setDisplayOrder(0);
@@ -99,6 +101,7 @@ export const AdminTeamPage: React.FC = () => {
     setSpecialty(member.specialty || '');
     setResponsibilities(toResponsibilities(member.responsibilities).join(', '));
     setAvatarUrl(member.avatarUrl || '');
+    setAvatarFile(null);
     setInstagramUrl(member.instagramUrl || '');
     setLinkedinUrl(member.linkedinUrl || '');
     setDisplayOrder(member.displayOrder || 0);
@@ -119,6 +122,9 @@ export const AdminTeamPage: React.FC = () => {
 
     setIsSubmitting(true);
     try {
+      const uploadedAvatar = avatarFile
+        ? await uploadImage('team', avatarFile, 'members')
+        : null;
       const payload = {
         name: name.trim(),
         role: role.trim(),
@@ -129,7 +135,7 @@ export const AdminTeamPage: React.FC = () => {
         quote: quote.trim() || undefined,
         specialty: specialty.trim() || undefined,
         responsibilities: toResponsibilities(responsibilities),
-        avatarUrl: avatarUrl.trim() || undefined,
+        avatarUrl: uploadedAvatar?.publicUrl || avatarUrl.trim() || undefined,
         instagramUrl: instagramUrl.trim() || undefined,
         linkedinUrl: linkedinUrl.trim() || undefined,
         displayOrder: Number(displayOrder) || 0,
@@ -587,18 +593,44 @@ export const AdminTeamPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Row 4: Avatar URL */}
+                  {/* Row 4: Member image upload or URL */}
                   <div>
                     <label className="block text-xs font-mono font-semibold text-[var(--ink)] mb-1">
-                      Avatar Image URL
+                      Member Artwork / Portrait
                     </label>
-                    <input
-                      type="url"
-                      value={avatarUrl}
-                      onChange={(e) => setAvatarUrl(e.target.value)}
-                      placeholder="https://... or leave empty for automatic initials badge"
-                      className="w-full px-3 py-2 text-xs font-mono bg-[var(--paper)] border border-[var(--line)] rounded-md focus:border-[var(--accent)] focus:outline-none text-[var(--ink)]"
-                    />
+                    <div className="space-y-2">
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={(e) => {
+                          const file = e.currentTarget.files?.[0] ?? null;
+                          setAvatarFile(file);
+                          if (file) setAvatarUrl('');
+                          // Allow choosing the same file again after a failed save.
+                          e.currentTarget.value = '';
+                        }}
+                        className="w-full text-xs text-[var(--muted)] file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-[var(--accent)] file:text-[var(--on-accent)] hover:file:opacity-90"
+                      />
+                      {avatarFile && (
+                        <p className="text-[11px] font-mono text-[var(--accent)]" aria-live="polite">
+                          Selected: {avatarFile.name} · uploads when you save
+                        </p>
+                      )}
+                      <div className="text-center text-[11px] text-[var(--muted)] font-mono">— OR USE AN IMAGE URL —</div>
+                      <input
+                        type="url"
+                        value={avatarUrl}
+                        onChange={(e) => {
+                          setAvatarUrl(e.target.value);
+                          if (e.target.value) setAvatarFile(null);
+                        }}
+                        placeholder="https://... or leave empty for automatic initials badge"
+                        className="w-full px-3 py-2 text-xs font-mono bg-[var(--paper)] border border-[var(--line)] rounded-md focus:border-[var(--accent)] focus:outline-none text-[var(--ink)]"
+                      />
+                      <p className="text-[10px] font-mono text-[var(--muted)]">
+                        JPEG, PNG, or WebP · max 20 MB before image optimization
+                      </p>
+                    </div>
                   </div>
 
                   {/* Row 5: Quote & Specialty */}
