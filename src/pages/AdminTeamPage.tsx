@@ -128,7 +128,7 @@ export const AdminTeamPage: React.FC = () => {
         bio: bio.trim() || undefined,
         quote: quote.trim() || undefined,
         specialty: specialty.trim() || undefined,
-        responsibilities: responsibilities.trim() || undefined,
+        responsibilities: toResponsibilities(responsibilities),
         avatarUrl: avatarUrl.trim() || undefined,
         instagramUrl: instagramUrl.trim() || undefined,
         linkedinUrl: linkedinUrl.trim() || undefined,
