@@ -11,6 +11,7 @@ import type { TeamMember, ActiveMember } from '../types';
 import type { Easing } from 'framer-motion';
 import { teamApi } from '../services/api';
 import { useAdminAuth } from '../context/AdminAuthContext';
+import { TeamMemberAvatar } from '../components/common/TeamMemberAvatar';
 
 // ── Inline SVG brand icons (lucide-react doesn't ship brand icons) ──
 const InstagramIcon: React.FC<{ size?: number }> = ({ size = 16 }) => (
@@ -28,41 +29,6 @@ const LinkedinIcon: React.FC<{ size?: number }> = ({ size = 16 }) => (
     <circle cx="4" cy="4" r="2" />
   </svg>
 );
-
-// ── Initials Avatar Fallback ──
-const InitialsAvatar: React.FC<{
-  name: string;
-  size?: 'sm' | 'md' | 'lg';
-}> = ({ name, size = 'md' }) => {
-  const initials = name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
-
-  // Generate a consistent colour from the name
-  const hue = name.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) % 360;
-
-  const sizeClasses =
-    size === 'lg'
-      ? 'w-full h-full text-3xl sm:text-4xl'
-      : size === 'md'
-      ? 'w-20 h-20 text-xl'
-      : 'w-10 h-10 sm:w-12 sm:h-12 text-sm';
-
-  return (
-    <div
-      className={`${sizeClasses} rounded-[4px] flex items-center justify-center font-display font-bold select-none shrink-0`}
-      style={{
-        backgroundColor: `hsl(${hue}, 45%, 88%)`,
-        color: `hsl(${hue}, 55%, 35%)`,
-      }}
-    >
-      {initials}
-    </div>
-  );
-};
 
 // ── Social Link Icons ──
 const SocialIcons: React.FC<{
@@ -278,17 +244,11 @@ export const TeamPage: React.FC = () => {
               key={member.id}
               className="bg-[var(--surface)] border border-[var(--line)] rounded-[6px] p-6 sm:p-10 grid grid-cols-1 md:grid-cols-12 gap-8 items-center"
             >
-              <div className="md:col-span-3 aspect-square rounded-[4px] overflow-hidden border border-[var(--line)] bg-[var(--paper)]">
-                {member.avatarUrl ? (
-                  <img
-                    src={member.avatarUrl}
-                    alt={member.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <InitialsAvatar name={member.name} size="lg" />
-                )}
-              </div>
+              <TeamMemberAvatar
+                name={member.name}
+                avatarUrl={member.avatarUrl}
+                className="md:col-span-3 aspect-square rounded-[4px] border border-[var(--line)] bg-[var(--paper)] text-3xl"
+              />
               <div className="md:col-span-9 space-y-4">
                 <div>
                   <span className="text-xs font-mono text-[var(--accent)] font-semibold block">
@@ -356,17 +316,11 @@ export const TeamPage: React.FC = () => {
               {/* Top: Avatar + Name */}
               <div className="space-y-4">
                 <div className="flex items-start gap-4">
-                  <div className="w-20 h-20 rounded-[4px] overflow-hidden border border-[var(--line)] shrink-0 bg-[var(--paper)]">
-                    {member.avatarUrl ? (
-                      <img
-                        src={member.avatarUrl}
-                        alt={member.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <InitialsAvatar name={member.name} size="md" />
-                    )}
-                  </div>
+                  <TeamMemberAvatar
+                    name={member.name}
+                    avatarUrl={member.avatarUrl}
+                    className="w-20 h-20 rounded-[4px] border border-[var(--line)] bg-[var(--paper)] text-xl"
+                  />
                   <div className="min-w-0">
                     <span className="text-[11px] font-mono text-[var(--accent)] font-semibold block leading-tight uppercase tracking-wider">
                       {member.role}
@@ -418,7 +372,7 @@ export const TeamPage: React.FC = () => {
                   )}
                 </div>
                 <Link
-                  to={`/artists/${member.slug}`}
+                  to={`/team/${member.slug}`}
                   className="text-xs font-mono text-[var(--accent)] hover:underline inline-flex items-center gap-1"
                 >
                   <span>Profile</span>
@@ -452,17 +406,11 @@ export const TeamPage: React.FC = () => {
               >
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-14 h-14 rounded-[4px] overflow-hidden border border-[var(--line)] shrink-0 bg-[var(--paper)]">
-                      {member.avatarUrl ? (
-                        <img
-                          src={member.avatarUrl}
-                          alt={member.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <InitialsAvatar name={member.name} size="md" />
-                      )}
-                    </div>
+                    <TeamMemberAvatar
+                      name={member.name}
+                      avatarUrl={member.avatarUrl}
+                      className="w-14 h-14 rounded-[4px] border border-[var(--line)] bg-[var(--paper)] text-base"
+                    />
                     <div>
                       <span className="text-[11px] font-mono text-[var(--accent)] font-semibold block leading-tight">
                         {member.role}
@@ -501,7 +449,7 @@ export const TeamPage: React.FC = () => {
                     size={14}
                   />
                   <Link
-                    to={`/artists/${member.slug}`}
+                    to={`/team/${member.slug}`}
                     className="text-[var(--accent)] hover:underline inline-flex items-center gap-1 ml-auto"
                   >
                     <span>Profile</span>
@@ -565,8 +513,11 @@ export const TeamPage: React.FC = () => {
               variants={cardVariants}
               className="group bg-[var(--surface)] border border-[var(--line)] rounded-[6px] p-3 sm:p-4 flex items-start gap-3 hover:border-[var(--ink)]/30 transition-colors"
             >
-              {/* Initials badge */}
-              <InitialsAvatar name={member.name} size="sm" />
+              <TeamMemberAvatar
+                name={member.name}
+                avatarUrl={member.avatarUrl}
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-[4px] border border-[var(--line)] bg-[var(--paper)] text-sm"
+              />
 
               <div className="min-w-0 flex-1">
                 <h4 className="font-display text-sm font-bold text-[var(--ink)] truncate leading-tight">

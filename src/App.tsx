@@ -23,6 +23,7 @@ const ArtistsPage = lazy(() => import('./pages/ArtistsPage').then(m => ({ defaul
 const ArtistDetailPage = lazy(() => import('./pages/ArtistDetailPage').then(m => ({ default: m.ArtistDetailPage })));
 const AchievementsPage = lazy(() => import('./pages/AchievementsPage').then(m => ({ default: m.AchievementsPage })));
 const TeamPage = lazy(() => import('./pages/TeamPage').then(m => ({ default: m.TeamPage })));
+const TeamMemberProfilePage = lazy(() => import('./pages/TeamMemberProfilePage').then(m => ({ default: m.TeamMemberProfilePage })));
 const JoinPage = lazy(() => import('./pages/JoinPage').then(m => ({ default: m.JoinPage })));
 const ContactPage = lazy(() => import('./pages/ContactPage').then(m => ({ default: m.ContactPage })));
 
@@ -161,6 +162,7 @@ function AppContent() {
 
             {/* Team */}
             <Route path="/team" element={<TeamPage />} />
+            <Route path="/team/:slug" element={<TeamMemberProfilePage />} />
 
             {/* Join */}
             <Route path="/join" element={<JoinPage />} />
