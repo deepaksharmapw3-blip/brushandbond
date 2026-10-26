@@ -886,11 +886,23 @@ export const adminAnalyticsApi = {
 
 // ─── Image upload helper ─────────────────────────────────────────────────────
 
+type ImageUploadStage = 'preparing' | 'uploading';
+
+function withTimeout<T>(promise: Promise<T>, milliseconds: number, message: string) {
+  let timeoutId: ReturnType<typeof setTimeout>;
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(message)), milliseconds);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timeoutId));
+}
+
 export async function uploadImage(
   bucket: 'artworks' | 'events' | 'artists' | 'team',
   file: File,
   folder?: string,
+  onStage?: (stage: ImageUploadStage) => void,
 ): Promise<{ publicUrl: string; width: number; height: number }> {
+  onStage?.('preparing');
   const maxInputBytes = 40 * 1024 * 1024;
   const extension = file.name.split('.').pop()?.toLowerCase() || '';
   const commonImageExtensions = new Set(['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif', 'avif', 'gif', 'bmp']);
@@ -905,10 +917,22 @@ export async function uploadImage(
   // large, and decoding their full resolution into a canvas can exhaust mobile memory.
   let decoded: { image: CanvasImageSource; width: number; height: number; cleanup: () => void } | null = null;
   if (typeof createImageBitmap === 'function') {
+    let bitmapSettled = false;
+    const bitmapPromise = createImageBitmap(file, { resizeWidth: 2000, resizeQuality: 'high' });
+    void bitmapPromise.then((bitmap) => {
+      if (bitmapSettled) bitmap.close();
+    }).catch(() => undefined);
     try {
-      const bitmap = await createImageBitmap(file, { resizeWidth: 2000, resizeQuality: 'high' });
+      const bitmap = await withTimeout(
+        bitmapPromise,
+        15_000,
+        'Preparing this phone photo took too long. Try a smaller JPEG or PNG image.',
+      );
+      bitmapSettled = true;
       decoded = { image: bitmap, width: bitmap.width, height: bitmap.height, cleanup: () => bitmap.close() };
-    } catch {
+    } catch (error) {
+      bitmapSettled = true;
+      if (error instanceof Error && error.message.startsWith('Preparing this phone photo took too long')) throw error;
       // Fall back to the HTML image decoder for browsers/codecs that do not
       // support createImageBitmap for the selected phone image format.
     }
@@ -916,12 +940,17 @@ export async function uploadImage(
   if (!decoded) {
     const objectUrl = URL.createObjectURL(file);
     try {
-      const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const imagePromise = new Promise<HTMLImageElement>((resolve, reject) => {
         const img = new Image();
         img.onload = () => resolve(img);
         img.onerror = () => reject(new Error('This phone image format is not supported by the browser. Choose a JPEG or PNG copy.'));
         img.src = objectUrl;
       });
+      const image = await withTimeout(
+        imagePromise,
+        15_000,
+        'Preparing this phone photo took too long. Try a smaller JPEG or PNG image.',
+      );
       decoded = {
         image,
         width: image.naturalWidth,
@@ -951,36 +980,47 @@ export async function uploadImage(
   let optimized: Blob | null = null;
   let outputWidth = 0;
   let outputHeight = 0;
-  while (maxDimension >= 1000) {
-    const scale = Math.min(1, maxDimension / Math.max(decoded.width, decoded.height));
-    canvas.width = Math.max(1, Math.round(decoded.width * scale));
-    canvas.height = Math.max(1, Math.round(decoded.height * scale));
-    outputWidth = canvas.width;
-    outputHeight = canvas.height;
-    context.clearRect(0, 0, canvas.width, canvas.height);
-    context.drawImage(decoded.image, 0, 0, canvas.width, canvas.height);
+  try {
+    while (maxDimension >= 1000) {
+      const scale = Math.min(1, maxDimension / Math.max(decoded.width, decoded.height));
+      canvas.width = Math.max(1, Math.round(decoded.width * scale));
+      canvas.height = Math.max(1, Math.round(decoded.height * scale));
+      outputWidth = canvas.width;
+      outputHeight = canvas.height;
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(decoded.image, 0, 0, canvas.width, canvas.height);
 
-    for (const quality of [0.86, 0.8, 0.74, 0.68]) {
-      optimized = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/webp', quality));
-      // Older mobile browsers may return PNG when WebP encoding is unavailable.
-      // Prefer JPEG in that case so phone photos still fit the Storage limit.
-      if (optimized && optimized.type !== 'image/webp') {
-        const pngFallback = optimized;
-        context.save();
-        context.globalCompositeOperation = 'destination-over';
-        context.fillStyle = '#fff';
-        context.fillRect(0, 0, canvas.width, canvas.height);
-        context.restore();
-        optimized = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality)) || pngFallback;
+      for (const quality of [0.86, 0.8, 0.74, 0.68]) {
+        optimized = await withTimeout(
+          new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/webp', quality)),
+          15_000,
+          'Optimizing this phone photo took too long. Try a smaller JPEG or PNG image.',
+        );
+        // Older mobile browsers may return PNG when WebP encoding is unavailable.
+        // Prefer JPEG in that case so phone photos still fit the Storage limit.
+        if (optimized && optimized.type !== 'image/webp') {
+          const pngFallback = optimized;
+          context.save();
+          context.globalCompositeOperation = 'destination-over';
+          context.fillStyle = '#fff';
+          context.fillRect(0, 0, canvas.width, canvas.height);
+          context.restore();
+          optimized = await withTimeout(
+            new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality)),
+            15_000,
+            'Optimizing this phone photo took too long. Try a smaller JPEG or PNG image.',
+          ) || pngFallback;
+        }
+        if (optimized && optimized.size <= targetBytes) break;
       }
       if (optimized && optimized.size <= targetBytes) break;
+      maxDimension -= 250;
     }
-    if (optimized && optimized.size <= targetBytes) break;
-    maxDimension -= 250;
+  } finally {
+    canvas.width = 0;
+    canvas.height = 0;
+    decoded.cleanup();
   }
-  canvas.width = 0;
-  canvas.height = 0;
-  decoded.cleanup();
 
   if (!optimized || optimized.size > hardLimitBytes) {
     throw new Error('This image could not be optimized for upload. Try a smaller photo or a JPEG copy.');
@@ -992,9 +1032,14 @@ export async function uploadImage(
     ? `${folder}/${crypto.randomUUID()}.${outputExtension}`
     : `${crypto.randomUUID()}.${outputExtension}`;
 
-  const { error: upError } = await supabase.storage
-    .from(bucket)
-    .upload(path, optimized, { contentType: outputType, cacheControl: '31536000' });
+  onStage?.('uploading');
+  const { error: upError } = await withTimeout(
+    supabase.storage
+      .from(bucket)
+      .upload(path, optimized, { contentType: outputType, cacheControl: '31536000' }),
+    60_000,
+    'The photo upload is taking too long. Check your connection and try again.',
+  );
   if (upError) throw new Error(upError.message);
 
   const { data } = supabase.storage.from(bucket).getPublicUrl(path);

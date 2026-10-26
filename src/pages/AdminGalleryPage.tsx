@@ -38,6 +38,7 @@ export const AdminGalleryPage: React.FC = () => {
   const [imageUrl, setImageUrl] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadStage, setUploadStage] = useState<'idle' | 'preparing' | 'uploading' | 'saving'>('idle');
 
   const fetchArtworks = async () => {
     try {
@@ -89,6 +90,7 @@ export const AdminGalleryPage: React.FC = () => {
     }
 
     setIsSubmitting(true);
+    setUploadStage(imageFile ? 'preparing' : 'saving');
     try {
       // Map category to Supabase enum values
       const categoryMap: Record<string, string> = {
@@ -113,12 +115,13 @@ export const AdminGalleryPage: React.FC = () => {
 
       if (imageFile) {
         // Upload to Supabase Storage first
-        const uploaded = await uploadImage('artworks', imageFile, String(currentYear));
+        const uploaded = await uploadImage('artworks', imageFile, String(currentYear), setUploadStage);
         finalImageUrl = uploaded.publicUrl;
         if (uploaded.width) width = uploaded.width;
         if (uploaded.height) height = uploaded.height;
       }
 
+      setUploadStage('saving');
       await artworkApi.create({
         title: title.trim(),
         slug,
@@ -144,6 +147,7 @@ export const AdminGalleryPage: React.FC = () => {
       setToast({ message: err.message || 'Failed to upload artwork', type: 'error' });
     } finally {
       setIsSubmitting(false);
+      setUploadStage('idle');
     }
   };
 
@@ -502,9 +506,22 @@ export const AdminGalleryPage: React.FC = () => {
                       disabled={isSubmitting}
                       className="px-5 py-2 bg-[var(--accent)] text-[var(--on-accent)] text-sm font-semibold rounded-lg hover:opacity-90 disabled:opacity-50"
                     >
-                      {isSubmitting ? 'Uploading...' : 'Publish Artwork'}
+                      {isSubmitting
+                        ? uploadStage === 'preparing'
+                          ? 'Preparing photo…'
+                          : uploadStage === 'uploading'
+                            ? 'Uploading photo…'
+                            : 'Saving artwork…'
+                        : 'Publish Artwork'}
                     </button>
                   </div>
+                  {isSubmitting && (
+                    <p className="mt-2 text-right text-xs text-[var(--muted)]" role="status" aria-live="polite">
+                      {uploadStage === 'preparing' && 'Optimizing the photo for your device…'}
+                      {uploadStage === 'uploading' && 'Sending the photo to the gallery…'}
+                      {uploadStage === 'saving' && 'Saving artwork details…'}
+                    </p>
+                  )}
                 </form>
               </motion.div>
             </div>
