@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowUpRight, ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowUpRight, ArrowRight } from 'lucide-react';
 import { SEO } from '../components/common/SEO';
 import { useGallery } from '../context/GalleryContext';
 import { ArtworkCard } from '../components/gallery/ArtworkCard';
@@ -20,7 +20,6 @@ export const HomePage: React.FC = () => {
 
   // Featured artwork of the week
   const featuredWeekArt = canvasArtworks.find((a) => a.id === 'art-002') || canvasArtworks[0];
-  const featuredWeekEvent = events.find((e) => e.slug === 'the-canvas-2026') || events[1] || events[0];
 
   // Next 3 events for upcoming events strip
   const nextThreeEvents = events.filter((e) => e.status !== 'concluded').slice(0, 3);
@@ -227,26 +226,12 @@ export const HomePage: React.FC = () => {
                 </p>
               </div>
 
-              {/* Event Badge */}
-              {featuredWeekEvent && <div className="flex items-center gap-2 text-xs font-mono text-[var(--ink)] bg-[var(--paper)] px-3 py-1.5 rounded-[4px] border border-[var(--line)] w-fit">
-                <Sparkles className="w-3.5 h-3.5 text-[var(--accent)]" />
-                <span>Exhibited at: {featuredWeekEvent.title}</span>
-              </div>}
-
               {/* Short Note */}
               <p className="text-sm text-[var(--muted)] leading-relaxed font-sans max-w-[55ch]">
                 {featuredWeekArt.description}
               </p>
 
               <div className="pt-2 flex flex-wrap gap-4">
-                {featuredWeekEvent && <Link
-                  to={`/events/${featuredWeekEvent.slug}`}
-                  className="btn-primary"
-                >
-                  <span>See the event</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Link>}
-
                 <Link
                   to={`/gallery/${featuredWeekArt.id}`}
                   className="btn-secondary"
