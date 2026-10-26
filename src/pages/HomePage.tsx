@@ -18,8 +18,8 @@ export const HomePage: React.FC = () => {
   const canvasArtworks = artworks.filter((artwork) => artwork.category !== 'campus-art');
   const canvasPreviewArtworks = canvasArtworks.slice(0, 8);
 
-  // Featured artwork of the week
-  const featuredWeekArt = canvasArtworks.find((a) => a.id === 'art-002') || canvasArtworks[0];
+  // The artwork of the month is selected by an admin in Manage Artwork & Gallery.
+  const artworkOfMonth = canvasArtworks.find((artwork) => artwork.featured);
 
   // Next 3 events for upcoming events strip
   const nextThreeEvents = events.filter((e) => e.status !== 'concluded').slice(0, 3);
@@ -182,24 +182,24 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* =========================================================
-          3. Featured Artwork of the Week (Two-Column)
+          3. Artwork of the Month (Two-Column)
          ========================================================= */}
-      {featuredWeekArt && <section className="gallery-container">
+      {artworkOfMonth && <section className="gallery-container">
         <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[6px] p-6 sm:p-10 lg:p-14 shadow-sm">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-center">
             {/* Left: Large artwork image */}
             <div className="lg:col-span-6">
               <Link
-                to={`/gallery/${featuredWeekArt.id}`}
+                to={`/gallery/${artworkOfMonth.id}`}
                 className="group relative block aspect-[4/3] rounded-[4px] overflow-hidden bg-[var(--paper)] border border-[var(--line)]"
               >
                 <img
-                  src={featuredWeekArt.imageUrl}
-                  alt={featuredWeekArt.title}
+                  src={artworkOfMonth.imageUrl}
+                  alt={artworkOfMonth.title}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
                 <div className="absolute top-3 left-3 bg-[var(--surface)]/90 backdrop-blur-sm px-3 py-1 text-xs font-mono text-[var(--accent)] border border-[var(--line)] rounded-[4px] font-semibold">
-                  Accession {featuredWeekArt.accessionNo}
+                  Accession {artworkOfMonth.accessionNo}
                 </div>
               </Link>
             </div>
@@ -208,32 +208,32 @@ export const HomePage: React.FC = () => {
             <div className="lg:col-span-6 space-y-5">
               <div className="space-y-1">
                 <span className="text-xs font-mono text-[var(--accent)] font-semibold uppercase tracking-wider block">
-                  Featured artwork of the week
+                  Artwork of the Month
                 </span>
                 <h3 className="font-display text-3xl sm:text-4xl font-extrabold text-[var(--ink)] leading-tight">
                   <Link
-                    to={`/gallery/${featuredWeekArt.id}`}
+                    to={`/gallery/${artworkOfMonth.id}`}
                     className="hover:text-[var(--accent)] transition-colors"
                   >
-                    {featuredWeekArt.title}
+                    {artworkOfMonth.title}
                   </Link>
                 </h3>
                 <p className="text-sm font-medium text-[var(--ink)] font-sans">
-                  By {featuredWeekArt.artistName}
+                  By {artworkOfMonth.artistName}
                 </p>
                 <p className="text-xs font-mono text-[var(--muted)]">
-                  {featuredWeekArt.artistDept} • {featuredWeekArt.medium}
+                  {artworkOfMonth.artistDept} • {artworkOfMonth.medium}
                 </p>
               </div>
 
               {/* Short Note */}
               <p className="text-sm text-[var(--muted)] leading-relaxed font-sans max-w-[55ch]">
-                {featuredWeekArt.description}
+                {artworkOfMonth.description}
               </p>
 
               <div className="pt-2 flex flex-wrap gap-4">
                 <Link
-                  to={`/gallery/${featuredWeekArt.id}`}
+                  to={`/gallery/${artworkOfMonth.id}`}
                   className="btn-secondary"
                 >
                   <span>Inspect artwork</span>

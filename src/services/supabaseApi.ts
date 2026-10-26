@@ -251,6 +251,26 @@ export const artworkApi = {
     return { success: true, artwork: normalizeRow(data) };
   },
 
+  setArtworkOfMonth: async (id: number | string) => {
+    const { error: clearError } = await supabase
+      .from('artworks')
+      .update({ featured: false })
+      .eq('featured', true)
+      .neq('category', 'campus-art');
+    if (clearError) throw new Error(clearError.message);
+
+    const { data, error } = await supabase
+      .from('artworks')
+      .update({ featured: true })
+      .eq('id', id)
+      .eq('is_published', true)
+      .neq('category', 'campus-art')
+      .select('id')
+      .single();
+    if (error) throw new Error(error.message);
+    return { success: true, artworkId: data.id };
+  },
+
   delete: async (id: number | string) => {
     // Also remove the file from storage
     const { data: artwork } = await supabase

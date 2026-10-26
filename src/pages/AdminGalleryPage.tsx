@@ -6,6 +6,7 @@ import {
   Grid3X3,
   Search,
   X,
+  Star,
 } from 'lucide-react';
 import { SEO } from '../components/common/SEO';
 import { ProtectedAdminRoute } from '../components/admin/ProtectedAdminRoute';
@@ -26,6 +27,7 @@ export const AdminGalleryPage: React.FC = () => {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedArtwork, setSelectedArtwork] = useState<any | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [settingArtworkOfMonthId, setSettingArtworkOfMonthId] = useState<string | null>(null);
 
   // Form state
   const [title, setTitle] = useState('');
@@ -33,7 +35,6 @@ export const AdminGalleryPage: React.FC = () => {
   const [artistId, setArtistId] = useState('');
   const [description, setDescription] = useState('');
   const [tags, setTags] = useState('');
-  const [featured, setFeatured] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -72,7 +73,6 @@ export const AdminGalleryPage: React.FC = () => {
     setArtistId('');
     setDescription('');
     setTags('');
-    setFeatured(false);
     setImageUrl('');
     setImageFile(null);
   };
@@ -131,7 +131,7 @@ export const AdminGalleryPage: React.FC = () => {
         art_year: currentYear,
         artist_id: artistId || null,
         description: description.trim() || null,
-        featured,
+        featured: false,
         is_published: true,
       });
 
@@ -144,6 +144,21 @@ export const AdminGalleryPage: React.FC = () => {
       setToast({ message: err.message || 'Failed to upload artwork', type: 'error' });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleSetArtworkOfMonth = async (artwork: any) => {
+    if (artwork.category === 'campus-art' || artwork.is_published === false) return;
+    setSettingArtworkOfMonthId(artwork.id);
+    try {
+      await artworkApi.setArtworkOfMonth(artwork.id);
+      setToast({ message: `${artwork.title} is now Artwork of the Month.`, type: 'success' });
+      await fetchArtworks();
+      window.dispatchEvent(new Event('bb-data-updated'));
+    } catch (err: any) {
+      setToast({ message: err.message || 'Could not update Artwork of the Month.', type: 'error' });
+    } finally {
+      setSettingArtworkOfMonthId(null);
     }
   };
 
@@ -251,7 +266,7 @@ export const AdminGalleryPage: React.FC = () => {
                   />
                   {artwork.featured && (
                     <span className="absolute top-2 left-2 px-2 py-0.5 bg-[var(--accent)] text-[var(--on-accent)] text-[10px] font-bold rounded-md uppercase">
-                      Featured
+                      Artwork of the Month
                     </span>
                   )}
                   <span className="absolute top-2 right-2 px-2 py-0.5 bg-black/70 text-white text-[10px] font-mono rounded-md">
@@ -269,6 +284,16 @@ export const AdminGalleryPage: React.FC = () => {
                     <span className="text-[11px] text-[var(--muted)] font-mono">
                       ❤️ {artwork.likes || 0} likes
                     </span>
+                    <button
+                      type="button"
+                      onClick={() => handleSetArtworkOfMonth(artwork)}
+                      disabled={Boolean(settingArtworkOfMonthId) || artwork.category === 'campus-art' || artwork.is_published === false || artwork.featured}
+                      className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-mono rounded-md border border-[var(--line)] text-[var(--accent)] hover:bg-[var(--accent)]/10 disabled:opacity-60 disabled:cursor-not-allowed"
+                      title={artwork.featured ? 'Current Artwork of the Month' : 'Set as Artwork of the Month'}
+                    >
+                      <Star className={`w-3 h-3 ${artwork.featured ? 'fill-current' : ''}`} />
+                      {settingArtworkOfMonthId === artwork.id ? 'Saving…' : artwork.featured ? 'Monthly pick' : 'Set monthly'}
+                    </button>
                     <button
                       onClick={() => {
                         setSelectedArtwork(artwork);
@@ -438,8 +463,8 @@ export const AdminGalleryPage: React.FC = () => {
                     />
                   </div>
 
-                  {/* Tags & Featured */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+                  {/* Tags */}
+                  <div className="grid grid-cols-1 gap-3 items-center">
                     <div>
                       <label className="block text-xs font-semibold text-[var(--ink)] mb-1">
                         Tags (comma separated)
@@ -453,18 +478,6 @@ export const AdminGalleryPage: React.FC = () => {
                       />
                     </div>
 
-                    <div className="flex items-center gap-2 sm:pt-4">
-                      <input
-                        type="checkbox"
-                        id="featured-check"
-                        checked={featured}
-                        onChange={(e) => setFeatured(e.target.checked)}
-                        className="w-4 h-4 rounded text-[var(--accent)] focus:ring-[var(--accent)]"
-                      />
-                      <label htmlFor="featured-check" className="text-xs font-medium text-[var(--ink)] cursor-pointer">
-                        Feature on Home page
-                      </label>
-                    </div>
                   </div>
 
                   {/* Action Buttons */}

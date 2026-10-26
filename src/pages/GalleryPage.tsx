@@ -74,17 +74,9 @@ export const GalleryPage: React.FC = () => {
     return ['all', ...years.map(String)];
   }, [artworks]);
 
-  // Featured artwork of the week (Top Hero Tile)
+  // Gallery spotlight uses the same admin-selected Artwork of the Month as Home.
   const featuredArtworkOfWeek: Artwork | undefined = useMemo(() => {
-    return (
-      artworks.find(
-        (a) =>
-          a.tags.some((t) => t.toLowerCase().includes('featured of the week')) ||
-          a.id === 'art-011'
-      ) ||
-      artworks.find((a) => a.featured) ||
-      artworks[0]
-    );
+    return artworks.find((artwork) => artwork.featured && artwork.category !== 'campus-art');
   }, [artworks]);
 
   // Filtered artworks computation
@@ -209,7 +201,7 @@ export const GalleryPage: React.FC = () => {
         </p>
       </section>
 
-      {/* 2. Featured Artwork of the Week (Top Hero Tile) */}
+      {/* 2. Admin-selected Artwork of the Month (Top Hero Tile) */}
       {featuredArtworkOfWeek && activeCategorySlug === 'all' && selectedYear === 'all' && !searchQuery && (
         <section className="gallery-container">
           <div className="relative overflow-hidden bg-[var(--surface)] border border-[var(--line)] rounded-[8px] p-4 sm:p-7 shadow-lg transition-all duration-300 hover:border-[var(--ink)]">
@@ -235,7 +227,7 @@ export const GalleryPage: React.FC = () => {
                 {/* Hero Badge */}
                 <div className="absolute top-3 left-3 bg-[var(--accent)] text-[var(--on-accent)] px-3 py-1 rounded-full text-xs font-mono font-semibold flex items-center gap-1.5 shadow-md">
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>Featured Artwork of the Week</span>
+                  <span>Artwork of the Month</span>
                 </div>
 
                 {/* Accession tag */}
