@@ -432,18 +432,26 @@ export const AdminGalleryPage: React.FC = () => {
                         type="file"
                         accept="image/*"
                         onChange={(e) => {
-                          if (e.target.files && e.target.files[0]) {
-                            setImageFile(e.target.files[0]);
+                          const file = e.currentTarget.files?.[0] ?? null;
+                          if (file) {
+                            setImageFile(file);
+                            setImageUrl('');
                           }
+                          // Keep the same file selectable again after a failed upload.
+                          e.currentTarget.value = '';
                         }}
                         className="w-full text-xs text-[var(--muted)] file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-[var(--accent)] file:text-[var(--on-accent)] hover:file:opacity-90"
                       />
+                      {imageFile && <p className="text-[11px] text-[var(--accent)] font-mono" aria-live="polite">Selected: {imageFile.name}</p>}
                       <div className="text-center text-[11px] text-[var(--muted)] font-mono">— OR ENTER IMAGE URL —</div>
                       <input
                         type="url"
                         placeholder="https://images.unsplash.com/photo-..."
                         value={imageUrl}
-                        onChange={(e) => setImageUrl(e.target.value)}
+                        onChange={(e) => {
+                          setImageUrl(e.target.value);
+                          if (e.target.value) setImageFile(null);
+                        }}
                         className="w-full px-3 py-2 bg-[var(--paper)] border border-[var(--line)] rounded-lg text-sm text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
                       />
                     </div>

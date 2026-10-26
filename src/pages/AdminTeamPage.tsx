@@ -601,7 +601,7 @@ export const AdminTeamPage: React.FC = () => {
                     <div className="space-y-2">
                       <input
                         type="file"
-                        accept="image/jpeg,image/png,image/webp"
+                        accept="image/*"
                         onChange={(e) => {
                           const file = e.currentTarget.files?.[0] ?? null;
                           setAvatarFile(file);
@@ -628,7 +628,7 @@ export const AdminTeamPage: React.FC = () => {
                         className="w-full px-3 py-2 text-xs font-mono bg-[var(--paper)] border border-[var(--line)] rounded-md focus:border-[var(--accent)] focus:outline-none text-[var(--ink)]"
                       />
                       <p className="text-[10px] font-mono text-[var(--muted)]">
-                        JPEG, PNG, or WebP · max 20 MB before image optimization
+                        Phone photos supported · max 40 MB before image optimization
                       </p>
                     </div>
                   </div>

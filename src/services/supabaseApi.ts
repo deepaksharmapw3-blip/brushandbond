@@ -891,33 +891,61 @@ export async function uploadImage(
   file: File,
   folder?: string,
 ): Promise<{ publicUrl: string; width: number; height: number }> {
-  const maxInputBytes = 20 * 1024 * 1024;
-  const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
-  if (!allowedTypes.has(file.type)) {
-    throw new Error('Choose a JPEG, PNG, or WebP image.');
+  const maxInputBytes = 40 * 1024 * 1024;
+  const extension = file.name.split('.').pop()?.toLowerCase() || '';
+  const commonImageExtensions = new Set(['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif', 'avif', 'gif', 'bmp']);
+  if (!file.type.startsWith('image/') && !commonImageExtensions.has(extension)) {
+    throw new Error('Choose an image file from your phone or device.');
   }
   if (file.size === 0 || file.size > maxInputBytes) {
-    throw new Error('Choose an image smaller than 20 MB to upload.');
+    throw new Error('Choose an image smaller than 40 MB to upload.');
   }
 
-  // Decode and optimize before upload so corrupt/oversized images do not
-  // consume Storage quota. Always release the temporary browser object URL.
-  const objectUrl = URL.createObjectURL(file);
-  const decoded = await new Promise<{ image: HTMLImageElement; width: number; height: number }>((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve({ image: img, width: img.naturalWidth, height: img.naturalHeight });
-    img.onerror = () => reject(new Error('The selected file is not a valid image.'));
-    img.src = objectUrl;
-  }).finally(() => URL.revokeObjectURL(objectUrl));
-  if (!decoded.width || !decoded.height || decoded.width > 10_000 || decoded.height > 10_000 || decoded.width * decoded.height > 24_000_000) {
-    throw new Error('Image dimensions are too large. Use an image under 24 megapixels.');
+  // Downsample at decode time when supported. Phone camera images can be very
+  // large, and decoding their full resolution into a canvas can exhaust mobile memory.
+  let decoded: { image: CanvasImageSource; width: number; height: number; cleanup: () => void } | null = null;
+  if (typeof createImageBitmap === 'function') {
+    try {
+      const bitmap = await createImageBitmap(file, { resizeWidth: 2000, resizeQuality: 'high' });
+      decoded = { image: bitmap, width: bitmap.width, height: bitmap.height, cleanup: () => bitmap.close() };
+    } catch {
+      // Fall back to the HTML image decoder for browsers/codecs that do not
+      // support createImageBitmap for the selected phone image format.
+    }
+  }
+  if (!decoded) {
+    const objectUrl = URL.createObjectURL(file);
+    try {
+      const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error('This phone image format is not supported by the browser. Choose a JPEG or PNG copy.'));
+        img.src = objectUrl;
+      });
+      decoded = {
+        image,
+        width: image.naturalWidth,
+        height: image.naturalHeight,
+        cleanup: () => URL.revokeObjectURL(objectUrl),
+      };
+    } catch (error) {
+      URL.revokeObjectURL(objectUrl);
+      throw error;
+    }
+  }
+  if (!decoded.width || !decoded.height || decoded.width > 30_000 || decoded.height > 30_000) {
+    decoded.cleanup();
+    throw new Error('This image has unsupported dimensions. Choose a smaller photo.');
   }
 
   const targetBytes = 350 * 1024;
   const hardLimitBytes = 1 * 1024 * 1024;
   const canvas = document.createElement('canvas');
   const context = canvas.getContext('2d');
-  if (!context) throw new Error('This browser cannot process the selected image.');
+  if (!context) {
+    decoded.cleanup();
+    throw new Error('This browser cannot process the selected image.');
+  }
 
   let maxDimension = 2000;
   let optimized: Blob | null = null;
@@ -934,6 +962,17 @@ export async function uploadImage(
 
     for (const quality of [0.86, 0.8, 0.74, 0.68]) {
       optimized = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/webp', quality));
+      // Older mobile browsers may return PNG when WebP encoding is unavailable.
+      // Prefer JPEG in that case so phone photos still fit the Storage limit.
+      if (optimized && optimized.type !== 'image/webp') {
+        const pngFallback = optimized;
+        context.save();
+        context.globalCompositeOperation = 'destination-over';
+        context.fillStyle = '#fff';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.restore();
+        optimized = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality)) || pngFallback;
+      }
       if (optimized && optimized.size <= targetBytes) break;
     }
     if (optimized && optimized.size <= targetBytes) break;
@@ -941,18 +980,21 @@ export async function uploadImage(
   }
   canvas.width = 0;
   canvas.height = 0;
+  decoded.cleanup();
 
   if (!optimized || optimized.size > hardLimitBytes) {
-    throw new Error('This image could not be compressed below 1 MB. Choose a smaller image.');
+    throw new Error('This image could not be optimized for upload. Try a smaller photo or a JPEG copy.');
   }
 
+  const outputType = optimized.type === 'image/jpeg' ? 'image/jpeg' : optimized.type === 'image/png' ? 'image/png' : 'image/webp';
+  const outputExtension = outputType === 'image/jpeg' ? 'jpg' : outputType === 'image/png' ? 'png' : 'webp';
   const path = folder
-    ? `${folder}/${crypto.randomUUID()}.webp`
-    : `${crypto.randomUUID()}.webp`;
+    ? `${folder}/${crypto.randomUUID()}.${outputExtension}`
+    : `${crypto.randomUUID()}.${outputExtension}`;
 
   const { error: upError } = await supabase.storage
     .from(bucket)
-    .upload(path, optimized, { contentType: 'image/webp', cacheControl: '31536000' });
+    .upload(path, optimized, { contentType: outputType, cacheControl: '31536000' });
   if (upError) throw new Error(upError.message);
 
   const { data } = supabase.storage.from(bucket).getPublicUrl(path);
