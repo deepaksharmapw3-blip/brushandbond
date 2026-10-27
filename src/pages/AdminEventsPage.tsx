@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Calendar,
@@ -12,7 +12,7 @@ import { SEO } from '../components/common/SEO';
 import { ProtectedAdminRoute } from '../components/admin/ProtectedAdminRoute';
 import { AdminLayout } from '../components/admin/AdminLayout';
 import { AdminToast, ConfirmDialog, AdminEmptyState, AdminBadge } from '../components/admin/AdminUtils';
-import { eventApi } from '../services/api';
+import { eventApi, uploadImage } from '../services/api';
 
 const isEventDatePast = (event: any) => {
   const value = event.event_date || event.date;
@@ -42,12 +42,25 @@ export const AdminEventsPage: React.FC = () => {
   const [category, setCategory] = useState('Workshop');
   const [maxCapacity, setMaxCapacity] = useState('100');
   const [description, setDescription] = useState('');
-  const [bannerUrl, setBannerUrl] = useState('');
-  const [bannerPreviewFailed, setBannerPreviewFailed] = useState(false);
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [bannerPreviewUrl, setBannerPreviewUrl] = useState('');
+  const bannerPreviewUrlRef = useRef<string | null>(null);
   const [isPast, setIsPast] = useState(false);
   const [registrationOpen, setRegistrationOpen] = useState(true);
   const [savingRegistrationId, setSavingRegistrationId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadStage, setUploadStage] = useState<'idle' | 'preparing' | 'uploading' | 'saving'>('idle');
+
+  const handleBannerFileChange = (file: File | null) => {
+    if (bannerPreviewUrlRef.current) URL.revokeObjectURL(bannerPreviewUrlRef.current);
+    bannerPreviewUrlRef.current = file ? URL.createObjectURL(file) : null;
+    setBannerPreviewUrl(bannerPreviewUrlRef.current || '');
+    setBannerFile(file);
+  };
+
+  useEffect(() => () => {
+    if (bannerPreviewUrlRef.current) URL.revokeObjectURL(bannerPreviewUrlRef.current);
+  }, []);
 
   const fetchEvents = async () => {
     try {
@@ -75,8 +88,7 @@ export const AdminEventsPage: React.FC = () => {
     setCategory('Workshop');
     setMaxCapacity('100');
     setDescription('');
-    setBannerUrl('');
-    setBannerPreviewFailed(false);
+    handleBannerFileChange(null);
     setIsPast(false);
     setRegistrationOpen(true);
     setSelectedEvent(null);
@@ -92,6 +104,13 @@ export const AdminEventsPage: React.FC = () => {
     setIsSubmitting(true);
     try {
       const eventIsPast = isPast || isEventDatePast({ event_date: eventDate });
+      let finalBannerUrl = 'https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?w=800';
+      if (bannerFile) {
+        setUploadStage('preparing');
+        const uploaded = await uploadImage('events', bannerFile, String(new Date().getFullYear()), setUploadStage);
+        finalBannerUrl = uploaded.publicUrl;
+      }
+      setUploadStage('saving');
       await eventApi.create({
         event_name: eventName.trim(),
         event_date: eventDate,
@@ -100,7 +119,7 @@ export const AdminEventsPage: React.FC = () => {
         category,
         max_capacity: parseInt(maxCapacity, 10) || 100,
         description: description.trim(),
-        banner_url: bannerUrl.trim() || 'https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?w=800',
+        banner_url: finalBannerUrl,
         is_past: eventIsPast,
         registration_open: !eventIsPast && registrationOpen,
         status: !eventIsPast && registrationOpen ? 'open' : eventIsPast ? 'concluded' : 'upcoming',
@@ -114,6 +133,7 @@ export const AdminEventsPage: React.FC = () => {
       setToast({ message: err.message || 'Failed to create event', type: 'error' });
     } finally {
       setIsSubmitting(false);
+      setUploadStage('idle');
     }
   };
 
@@ -255,12 +275,18 @@ export const AdminEventsPage: React.FC = () => {
                     const name = event.event_name || event.title;
                     const date = event.event_date || event.date;
                     const regCount = event._count?.registrations ?? event.registeredCount ?? 0;
+                    const posterUrl = event.bannerUrl || event.imageUrl || event.banner_url || event.image_url;
                     return (
                       <tr key={id} className="hover:bg-[var(--paper)]/50 transition-colors">
                         <td className="px-6 py-4">
-                          <div>
-                            <p className="font-semibold text-[var(--ink)]">{name}</p>
-                            <p className="text-xs text-[var(--muted)] line-clamp-1 mt-0.5">{event.description}</p>
+                          <div className="flex items-center gap-3 min-w-56">
+                            {posterUrl && (
+                              <img src={posterUrl} alt={`${name} poster`} className="h-12 w-16 shrink-0 rounded-md border border-[var(--line)] bg-[var(--paper)] object-cover" />
+                            )}
+                            <div className="min-w-0">
+                              <p className="font-semibold text-[var(--ink)]">{name}</p>
+                              <p className="text-xs text-[var(--muted)] line-clamp-1 mt-0.5">{event.description}</p>
+                            </div>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -449,32 +475,21 @@ export const AdminEventsPage: React.FC = () => {
 
                   <div>
                     <label className="block text-xs font-semibold text-[var(--ink)] mb-1">
-                      Banner Image URL
+                      Event Poster Image
                     </label>
                     <input
-                      type="url"
-                      placeholder="Paste a direct image URL (https://…jpg, .png, .webp)"
-                      value={bannerUrl}
+                      type="file"
+                      accept="image/*"
                       onChange={(e) => {
-                        setBannerUrl(e.target.value);
-                        setBannerPreviewFailed(false);
+                        handleBannerFileChange(e.currentTarget.files?.[0] ?? null);
+                        e.currentTarget.value = '';
                       }}
-                      className="w-full px-3 py-2 bg-[var(--paper)] border border-[var(--line)] rounded-lg text-sm text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                      className="w-full text-xs text-[var(--muted)] file:mr-3 file:rounded-md file:border-0 file:bg-[var(--accent)] file:px-3 file:py-2 file:text-xs file:font-semibold file:text-[var(--on-accent)]"
                     />
-                    {bannerUrl.trim() && (
+                    {bannerFile && <p className="mt-1 text-[11px] text-[var(--muted)]">Selected: {bannerFile.name}</p>}
+                    {bannerPreviewUrl && (
                       <div className="mt-2 overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--paper)]">
-                        {bannerPreviewFailed ? (
-                          <p className="p-3 text-xs text-red-500" role="status">
-                            This link did not load as an image. Use a direct, publicly accessible image URL.
-                          </p>
-                        ) : (
-                          <img
-                            src={bannerUrl.trim()}
-                            alt="Event poster preview"
-                            onError={() => setBannerPreviewFailed(true)}
-                            className="max-h-48 w-full object-cover"
-                          />
-                        )}
+                        <img src={bannerPreviewUrl} alt="Selected event poster preview" className="max-h-48 w-full object-cover" />
                       </div>
                     )}
                   </div>
@@ -532,9 +547,22 @@ export const AdminEventsPage: React.FC = () => {
                       disabled={isSubmitting}
                       className="px-5 py-2 bg-[var(--accent)] text-[var(--on-accent)] text-sm font-semibold rounded-lg hover:opacity-90 disabled:opacity-50"
                     >
-                      {isSubmitting ? 'Creating...' : 'Publish Event'}
+                      {isSubmitting
+                        ? uploadStage === 'preparing'
+                          ? 'Preparing poster…'
+                          : uploadStage === 'uploading'
+                            ? 'Uploading poster…'
+                            : 'Saving event…'
+                        : 'Publish Event'}
                     </button>
                   </div>
+                  {isSubmitting && (
+                    <p className="text-right text-xs text-[var(--muted)]" role="status" aria-live="polite">
+                      {uploadStage === 'preparing' && 'Optimizing the poster for upload…'}
+                      {uploadStage === 'uploading' && 'Uploading the poster to event storage…'}
+                      {uploadStage === 'saving' && 'Saving event details…'}
+                    </p>
+                  )}
                 </form>
               </motion.div>
             </div>
