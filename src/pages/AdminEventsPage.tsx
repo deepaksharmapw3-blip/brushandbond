@@ -43,6 +43,7 @@ export const AdminEventsPage: React.FC = () => {
   const [maxCapacity, setMaxCapacity] = useState('100');
   const [description, setDescription] = useState('');
   const [bannerUrl, setBannerUrl] = useState('');
+  const [bannerPreviewFailed, setBannerPreviewFailed] = useState(false);
   const [isPast, setIsPast] = useState(false);
   const [registrationOpen, setRegistrationOpen] = useState(true);
   const [savingRegistrationId, setSavingRegistrationId] = useState<string | null>(null);
@@ -75,6 +76,7 @@ export const AdminEventsPage: React.FC = () => {
     setMaxCapacity('100');
     setDescription('');
     setBannerUrl('');
+    setBannerPreviewFailed(false);
     setIsPast(false);
     setRegistrationOpen(true);
     setSelectedEvent(null);
@@ -451,11 +453,30 @@ export const AdminEventsPage: React.FC = () => {
                     </label>
                     <input
                       type="url"
-                      placeholder="https://images.unsplash.com/..."
+                      placeholder="Paste a direct image URL (https://…jpg, .png, .webp)"
                       value={bannerUrl}
-                      onChange={(e) => setBannerUrl(e.target.value)}
+                      onChange={(e) => {
+                        setBannerUrl(e.target.value);
+                        setBannerPreviewFailed(false);
+                      }}
                       className="w-full px-3 py-2 bg-[var(--paper)] border border-[var(--line)] rounded-lg text-sm text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
                     />
+                    {bannerUrl.trim() && (
+                      <div className="mt-2 overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--paper)]">
+                        {bannerPreviewFailed ? (
+                          <p className="p-3 text-xs text-red-500" role="status">
+                            This link did not load as an image. Use a direct, publicly accessible image URL.
+                          </p>
+                        ) : (
+                          <img
+                            src={bannerUrl.trim()}
+                            alt="Event poster preview"
+                            onError={() => setBannerPreviewFailed(true)}
+                            className="max-h-48 w-full object-cover"
+                          />
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div>

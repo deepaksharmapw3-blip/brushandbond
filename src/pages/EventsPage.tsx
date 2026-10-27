@@ -302,7 +302,7 @@ export const EventsPage: React.FC = () => {
                     {/* Cover Photo */}
                     <div className="relative aspect-[16/10] overflow-hidden bg-[var(--paper)]">
                       <img
-                        src={event.imageUrl}
+                        src={event.bannerUrl || event.imageUrl}
                         alt={event.title}
                         className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.02]"
                       />

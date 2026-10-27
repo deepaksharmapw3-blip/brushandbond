@@ -264,7 +264,7 @@ export const EventDetailPage: React.FC = () => {
         <div className="lg:col-span-5">
           <div className="aspect-[4/3] rounded-[8px] overflow-hidden border border-[var(--line)] bg-[var(--paper)] shadow-sm">
             <img
-              src={event.imageUrl}
+              src={event.bannerUrl || event.imageUrl}
               alt={event.title}
               className="w-full h-full object-cover"
             />

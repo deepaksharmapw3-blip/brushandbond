@@ -33,7 +33,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event }) => {
         <div className="md:w-5/12 p-3 pb-0 md:pb-3 md:pr-0">
           <div className="relative aspect-[16/10] md:h-full md:aspect-auto bg-[var(--paper)] rounded-[4px] overflow-hidden">
             <img
-              src={event.imageUrl}
+              src={event.bannerUrl || event.imageUrl}
               alt={event.title}
               className="w-full h-full object-cover object-center transition-transform duration-500 ease-out hover:scale-[1.02]"
             />

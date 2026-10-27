@@ -62,6 +62,7 @@ export interface EventItem {
   materialsProvided: string[];
   guidelines: string[];
   imageUrl: string;
+  bannerUrl?: string;
   galleryImages?: string[];
   participantArtworkIds?: string[];
   winners?: { place: string; name: string; department: string; artworkTitle?: string }[];

@@ -24,7 +24,7 @@ const rowAliases: Record<string, string> = {
   registered_count: 'registeredCount',
   image_url: 'imageUrl',
   cover_url: 'imageUrl',
-  banner_url: 'imageUrl',
+  banner_url: 'bannerUrl',
   avatar_url: 'avatarUrl',
   photo_url: 'avatarUrl',
 };
