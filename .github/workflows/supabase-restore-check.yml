@@ -1,0 +1,127 @@
+name: Supabase restore check
+
+on:
+  workflow_dispatch:
+    inputs:
+      backup_run_id:
+        description: GitHub Actions run ID that produced the encrypted backup
+        required: true
+        type: string
+        default: '40656893024'
+      confirm_replace_test_data:
+        description: Type replace-restore-test to replace the restore-test project's current data
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: supabase-restore-test
+  cancel-in-progress: false
+
+jobs:
+  restore-check:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+      RESTORE_TEST_DB_URL: ${{ secrets.RESTORE_TEST_DB_URL }}
+      RESTORE_TEST_SERVICE_ROLE_KEY: ${{ secrets.RESTORE_TEST_SERVICE_ROLE_KEY }}
+      RESTORE_TEST_SUPABASE_URL: https://uxmdfvjzhlluppxdryma.supabase.co
+      BACKUP_RUN_ID: ${{ inputs.backup_run_id }}
+      CONFIRM_REPLACE_TEST_DATA: ${{ inputs.confirm_replace_test_data }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Validate credentials and destination before any reset
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$CONFIRM_REPLACE_TEST_DATA" == "replace-restore-test" ]] || { echo 'Explicit test-project replacement confirmation is required.' >&2; exit 1; }
+          [[ "$BACKUP_RUN_ID" =~ ^[0-9]+$ ]] || { echo 'Backup run ID must be numeric.' >&2; exit 1; }
+          [[ "$BACKUP_ENCRYPTION_KEY" =~ ^[a-fA-F0-9]{64}$ ]] || { echo 'Backup encryption key is missing or has an invalid format.' >&2; exit 1; }
+          [[ -n "$RESTORE_TEST_DB_URL" && -n "$RESTORE_TEST_SERVICE_ROLE_KEY" ]] || { echo 'Restore-test credentials are missing.' >&2; exit 1; }
+          node --input-type=module <<'NODE'
+          const ref = 'uxmdfvjzhlluppxdryma';
+          const supabaseUrl = new URL(process.env.RESTORE_TEST_SUPABASE_URL);
+          const dbUrl = new URL(process.env.RESTORE_TEST_DB_URL);
+          const username = decodeURIComponent(dbUrl.username);
+          if (supabaseUrl.hostname !== `${ref}.supabase.co`) throw new Error('Restore destination URL is not the approved test project.');
+          if (!username.includes(ref) && !dbUrl.hostname.includes(ref)) throw new Error('Database connection is not clearly scoped to the approved test project.');
+          if (!dbUrl.password) throw new Error('Restore-test database connection string has no password.');
+          NODE
+          curl --fail --silent --show-error --output /dev/null \
+            -H "apikey: $RESTORE_TEST_SERVICE_ROLE_KEY" \
+            -H "Authorization: Bearer $RESTORE_TEST_SERVICE_ROLE_KEY" \
+            "$RESTORE_TEST_SUPABASE_URL/storage/v1/bucket"
+
+      - name: Download selected encrypted backup artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: brushandbond-supabase-backup-${{ inputs.backup_run_id }}
+          path: encrypted-artifact
+          run-id: ${{ inputs.backup_run_id }}
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+
+      - name: Install database client and Storage dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+          npm ci --ignore-scripts --omit=dev
+
+      - name: Decrypt and validate backup source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f encrypted-artifact/backup.tar.gz.enc
+          node scripts/backup-crypto.mjs decrypt encrypted-artifact/backup.tar.gz.enc backup.tar.gz
+          mkdir restored-backup
+          tar -xzf backup.tar.gz -C restored-backup
+          node --input-type=module <<'NODE'
+          import { readFile } from 'node:fs/promises';
+          const expectedRef = 'fxxolsjhlqlatwlqdwsq';
+          const root = JSON.parse(await readFile('restored-backup/backup/manifest.json', 'utf8'));
+          const storage = JSON.parse(await readFile('restored-backup/backup/storage/manifest.json', 'utf8'));
+          if (root.projectRef !== expectedRef || storage.sourceProjectRef !== expectedRef) {
+            throw new Error('Backup is not from the approved production project; refusing to restore.');
+          }
+          if (!Array.isArray(storage.buckets)) throw new Error('Backup Storage manifest is invalid.');
+          NODE
+
+      - name: Confirm test database is reachable
+        shell: bash
+        run: psql "$RESTORE_TEST_DB_URL" --set ON_ERROR_STOP=1 --command 'SELECT 1' >/dev/null
+
+      - name: Replace restore-test public database schema and restore backup
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql "$RESTORE_TEST_DB_URL" --set ON_ERROR_STOP=1 \
+            --command 'DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public AUTHORIZATION postgres; GRANT ALL ON SCHEMA public TO postgres; GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;'
+          psql "$RESTORE_TEST_DB_URL" --set ON_ERROR_STOP=1 \
+            --file restored-backup/backup/database/roles.sql
+          psql "$RESTORE_TEST_DB_URL" --single-transaction --set ON_ERROR_STOP=1 \
+            --file restored-backup/backup/database/schema.sql \
+            --command 'SET session_replication_role = replica' \
+            --file restored-backup/backup/database/data.sql
+
+      - name: Replace Storage contents and restore backed-up files
+        shell: bash
+        env:
+          SUPABASE_URL: ${{ env.RESTORE_TEST_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.RESTORE_TEST_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          node scripts/reset-supabase-storage.mjs restored-backup/backup/storage
+          node scripts/import-supabase-storage.mjs restored-backup/backup/storage
+          node scripts/verify-supabase-storage.mjs restored-backup/backup/storage
