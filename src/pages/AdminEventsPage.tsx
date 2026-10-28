@@ -8,6 +8,7 @@ import {
   Search,
   X,
   Pencil,
+  ImagePlus,
 } from 'lucide-react';
 import { SEO } from '../components/common/SEO';
 import { ProtectedAdminRoute } from '../components/admin/ProtectedAdminRoute';
@@ -34,6 +35,19 @@ export const AdminEventsPage: React.FC = () => {
   const [descriptionEvent, setDescriptionEvent] = useState<any | null>(null);
   const [draftEventDescription, setDraftEventDescription] = useState('');
   const [isSavingDescription, setIsSavingDescription] = useState(false);
+  const [mediaEvent, setMediaEvent] = useState<any | null>(null);
+  const [eventMediaPhotos, setEventMediaPhotos] = useState<string[]>([]);
+  const [eventMediaArtworkIds, setEventMediaArtworkIds] = useState<string[]>([]);
+  const [mediaPhotoFiles, setMediaPhotoFiles] = useState<File[]>([]);
+  const [mediaPhotoPreviews, setMediaPhotoPreviews] = useState<string[]>([]);
+  const mediaPhotoPreviewUrlsRef = useRef<string[]>([]);
+  const [mediaArtworkFile, setMediaArtworkFile] = useState<File | null>(null);
+  const [mediaArtworkPreview, setMediaArtworkPreview] = useState('');
+  const mediaArtworkPreviewUrlRef = useRef<string | null>(null);
+  const [mediaArtworkTitle, setMediaArtworkTitle] = useState('');
+  const [mediaArtworkArtist, setMediaArtworkArtist] = useState('');
+  const [mediaArtworkCategory, setMediaArtworkCategory] = useState('sketches');
+  const [isSavingMedia, setIsSavingMedia] = useState(false);
   const [registrationsModalOpen, setRegistrationsModalOpen] = useState(false);
   const [eventAttendees, setEventAttendees] = useState<any[]>([]);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -87,10 +101,37 @@ export const AdminEventsPage: React.FC = () => {
     setEventArtworkFile(file);
   };
 
+  const handleMediaPhotoFilesChange = (files: File[]) => {
+    mediaPhotoPreviewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    mediaPhotoPreviewUrlsRef.current = files.map((file) => URL.createObjectURL(file));
+    setMediaPhotoPreviews(mediaPhotoPreviewUrlsRef.current);
+    setMediaPhotoFiles(files);
+  };
+
+  const handleMediaArtworkFileChange = (file: File | null) => {
+    if (mediaArtworkPreviewUrlRef.current) URL.revokeObjectURL(mediaArtworkPreviewUrlRef.current);
+    mediaArtworkPreviewUrlRef.current = file ? URL.createObjectURL(file) : null;
+    setMediaArtworkPreview(mediaArtworkPreviewUrlRef.current || '');
+    setMediaArtworkFile(file);
+  };
+
+  const clearEventMediaDraft = () => {
+    mediaPhotoPreviewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    mediaPhotoPreviewUrlsRef.current = [];
+    setMediaPhotoFiles([]);
+    setMediaPhotoPreviews([]);
+    handleMediaArtworkFileChange(null);
+    setMediaArtworkTitle('');
+    setMediaArtworkArtist('');
+    setMediaArtworkCategory('sketches');
+  };
+
   useEffect(() => () => {
     if (bannerPreviewUrlRef.current) URL.revokeObjectURL(bannerPreviewUrlRef.current);
     galleryPreviewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
     if (eventArtworkPreviewRef.current) URL.revokeObjectURL(eventArtworkPreviewRef.current);
+    mediaPhotoPreviewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    if (mediaArtworkPreviewUrlRef.current) URL.revokeObjectURL(mediaArtworkPreviewUrlRef.current);
   }, []);
 
   const fetchEvents = async () => {
@@ -304,6 +345,96 @@ export const AdminEventsPage: React.FC = () => {
     }
   };
 
+  const openEventMediaManager = (event: any) => {
+    setMediaEvent(event);
+    setEventMediaPhotos(event.galleryImages || event.gallery_images || []);
+    setEventMediaArtworkIds((event.participantArtworkIds || event.participant_artwork_ids || []).map(String));
+    clearEventMediaDraft();
+  };
+
+  const closeEventMediaManager = () => {
+    if (isSavingMedia) return;
+    clearEventMediaDraft();
+    setMediaEvent(null);
+  };
+
+  const saveEventMedia = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!mediaEvent) return;
+    if (mediaArtworkFile && !mediaArtworkTitle.trim()) {
+      setToast({ message: 'Add a title for the participant artwork you selected', type: 'error' });
+      return;
+    }
+    const id = mediaEvent.event_id || mediaEvent.id;
+    const eventNameForArtwork = mediaEvent.event_name || mediaEvent.title || 'event';
+    setIsSavingMedia(true);
+    try {
+      const folder = `events/${String(id).replace(/[^a-zA-Z0-9_-]/g, '')}`;
+      const newPhotoUrls: string[] = [];
+      for (const file of mediaPhotoFiles) {
+        const uploaded = await uploadImage('events', file, folder, setUploadStage);
+        newPhotoUrls.push(uploaded.publicUrl);
+      }
+
+      const artworkIds = [...eventMediaArtworkIds];
+      let uploadedArtworkId: string | null = null;
+      if (mediaArtworkFile) {
+        const uploaded = await uploadImage('artworks', mediaArtworkFile, folder, setUploadStage);
+        const title = mediaArtworkTitle.trim();
+        const artwork = await artworkApi.create({
+          title,
+          slug: `${title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}-${Date.now()}`,
+          category: mediaArtworkCategory,
+          image_url: uploaded.publicUrl,
+          width: uploaded.width,
+          height: uploaded.height,
+          alt: title,
+          year: new Date().getFullYear(),
+          art_year: new Date().getFullYear(),
+          artist_name: mediaArtworkArtist.trim() || null,
+          description: `Submitted for ${eventNameForArtwork}`,
+          event_title: eventNameForArtwork,
+          featured: false,
+          is_published: true,
+        });
+        uploadedArtworkId = String(artwork.artwork.id);
+        artworkIds.push(uploadedArtworkId);
+      }
+
+      const galleryImages = [...eventMediaPhotos, ...newPhotoUrls];
+      await eventApi.update(id, {
+        gallery_images: galleryImages,
+        participant_artwork_ids: artworkIds,
+      });
+      setEvents((current) => current.map((event) => (
+        String(event.event_id || event.id) === String(id)
+          ? {
+              ...event,
+              galleryImages,
+              gallery_images: galleryImages,
+              participantArtworkIds: artworkIds,
+              participant_artwork_ids: artworkIds,
+            }
+          : event
+      )));
+      if (uploadedArtworkId) {
+        setAvailableArtworks((current) => current.filter((artwork) => String(artwork.id) !== uploadedArtworkId));
+        artworkApi.getAll({ limit: 500 }).then((res) => {
+          if (res.success && Array.isArray(res.artworks)) setAvailableArtworks(res.artworks);
+        }).catch(() => undefined);
+      }
+      setToast({ message: 'Event photos and artwork updated', type: 'success' });
+      clearEventMediaDraft();
+      setMediaEvent(null);
+      window.dispatchEvent(new Event('bb-data-updated'));
+    } catch (err: any) {
+      setToast({ message: err.message || 'Could not update event photos and artwork', type: 'error' });
+    } finally {
+      setIsSavingMedia(false);
+      setUploadStage('idle');
+    }
+  };
+
   const filteredEvents = events.filter((evt) => {
     const title = evt.event_name || evt.title || '';
     const matchesSearch = title.toLowerCase().includes(searchQuery.toLowerCase());
@@ -442,6 +573,15 @@ export const AdminEventsPage: React.FC = () => {
                         <td className="px-6 py-4 text-right">
                           <button
                             type="button"
+                            onClick={() => openEventMediaManager(event)}
+                            className="mr-2 rounded-md p-1.5 text-[var(--muted)] transition-colors hover:bg-[var(--paper)] hover:text-[var(--accent)]"
+                            title="Manage event photos and artwork"
+                            aria-label={`Manage photos and artwork for ${name}`}
+                          >
+                            <ImagePlus className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => editEventDescription(event)}
                             className="mr-2 rounded-md p-1.5 text-[var(--muted)] transition-colors hover:bg-[var(--paper)] hover:text-[var(--accent)]"
                             title="Edit event description"
@@ -538,6 +678,128 @@ export const AdminEventsPage: React.FC = () => {
                       {isSavingDescription ? 'Saving…' : 'Save description'}
                     </button>
                   </div>
+                </div>
+              </motion.form>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* ── MANAGE EXISTING EVENT PHOTOS AND ARTWORK ── */}
+        <AnimatePresence>
+          {mediaEvent && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-3 backdrop-blur-xs sm:p-4">
+              <motion.form
+                onSubmit={saveEventMedia}
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.96 }}
+                className="my-4 max-h-[calc(100dvh-2rem)] w-full max-w-2xl space-y-5 overflow-y-auto rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4 shadow-2xl sm:my-8 sm:p-6"
+              >
+                <div className="flex items-center justify-between gap-4 border-b border-[var(--line)] pb-3">
+                  <div>
+                    <h3 className="font-bold text-base text-[var(--ink)]">Add photos and artwork</h3>
+                    <p className="mt-1 text-xs text-[var(--muted)]">{mediaEvent.event_name || mediaEvent.title}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={closeEventMediaManager}
+                    disabled={isSavingMedia}
+                    aria-label="Close event media editor"
+                    className="rounded-md p-1 text-[var(--muted)] hover:text-[var(--ink)] disabled:opacity-50"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+
+                <section className="space-y-2">
+                  <label htmlFor="existing-event-photo-files" className="block text-xs font-semibold text-[var(--ink)]">
+                    Add event photos
+                  </label>
+                  <input
+                    id="existing-event-photo-files"
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    disabled={isSavingMedia}
+                    onChange={(e) => handleMediaPhotoFilesChange(Array.from(e.currentTarget.files || []))}
+                    className="w-full text-xs text-[var(--muted)] file:mr-3 file:rounded-md file:border-0 file:bg-[var(--accent)] file:px-3 file:py-2 file:text-xs file:font-semibold file:text-[var(--on-accent)]"
+                  />
+                  {eventMediaPhotos.length > 0 && (
+                    <>
+                      <p className="text-[11px] text-[var(--muted)]">Already on this event ({eventMediaPhotos.length})</p>
+                      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                        {eventMediaPhotos.map((photo, index) => (
+                          <img key={`${photo}-${index}`} src={photo} alt={`Existing event photo ${index + 1}`} className="aspect-[4/3] w-full rounded-md border border-[var(--line)] object-cover" />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                  {mediaPhotoPreviews.length > 0 && (
+                    <>
+                      <p className="text-[11px] text-[var(--muted)]">Selected to upload ({mediaPhotoFiles.length})</p>
+                      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                        {mediaPhotoPreviews.map((preview, index) => (
+                          <img key={preview} src={preview} alt={`New event photo preview ${index + 1}`} className="aspect-[4/3] w-full rounded-md border border-[var(--accent)] object-cover" />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </section>
+
+                <section className="space-y-2">
+                  <p className="text-xs font-semibold text-[var(--ink)]">Feature participants’ artwork</p>
+                  <p className="text-[11px] text-[var(--muted)]">Selected artworks appear in this event’s Participants’ Artwork section.</p>
+                  {availableArtworks.length > 0 ? (
+                    <div className="max-h-48 space-y-1 overflow-y-auto rounded-lg border border-[var(--line)] bg-[var(--paper)] p-2">
+                      {availableArtworks.map((artwork) => {
+                        const artworkId = String(artwork.id);
+                        return (
+                          <label key={artworkId} className="flex cursor-pointer items-center gap-3 rounded-md p-2 hover:bg-[var(--surface)]">
+                            <input
+                              type="checkbox"
+                              checked={eventMediaArtworkIds.includes(artworkId)}
+                              disabled={isSavingMedia}
+                              onChange={(e) => setEventMediaArtworkIds((current) => (
+                                e.target.checked ? [...current, artworkId] : current.filter((item) => item !== artworkId)
+                              ))}
+                              className="h-4 w-4 shrink-0 rounded text-[var(--accent)] focus:ring-[var(--accent)]"
+                            />
+                            <img src={artwork.imageUrl || artwork.image_url} alt="" className="h-10 w-12 shrink-0 rounded border border-[var(--line)] object-cover" />
+                            <span className="min-w-0 text-xs text-[var(--ink)]">
+                              <span className="block truncate font-semibold">{artwork.title}</span>
+                              <span className="block truncate text-[var(--muted)]">{artwork.artist?.name || artwork.artistName || 'Artist'}</span>
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="rounded-lg border border-dashed border-[var(--line)] p-3 text-xs text-[var(--muted)]">No gallery artworks are available yet. You can upload a new artwork below.</p>
+                  )}
+                  <div className="space-y-2 rounded-lg border border-[var(--line)] bg-[var(--paper)]/50 p-3">
+                    <p className="text-xs font-semibold text-[var(--ink)]">Upload new participant artwork</p>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      <input type="text" value={mediaArtworkTitle} disabled={isSavingMedia} onChange={(e) => setMediaArtworkTitle(e.target.value)} placeholder="Artwork title" aria-label="Participant artwork title" className="w-full rounded-lg border border-[var(--line)] bg-[var(--paper)] px-3 py-2 text-xs text-[var(--ink)]" />
+                      <input type="text" value={mediaArtworkArtist} disabled={isSavingMedia} onChange={(e) => setMediaArtworkArtist(e.target.value)} placeholder="Artist name (optional)" aria-label="Participant artwork artist name" className="w-full rounded-lg border border-[var(--line)] bg-[var(--paper)] px-3 py-2 text-xs text-[var(--ink)]" />
+                    </div>
+                    <select value={mediaArtworkCategory} disabled={isSavingMedia} onChange={(e) => setMediaArtworkCategory(e.target.value)} aria-label="Participant artwork category" className="w-full rounded-lg border border-[var(--line)] bg-[var(--paper)] px-3 py-2 text-xs text-[var(--ink)]">
+                      <option value="sketches">Sketches</option>
+                      <option value="paintings">Paintings</option>
+                      <option value="digitalart">Digital art</option>
+                      <option value="photography">Photography</option>
+                      <option value="calligraphy">Calligraphy</option>
+                      <option value="doodles">Doodles</option>
+                    </select>
+                    <input type="file" accept="image/*" disabled={isSavingMedia} onChange={(e) => handleMediaArtworkFileChange(e.currentTarget.files?.[0] ?? null)} className="w-full text-xs text-[var(--muted)] file:mr-3 file:rounded-md file:border-0 file:bg-[var(--accent)] file:px-3 file:py-2 file:text-xs file:font-semibold file:text-[var(--on-accent)]" />
+                    {mediaArtworkPreview && <img src={mediaArtworkPreview} alt="New participant artwork preview" className="max-h-40 w-full rounded-md border border-[var(--line)] object-contain" />}
+                  </div>
+                </section>
+
+                <div className="flex flex-col-reverse gap-2 border-t border-[var(--line)] pt-3 sm:flex-row sm:justify-end">
+                  <button type="button" onClick={closeEventMediaManager} disabled={isSavingMedia} className="rounded-lg px-4 py-2 text-sm font-medium text-[var(--muted)] hover:text-[var(--ink)] disabled:opacity-50">Cancel</button>
+                  <button type="submit" disabled={isSavingMedia} className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--on-accent)] hover:opacity-90 disabled:opacity-50">
+                    {isSavingMedia ? uploadStage === 'uploading' ? 'Uploading media…' : 'Saving media…' : 'Save event media'}
+                  </button>
                 </div>
               </motion.form>
             </div>
