@@ -56,11 +56,38 @@ jobs:
           if (supabaseUrl.hostname !== `${ref}.supabase.co`) throw new Error('Restore destination URL is not the approved test project.');
           if (!username.includes(ref) && !dbUrl.hostname.includes(ref)) throw new Error('Database connection is not clearly scoped to the approved test project.');
           if (!dbUrl.password) throw new Error('Restore-test database connection string has no password.');
+          const key = process.env.RESTORE_TEST_SERVICE_ROLE_KEY;
+          if (!key.startsWith('sb_secret_')) {
+            const parts = key.split('.');
+            if (parts.length !== 3) throw new Error('Restore key must be a Supabase secret key or a legacy service_role JWT.');
+            let claims;
+            try {
+              claims = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
+            } catch {
+              throw new Error('Legacy restore key is not a valid JWT.');
+            }
+            if (claims.role !== 'service_role') throw new Error('Legacy restore key is not the service_role key.');
+            if (claims.ref && claims.ref !== ref) throw new Error('Legacy restore key belongs to a different Supabase project.');
+          }
           NODE
-          curl --fail --silent --show-error --output /dev/null \
-            -H "apikey: $RESTORE_TEST_SERVICE_ROLE_KEY" \
-            -H "Authorization: Bearer $RESTORE_TEST_SERVICE_ROLE_KEY" \
-            "$RESTORE_TEST_SUPABASE_URL/storage/v1/bucket"
+          storage_headers=(-H "apikey: $RESTORE_TEST_SERVICE_ROLE_KEY")
+          if [[ "$RESTORE_TEST_SERVICE_ROLE_KEY" != sb_secret_* ]]; then
+            storage_headers+=(-H "Authorization: Bearer $RESTORE_TEST_SERVICE_ROLE_KEY")
+          fi
+          storage_status=$(curl --silent --show-error --output storage-auth-check.json --write-out '%{http_code}' \
+            "${storage_headers[@]}" "$RESTORE_TEST_SUPABASE_URL/storage/v1/bucket")
+          if [[ ! "$storage_status" =~ ^2 ]]; then
+            echo "Supabase Storage rejected the restore key (HTTP $storage_status)." >&2
+            node --input-type=module <<'NODE'
+          import { readFile } from 'node:fs/promises';
+          try {
+            const body = JSON.parse(await readFile('storage-auth-check.json', 'utf8'));
+            const safeMessage = body.message ?? body.error_description ?? body.error ?? body.code;
+            if (typeof safeMessage === 'string') console.error(`Supabase response: ${safeMessage.slice(0, 240)}`);
+          } catch {}
+          NODE
+            exit 1
+          fi
 
       - name: Download selected encrypted backup artifact
         uses: actions/download-artifact@v4
