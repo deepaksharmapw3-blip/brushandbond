@@ -12,7 +12,7 @@ import { SEO } from '../components/common/SEO';
 import { ProtectedAdminRoute } from '../components/admin/ProtectedAdminRoute';
 import { AdminLayout } from '../components/admin/AdminLayout';
 import { AdminToast, ConfirmDialog, AdminEmptyState, AdminBadge } from '../components/admin/AdminUtils';
-import { eventApi, uploadImage } from '../services/api';
+import { artworkApi, eventApi, uploadImage } from '../services/api';
 
 const isEventDatePast = (event: any) => {
   const value = event.event_date || event.date;
@@ -45,6 +45,17 @@ export const AdminEventsPage: React.FC = () => {
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [bannerPreviewUrl, setBannerPreviewUrl] = useState('');
   const bannerPreviewUrlRef = useRef<string | null>(null);
+  const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
+  const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
+  const galleryPreviewUrlsRef = useRef<string[]>([]);
+  const [availableArtworks, setAvailableArtworks] = useState<any[]>([]);
+  const [participantArtworkIds, setParticipantArtworkIds] = useState<string[]>([]);
+  const [eventArtworkFile, setEventArtworkFile] = useState<File | null>(null);
+  const [eventArtworkPreview, setEventArtworkPreview] = useState('');
+  const eventArtworkPreviewRef = useRef<string | null>(null);
+  const [eventArtworkTitle, setEventArtworkTitle] = useState('');
+  const [eventArtworkArtist, setEventArtworkArtist] = useState('');
+  const [eventArtworkCategory, setEventArtworkCategory] = useState('sketches');
   const [isPast, setIsPast] = useState(false);
   const [registrationOpen, setRegistrationOpen] = useState(true);
   const [savingRegistrationId, setSavingRegistrationId] = useState<string | null>(null);
@@ -58,8 +69,24 @@ export const AdminEventsPage: React.FC = () => {
     setBannerFile(file);
   };
 
+  const handleGalleryFilesChange = (files: File[]) => {
+    galleryPreviewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    galleryPreviewUrlsRef.current = files.map((file) => URL.createObjectURL(file));
+    setGalleryPreviews(galleryPreviewUrlsRef.current);
+    setGalleryFiles(files);
+  };
+
+  const handleEventArtworkFileChange = (file: File | null) => {
+    if (eventArtworkPreviewRef.current) URL.revokeObjectURL(eventArtworkPreviewRef.current);
+    eventArtworkPreviewRef.current = file ? URL.createObjectURL(file) : null;
+    setEventArtworkPreview(eventArtworkPreviewRef.current || '');
+    setEventArtworkFile(file);
+  };
+
   useEffect(() => () => {
     if (bannerPreviewUrlRef.current) URL.revokeObjectURL(bannerPreviewUrlRef.current);
+    galleryPreviewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    if (eventArtworkPreviewRef.current) URL.revokeObjectURL(eventArtworkPreviewRef.current);
   }, []);
 
   const fetchEvents = async () => {
@@ -78,6 +105,9 @@ export const AdminEventsPage: React.FC = () => {
   useEffect(() => {
     // oxlint-disable-next-line react/set-state-in-effect -- This starts an async read; state changes follow the API response.
     fetchEvents();
+    artworkApi.getAll({ limit: 500 }).then((res) => {
+      if (res.success && Array.isArray(res.artworks)) setAvailableArtworks(res.artworks);
+    }).catch((err: any) => console.warn('Could not load artwork for event selection:', err.message));
   }, []);
 
   const resetForm = () => {
@@ -89,6 +119,12 @@ export const AdminEventsPage: React.FC = () => {
     setMaxCapacity('100');
     setDescription('');
     handleBannerFileChange(null);
+    handleGalleryFilesChange([]);
+    setParticipantArtworkIds([]);
+    handleEventArtworkFileChange(null);
+    setEventArtworkTitle('');
+    setEventArtworkArtist('');
+    setEventArtworkCategory('sketches');
     setIsPast(false);
     setRegistrationOpen(true);
     setSelectedEvent(null);
@@ -100,15 +136,50 @@ export const AdminEventsPage: React.FC = () => {
       setToast({ message: 'Event name and date are required', type: 'error' });
       return;
     }
+    if (eventArtworkFile && !eventArtworkTitle.trim()) {
+      setToast({ message: 'Add a title for the participant artwork you selected', type: 'error' });
+      return;
+    }
 
     setIsSubmitting(true);
     try {
       const eventIsPast = isPast || isEventDatePast({ event_date: eventDate });
       let finalBannerUrl = 'https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?w=800';
+      const uploadFolder = `event-galleries/${crypto.randomUUID()}`;
       if (bannerFile) {
         setUploadStage('preparing');
         const uploaded = await uploadImage('events', bannerFile, String(new Date().getFullYear()), setUploadStage);
         finalBannerUrl = uploaded.publicUrl;
+      }
+      const uploadedGalleryImages: string[] = [];
+      for (let index = 0; index < galleryFiles.length; index += 1) {
+        setUploadStage('preparing');
+        const uploaded = await uploadImage('events', galleryFiles[index], uploadFolder, setUploadStage);
+        uploadedGalleryImages.push(uploaded.publicUrl);
+      }
+      const finalParticipantArtworkIds = [...participantArtworkIds];
+      if (eventArtworkFile) {
+        setUploadStage('preparing');
+        const uploadedArtwork = await uploadImage('artworks', eventArtworkFile, `events/${uploadFolder.split('/').pop()}`, setUploadStage);
+        setUploadStage('saving');
+        const artworkTitle = eventArtworkTitle.trim();
+        const artwork = await artworkApi.create({
+          title: artworkTitle,
+          slug: `${artworkTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}-${Date.now()}`,
+          category: eventArtworkCategory,
+          image_url: uploadedArtwork.publicUrl,
+          width: uploadedArtwork.width,
+          height: uploadedArtwork.height,
+          alt: artworkTitle,
+          year: new Date().getFullYear(),
+          art_year: new Date().getFullYear(),
+          artist_name: eventArtworkArtist.trim() || null,
+          description: `Submitted for ${eventName.trim()}`,
+          event_title: eventName.trim(),
+          featured: false,
+          is_published: true,
+        });
+        finalParticipantArtworkIds.push(String(artwork.artwork.id));
       }
       setUploadStage('saving');
       await eventApi.create({
@@ -120,6 +191,8 @@ export const AdminEventsPage: React.FC = () => {
         max_capacity: parseInt(maxCapacity, 10) || 100,
         description: description.trim(),
         banner_url: finalBannerUrl,
+        gallery_images: uploadedGalleryImages,
+        participant_artwork_ids: finalParticipantArtworkIds,
         is_past: eventIsPast,
         registration_open: !eventIsPast && registrationOpen,
         status: !eventIsPast && registrationOpen ? 'open' : eventIsPast ? 'concluded' : 'upcoming',
@@ -129,6 +202,7 @@ export const AdminEventsPage: React.FC = () => {
       setIsFormOpen(false);
       resetForm();
       fetchEvents();
+      window.dispatchEvent(new Event('bb-data-updated'));
     } catch (err: any) {
       setToast({ message: err.message || 'Failed to create event', type: 'error' });
     } finally {
@@ -492,6 +566,144 @@ export const AdminEventsPage: React.FC = () => {
                         <img src={bannerPreviewUrl} alt="Selected event poster preview" className="max-h-48 w-full object-cover" />
                       </div>
                     )}
+                  </div>
+
+                  <div className="space-y-2 rounded-lg border border-[var(--line)] bg-[var(--paper)]/50 p-3">
+                    <div>
+                      <label htmlFor="event-gallery-files" className="block text-xs font-semibold text-[var(--ink)] mb-1">
+                        Event Photos
+                      </label>
+                      <p className="mb-2 text-[11px] text-[var(--muted)]">
+                        Choose multiple photos from your device. They will appear in this event’s Photos gallery after publishing.
+                      </p>
+                      <input
+                        id="event-gallery-files"
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        disabled={isSubmitting}
+                        onChange={(e) => handleGalleryFilesChange(Array.from(e.currentTarget.files || []))}
+                        className="w-full text-xs text-[var(--muted)] file:mr-3 file:rounded-md file:border-0 file:bg-[var(--accent)] file:px-3 file:py-2 file:text-xs file:font-semibold file:text-[var(--on-accent)]"
+                      />
+                      {galleryFiles.length > 0 && (
+                        <p className="mt-1 text-[11px] text-[var(--muted)]" aria-live="polite">
+                          {galleryFiles.length} photo{galleryFiles.length === 1 ? '' : 's'} selected
+                        </p>
+                      )}
+                    </div>
+                    {galleryPreviews.length > 0 && (
+                      <div className="grid grid-cols-3 gap-2">
+                        {galleryPreviews.map((preview, index) => (
+                          <img
+                            key={preview}
+                            src={preview}
+                            alt={`Event photo preview ${index + 1}`}
+                            className="aspect-[4/3] w-full rounded-md border border-[var(--line)] object-cover"
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="event-artworks" className="block text-xs font-semibold text-[var(--ink)]">
+                      Participants’ Artwork
+                    </label>
+                    <p className="text-[11px] text-[var(--muted)]">
+                      Select artworks already uploaded in Upload / Gallery to feature them on this event page.
+                    </p>
+                    {availableArtworks.length > 0 && (
+                      <div id="event-artworks" className="max-h-52 space-y-1 overflow-y-auto rounded-lg border border-[var(--line)] bg-[var(--paper)] p-2">
+                        {availableArtworks.map((artwork) => {
+                          const artworkId = String(artwork.id);
+                          const isSelected = participantArtworkIds.includes(artworkId);
+                          return (
+                            <label key={artworkId} className="flex cursor-pointer items-center gap-3 rounded-md p-2 hover:bg-[var(--surface)]">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                disabled={isSubmitting}
+                                onChange={(e) => setParticipantArtworkIds((current) => (
+                                  e.target.checked
+                                    ? [...current, artworkId]
+                                    : current.filter((id) => id !== artworkId)
+                                ))}
+                                className="h-4 w-4 shrink-0 rounded text-[var(--accent)] focus:ring-[var(--accent)]"
+                              />
+                              <img
+                                src={artwork.imageUrl || artwork.image_url}
+                                alt=""
+                                className="h-10 w-12 shrink-0 rounded border border-[var(--line)] object-cover"
+                              />
+                              <span className="min-w-0 text-xs text-[var(--ink)]">
+                                <span className="block truncate font-semibold">{artwork.title}</span>
+                                <span className="block truncate text-[var(--muted)]">{artwork.artist?.name || artwork.artistName || 'Artist'}</span>
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+                    {availableArtworks.length === 0 && (
+                      <p className="text-[11px] text-[var(--muted)]">
+                        No gallery artworks are available yet. Upload artwork in Upload / Gallery first.
+                      </p>
+                    )}
+                    {participantArtworkIds.length > 0 && (
+                      <p className="text-[11px] text-[var(--muted)]" aria-live="polite">
+                        {participantArtworkIds.length} artwork{participantArtworkIds.length === 1 ? '' : 's'} selected
+                      </p>
+                    )}
+                    <div className="space-y-2 rounded-lg border border-[var(--line)] bg-[var(--paper)]/50 p-3">
+                      <p className="text-xs font-semibold text-[var(--ink)]">Upload new participant artwork</p>
+                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        <input
+                          type="text"
+                          value={eventArtworkTitle}
+                          disabled={isSubmitting}
+                          onChange={(e) => setEventArtworkTitle(e.target.value)}
+                          placeholder="Artwork title"
+                          aria-label="Participant artwork title"
+                          className="w-full rounded-lg border border-[var(--line)] bg-[var(--paper)] px-3 py-2 text-xs text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                        />
+                        <input
+                          type="text"
+                          value={eventArtworkArtist}
+                          disabled={isSubmitting}
+                          onChange={(e) => setEventArtworkArtist(e.target.value)}
+                          placeholder="Artist name (optional)"
+                          aria-label="Participant artwork artist name"
+                          className="w-full rounded-lg border border-[var(--line)] bg-[var(--paper)] px-3 py-2 text-xs text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                        />
+                      </div>
+                      <select
+                        value={eventArtworkCategory}
+                        disabled={isSubmitting}
+                        onChange={(e) => setEventArtworkCategory(e.target.value)}
+                        aria-label="Participant artwork category"
+                        className="w-full rounded-lg border border-[var(--line)] bg-[var(--paper)] px-3 py-2 text-xs text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                      >
+                        <option value="sketches">Sketches</option>
+                        <option value="paintings">Paintings</option>
+                        <option value="digitalart">Digital art</option>
+                        <option value="photography">Photography</option>
+                        <option value="calligraphy">Calligraphy</option>
+                        <option value="doodles">Doodles</option>
+                      </select>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        disabled={isSubmitting}
+                        onChange={(e) => handleEventArtworkFileChange(e.currentTarget.files?.[0] ?? null)}
+                        className="w-full text-xs text-[var(--muted)] file:mr-3 file:rounded-md file:border-0 file:bg-[var(--accent)] file:px-3 file:py-2 file:text-xs file:font-semibold file:text-[var(--on-accent)]"
+                      />
+                      {eventArtworkFile && (
+                        <p className="text-[11px] text-[var(--muted)]" aria-live="polite">Selected: {eventArtworkFile.name}</p>
+                      )}
+                      {eventArtworkPreview && (
+                        <img src={eventArtworkPreview} alt="Participant artwork preview" className="mt-2 max-h-40 w-full rounded-md border border-[var(--line)] object-contain" />
+                      )}
+                    </div>
                   </div>
 
                   <div>
