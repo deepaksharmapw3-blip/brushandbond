@@ -7,6 +7,7 @@ import {
   Users,
   Search,
   X,
+  Pencil,
 } from 'lucide-react';
 import { SEO } from '../components/common/SEO';
 import { ProtectedAdminRoute } from '../components/admin/ProtectedAdminRoute';
@@ -30,6 +31,9 @@ export const AdminEventsPage: React.FC = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
+  const [descriptionEvent, setDescriptionEvent] = useState<any | null>(null);
+  const [draftEventDescription, setDraftEventDescription] = useState('');
+  const [isSavingDescription, setIsSavingDescription] = useState(false);
   const [registrationsModalOpen, setRegistrationsModalOpen] = useState(false);
   const [eventAttendees, setEventAttendees] = useState<any[]>([]);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -272,6 +276,34 @@ export const AdminEventsPage: React.FC = () => {
     }
   };
 
+  const editEventDescription = (event: any) => {
+    setDescriptionEvent(event);
+    setDraftEventDescription(event.description || '');
+  };
+
+  const saveEventDescription = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!descriptionEvent) return;
+    const id = descriptionEvent.event_id || descriptionEvent.id;
+    setIsSavingDescription(true);
+    try {
+      const updatedDescription = draftEventDescription.trim();
+      await eventApi.update(id, { description: updatedDescription });
+      setEvents((current) => current.map((event) => (
+        String(event.event_id || event.id) === String(id)
+          ? { ...event, description: updatedDescription }
+          : event
+      )));
+      setToast({ message: 'Event description updated', type: 'success' });
+      setDescriptionEvent(null);
+      window.dispatchEvent(new Event('bb-data-updated'));
+    } catch (err: any) {
+      setToast({ message: err.message || 'Could not update the event description', type: 'error' });
+    } finally {
+      setIsSavingDescription(false);
+    }
+  };
+
   const filteredEvents = events.filter((evt) => {
     const title = evt.event_name || evt.title || '';
     const matchesSearch = title.toLowerCase().includes(searchQuery.toLowerCase());
@@ -409,6 +441,15 @@ export const AdminEventsPage: React.FC = () => {
                         </td>
                         <td className="px-6 py-4 text-right">
                           <button
+                            type="button"
+                            onClick={() => editEventDescription(event)}
+                            className="mr-2 rounded-md p-1.5 text-[var(--muted)] transition-colors hover:bg-[var(--paper)] hover:text-[var(--accent)]"
+                            title="Edit event description"
+                            aria-label={`Edit description for ${name}`}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button
                             onClick={() => {
                               setSelectedEvent(event);
                               setIsDeleteOpen(true);
@@ -438,6 +479,70 @@ export const AdminEventsPage: React.FC = () => {
             }}
           />
         )}
+
+        {/* ── EDIT EVENT DESCRIPTION ── */}
+        <AnimatePresence>
+          {descriptionEvent && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-4 backdrop-blur-xs">
+              <motion.form
+                onSubmit={saveEventDescription}
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.96 }}
+                className="my-8 w-full max-w-lg space-y-4 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-5 shadow-2xl"
+              >
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <h3 className="font-bold text-base text-[var(--ink)]">Edit event description</h3>
+                    <p className="mt-1 text-xs text-[var(--muted)]">{descriptionEvent.event_name || descriptionEvent.title}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setDescriptionEvent(null)}
+                    disabled={isSavingDescription}
+                    aria-label="Close description editor"
+                    className="rounded-md p-1 text-[var(--muted)] hover:text-[var(--ink)] disabled:opacity-50"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+                <label htmlFor="event-description-editor" className="block text-xs font-semibold text-[var(--ink)]">
+                  Description & Guidelines
+                </label>
+                <textarea
+                  id="event-description-editor"
+                  rows={8}
+                  maxLength={5000}
+                  autoFocus
+                  value={draftEventDescription}
+                  onChange={(e) => setDraftEventDescription(e.target.value)}
+                  placeholder="Add event details, guidelines, and what participants should bring..."
+                  className="w-full rounded-lg border border-[var(--line)] bg-[var(--paper)] px-3 py-2 text-sm text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                />
+                <div className="flex items-center justify-between gap-3 border-t border-[var(--line)] pt-3">
+                  <span className="text-[11px] text-[var(--muted)]">{draftEventDescription.length}/5000</span>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setDescriptionEvent(null)}
+                      disabled={isSavingDescription}
+                      className="rounded-lg px-4 py-2 text-sm font-medium text-[var(--muted)] hover:text-[var(--ink)] disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSavingDescription || draftEventDescription.length > 5000}
+                      className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--on-accent)] hover:opacity-90 disabled:opacity-50"
+                    >
+                      {isSavingDescription ? 'Saving…' : 'Save description'}
+                    </button>
+                  </div>
+                </div>
+              </motion.form>
+            </div>
+          )}
+        </AnimatePresence>
 
         {/* ── CREATE EVENT MODAL ── */}
         <AnimatePresence>
