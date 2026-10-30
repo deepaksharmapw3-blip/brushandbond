@@ -62,6 +62,39 @@ async function signVisitorId(visitorId: string, signingKey: string) {
   return [...new Uint8Array(signature)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
+async function readBodyLimited(request: Request, maxBytes: number) {
+  const contentLength = Number(request.headers.get('content-length'));
+  if (Number.isFinite(contentLength) && contentLength > maxBytes) return null;
+
+  const reader = request.body?.getReader();
+  if (!reader) return new Uint8Array();
+
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      totalBytes += value.byteLength;
+      if (totalBytes > maxBytes) {
+        await reader.cancel();
+        return null;
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  const body = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return body;
+}
+
 const signaturesEqual = (left: string, right: string) => {
   if (left.length !== right.length) return false;
   let difference = 0;
@@ -95,11 +128,16 @@ Deno.serve(async (request) => {
 
   let body: { type?: unknown; data?: unknown };
   let imageFile: File | null = null;
-  if (request.headers.get('content-type')?.toLowerCase().startsWith('multipart/form-data')) {
-    const contentLength = Number(request.headers.get('content-length') ?? 0);
-    if (contentLength > 1_100_000) return json({ error: 'Choose an image smaller than 1 MB.' }, 413, origin);
+  const contentType = request.headers.get('content-type') ?? '';
+  const isMultipart = contentType.toLowerCase().startsWith('multipart/form-data');
+  const requestBody = await readBodyLimited(request, isMultipart ? 1_100_000 : 16_384);
+  if (!requestBody) {
+    return json({ error: isMultipart ? 'Choose an image smaller than 1 MB.' : 'Submission is too large.' }, 413, origin);
+  }
+
+  if (isMultipart) {
     try {
-      const form = await request.formData();
+      const form = await new Response(requestBody, { headers: { 'content-type': contentType } }).formData();
       const formData: Record<string, string> = {};
       const allowedFields = new Set([
         'contributorName', 'email', 'batchYear', 'department', 'title',
@@ -124,12 +162,8 @@ Deno.serve(async (request) => {
       return json({ error: 'Invalid upload form.' }, 400, origin);
     }
   } else {
-    const rawBody = await request.text();
-    if (new TextEncoder().encode(rawBody).byteLength > 16_384) {
-      return json({ error: 'Submission is too large.' }, 413, origin);
-    }
     try {
-      body = JSON.parse(rawBody);
+      body = JSON.parse(new TextDecoder().decode(requestBody));
     } catch {
       return json({ error: 'Invalid request body.' }, 400, origin);
     }
