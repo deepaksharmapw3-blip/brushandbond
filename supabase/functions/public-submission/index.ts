@@ -103,7 +103,7 @@ Deno.serve(async (request) => {
       const formData: Record<string, string> = {};
       const allowedFields = new Set([
         'contributorName', 'email', 'batchYear', 'department', 'title',
-        'approxYear', 'location', 'description',
+        'approxYear', 'location', 'description', 'year', 'category', 'medium',
       ]);
       let textBytes = 0;
       let invalidForm = false;
@@ -155,6 +155,7 @@ Deno.serve(async (request) => {
     'event-registration': { max: 100, seconds: 15 * 60 },
     'artwork-like': { max: 100, seconds: 15 * 60 },
     'campus-art-contribution': { max: 5, seconds: 60 * 60 },
+    'artwork-submission': { max: 5, seconds: 60 * 60 },
   };
   const type = typeof body.type === 'string' ? body.type : '';
   const rateLimitScope = type === 'artwork-like-identity' || type === 'artwork-like' ? 'artwork-like' : type;
@@ -280,6 +281,73 @@ Deno.serve(async (request) => {
         .single();
       if (error) {
         if (uploadedImagePath) await admin.storage.from('artworks').remove([uploadedImagePath]);
+        throw error;
+      }
+      return json({ success: true, contribution }, 200, origin);
+    }
+
+    if (type === 'artwork-submission') {
+      const contributorName = text(data.contributorName, 100);
+      const email = emailValue(data.email);
+      const batchYear = text(data.batchYear, 40);
+      const department = text(data.department, 120);
+      const title = text(data.title, 180);
+      const year = Number(text(data.year, 4));
+      const description = text(data.description, 3000);
+      const category = text(data.category, 32);
+      const medium = text(data.medium, 120);
+      const allowedCategories = new Set(['sketches', 'paintings', 'digital-art', 'photography', 'calligraphy', 'doodles']);
+      if (
+        contributorName.length < 2
+        || (email && !validEmail(email))
+        || department.length < 2
+        || title.length < 2
+        || !Number.isInteger(year) || year < 1900 || year > new Date().getFullYear() + 1
+        || !allowedCategories.has(category)
+        || medium.length < 2
+        || description.length < 10
+        || !imageFile
+      ) {
+        return json({ error: 'Please check the artwork submission fields and attach an image.' }, 400, origin);
+      }
+
+      const extensions: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
+      const extension = extensions[imageFile.type];
+      if (!extension || imageFile.size === 0 || imageFile.size > 1_048_576) {
+        return json({ error: 'Choose a JPEG, PNG, or WebP image smaller than 1 MB.' }, 400, origin);
+      }
+
+      const uploadedImagePath = `gallery-submissions/${crypto.randomUUID()}.${extension}`;
+      const { error: uploadError } = await admin.storage
+        .from('artworks')
+        .upload(uploadedImagePath, imageFile, {
+          contentType: imageFile.type,
+          cacheControl: '31536000',
+          upsert: false,
+        });
+      if (uploadError) throw uploadError;
+      const imageUrl = admin.storage.from('artworks').getPublicUrl(uploadedImagePath).data.publicUrl;
+
+      const { data: contribution, error } = await admin
+        .from('campus_art_contributions')
+        .insert({
+          submission_type: 'gallery-artwork',
+          contributor_name: contributorName,
+          email: email || null,
+          batch_year: batchYear || null,
+          department,
+          title,
+          approximate_year: String(year),
+          category,
+          medium,
+          description,
+          image_url: imageUrl,
+          status: 'pending',
+        })
+        .select('id, created_at, image_url')
+        .single();
+      if (error) {
+        await admin.storage.from('artworks').remove([uploadedImagePath]);
         throw error;
       }
       return json({ success: true, contribution }, 200, origin);

@@ -25,6 +25,7 @@ const AchievementsPage = lazy(() => import('./pages/AchievementsPage').then(m =>
 const TeamPage = lazy(() => import('./pages/TeamPage').then(m => ({ default: m.TeamPage })));
 const TeamMemberProfilePage = lazy(() => import('./pages/TeamMemberProfilePage').then(m => ({ default: m.TeamMemberProfilePage })));
 const JoinPage = lazy(() => import('./pages/JoinPage').then(m => ({ default: m.JoinPage })));
+const ArtworkSubmissionPage = lazy(() => import('./pages/ArtworkSubmissionPage').then(m => ({ default: m.ArtworkSubmissionPage })));
 const ContactPage = lazy(() => import('./pages/ContactPage').then(m => ({ default: m.ContactPage })));
 
 // Real Admin Pages with full backend capabilities
@@ -166,6 +167,7 @@ function AppContent() {
 
             {/* Join */}
             <Route path="/join" element={<JoinPage />} />
+            <Route path="/submit-artwork" element={<ArtworkSubmissionPage />} />
 
             {/* Contact */}
             <Route path="/contact" element={<ContactPage />} />
