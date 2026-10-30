@@ -9,6 +9,7 @@ import { campusArtContributionApi } from '../services/api';
 type Submission = {
   id: string; contributorName: string; email?: string; batchYear?: string; department: string;
   title: string; approxYear: string; location?: string; description: string; imageUrl?: string;
+  submissionType?: 'campus-record' | 'gallery-artwork'; category?: string; medium?: string;
   submittedAt: string; status: 'pending' | 'approved' | 'rejected';
 };
 
@@ -39,7 +40,11 @@ export const AdminCampusSubmissionsPage: React.FC = () => {
     setBusyId(item.id); setError(null); setNotice(null);
     try {
       await campusArtContributionApi.updateStatus(item.id, status);
-      setNotice(status === 'approved' ? 'Contribution approved and added to the public archive.' : 'Contribution rejected.');
+      setNotice(status === 'approved'
+        ? item.submissionType === 'gallery-artwork'
+          ? 'Artwork approved and published in the Gallery.'
+          : 'Contribution approved and added to the public archive.'
+        : 'Contribution rejected.');
       await load();
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not update contribution.'); }
     finally { setBusyId(null); }
@@ -59,10 +64,10 @@ export const AdminCampusSubmissionsPage: React.FC = () => {
 
   return (
     <ProtectedAdminRoute>
-      <SEO title="Campus Art Submissions" />
+      <SEO title="Artwork Submissions" />
       <AdminLayout activeSection="campus-submissions">
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div><h1 className="text-2xl font-bold text-[var(--ink)]">Campus Art Submissions</h1><p className="mt-1 text-sm text-[var(--muted)]">Review public contributions before they appear in the archive. Only admins can approve, reject, or delete records.</p></div>
+          <div><h1 className="text-2xl font-bold text-[var(--ink)]">Artwork & Campus Submissions</h1><p className="mt-1 text-sm text-[var(--muted)]">Review public submissions. Approving Gallery artwork publishes it to the Gallery; approving campus records adds them to the archive.</p></div>
           <button type="button" onClick={() => { setLoading(true); void load(); }} className="btn-secondary"><RefreshCw className="h-4 w-4" /> Refresh</button>
         </div>
         {notice && <p role="status" className="mb-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-700">{notice}</p>}
@@ -81,9 +86,9 @@ export const AdminCampusSubmissionsPage: React.FC = () => {
             {item.imageUrl && <img src={item.imageUrl} alt="Submitted artwork" loading="lazy" className="max-h-72 w-full object-cover" />}
             <div className="space-y-4 p-5">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div><div className="mb-1 flex flex-wrap gap-2 text-xs text-[var(--muted)]"><span className="rounded-full bg-[var(--paper)] px-2 py-1 uppercase">{item.status}</span><span>{item.approxYear}</span><span>{new Date(item.submittedAt).toLocaleDateString()}</span></div><h2 className="text-xl font-bold text-[var(--ink)]">{item.title}</h2><p className="text-sm text-[var(--muted)]">{[item.contributorName, item.email, item.batchYear, item.department, item.location].filter(Boolean).join(' · ')}</p></div>
+                <div><div className="mb-1 flex flex-wrap gap-2 text-xs text-[var(--muted)]"><span className="rounded-full bg-[var(--paper)] px-2 py-1 uppercase">{item.status}</span><span className="rounded-full bg-[var(--paper)] px-2 py-1">{item.submissionType === 'gallery-artwork' ? 'Gallery artwork' : 'Campus archive record'}</span><span>{item.approxYear}</span><span>{new Date(item.submittedAt).toLocaleDateString()}</span></div><h2 className="text-xl font-bold text-[var(--ink)]">{item.title}</h2><p className="text-sm text-[var(--muted)]">{[item.contributorName, item.email, item.batchYear, item.department, item.location, item.category, item.medium].filter(Boolean).join(' · ')}</p></div>
                 <div className="flex shrink-0 gap-2">
-                  {item.status !== 'approved' && <button type="button" disabled={busyId === item.id} onClick={() => void updateStatus(item, 'approved')} className="btn-primary text-xs"><Check className="h-4 w-4" /> Approve</button>}
+                  {item.status !== 'approved' && <button type="button" disabled={busyId === item.id} onClick={() => void updateStatus(item, 'approved')} className="btn-primary text-xs"><Check className="h-4 w-4" /> {item.submissionType === 'gallery-artwork' ? 'Approve & publish' : 'Approve'}</button>}
                   {item.status === 'pending' && <button type="button" disabled={busyId === item.id} onClick={() => void updateStatus(item, 'rejected')} className="btn-secondary text-xs"><X className="h-4 w-4" /> Reject</button>}
                   <button type="button" disabled={busyId === item.id} onClick={() => setDeleteTarget(item)} className="btn-secondary text-xs text-red-600"><Trash2 className="h-4 w-4" /> Delete</button>
                 </div>

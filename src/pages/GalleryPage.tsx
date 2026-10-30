@@ -521,7 +521,7 @@ export const GalleryPage: React.FC = () => {
               generative shaders, and micron pen spreads.
             </p>
           </div>
-          <Link to="/join" className="btn-primary shrink-0">
+          <Link to="/submit-artwork" className="btn-primary shrink-0">
             <span>Submit artwork</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
