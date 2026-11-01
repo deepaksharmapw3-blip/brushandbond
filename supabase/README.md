@@ -241,6 +241,28 @@ application status. If email delivery fails, the status remains pending so an
 admin can safely retry. The relay uses an idempotency key to prevent duplicate
 emails when approval is retried.
 
+## Gmail member broadcasts
+
+Admins can compose in the official Gmail account with one of these subject
+prefixes: `[B&B EVENT]`, `[B&B ANNOUNCEMENT]`, `[B&B ACHIEVEMENT]`, or
+`[B&B UPDATE]`. The `runMemberEmailAutomation` Apps Script trigger scans Sent
+every five minutes, queues the campaign through the `member-email-broadcast`
+Edge Function, and dispatches it in small batches through the existing Gmail
+relay. Ordinary messages are ignored.
+
+Only approved members who opted in through the Join form or an admin-recorded
+consent are recipients. Each message is sent separately, carries an
+unsubscribe link, and is deduplicated by Gmail message ID and per-recipient
+idempotency keys. Campaigns and delivery records are private service-role-only
+tables. For Apps Script setup, Script Properties, and Gmail quota behavior, see
+[`email-relay/SETUP.md`](email-relay/SETUP.md) and
+[`docs/member-email-broadcast-architecture.md`](../docs/member-email-broadcast-architecture.md).
+
+The broadcast functions use `verify_jwt = false` because they validate the
+shared `GMAIL_AUTOMATION_SECRET` themselves; the unsubscribe function uses an
+opaque per-member token and requires a confirmation POST before changing the
+preference. Never put the relay secret in the browser app.
+
 For local development, copy `supabase/functions/.env.example` to
 `supabase/functions/.env` and fill in test credentials. Do not commit that
 file. Production values belong in the Supabase Edge Function secrets.

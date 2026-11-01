@@ -20,3 +20,11 @@ verify_jwt = false
 # This function validates the bearer token against Supabase Auth itself.
 [functions.admin-application-status]
 verify_jwt = false
+
+# These functions authenticate the Gmail automation with a shared secret or
+# opaque, per-member unsubscribe token instead of a Supabase user JWT.
+[functions.member-email-broadcast]
+verify_jwt = false
+
+[functions.member-email-unsubscribe]
+verify_jwt = false

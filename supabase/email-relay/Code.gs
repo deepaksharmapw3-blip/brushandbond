@@ -55,6 +55,136 @@ function authorizeMail() {
   return MailApp.getRemainingDailyQuota();
 }
 
+/**
+ * Run this once from the editor after configuring Script Properties and
+ * approving the Gmail/URL Fetch permissions. The recurring job only broadcasts
+ * messages with an explicit [B&B EVENT|ANNOUNCEMENT|ACHIEVEMENT|UPDATE] prefix.
+ */
+function runMemberEmailAutomation() {
+  scanSentMemberBroadcasts();
+  dispatchPendingMemberBroadcasts();
+}
+
+function installMemberEmailAutomation() {
+  const config = getBroadcastConfig();
+  if (!config.functionUrl || !config.publishableKey || !config.secret) {
+    throw new Error('Set BROADCAST_FUNCTION_URL, SUPABASE_PUBLISHABLE_KEY, and RELAY_SECRET in Script Properties first.');
+  }
+  if (String(Session.getEffectiveUser().getEmail() || '').toLowerCase() !== config.senderEmail) {
+    throw new Error('Run this script as the official Brush & Bond Gmail account.');
+  }
+
+  ScriptApp.getProjectTriggers()
+    .filter(trigger => trigger.getHandlerFunction() === 'runMemberEmailAutomation')
+    .forEach(trigger => ScriptApp.deleteTrigger(trigger));
+  ScriptApp.newTrigger('runMemberEmailAutomation').timeBased().everyMinutes(5).create();
+  return 'Member email automation is scheduled every five minutes.';
+}
+
+function authorizeMemberEmailAutomation() {
+  GmailApp.search('in:sent newer_than:1d', 0, 1);
+  MailApp.getRemainingDailyQuota();
+  UrlFetchApp.fetch('https://www.google.com/generate_204', { muteHttpExceptions: true });
+  return 'Gmail read, mail send, and URL Fetch permissions are ready.';
+}
+
+function scanSentMemberBroadcasts() {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(1000)) return;
+  try {
+    const config = getBroadcastConfig();
+    const processedLabelName = 'B&B Broadcast Processed';
+    const processedLabel = GmailApp.getUserLabelByName(processedLabelName) || GmailApp.createLabel(processedLabelName);
+    const query = 'in:sent newer_than:30d {subject:"[B&B EVENT]" subject:"[B&B ANNOUNCEMENT]" subject:"[B&B ACHIEVEMENT]" subject:"[B&B UPDATE]"} -label:"B&B Broadcast Processed"';
+    const threads = GmailApp.search(query, 0, 50);
+
+    threads.forEach(thread => {
+      let matchingMessages = 0;
+      let everyMessageAccepted = true;
+      thread.getMessages().forEach(message => {
+        const subject = String(message.getSubject() || '').trim();
+        const sender = emailAddressFromHeader(message.getFrom());
+        const body = String(message.getPlainBody() || '').trim().slice(0, 3500);
+        if (!/^\[B&B\s+(EVENT|ANNOUNCEMENT|ACHIEVEMENT|UPDATE)\]\s*.+/i.test(subject)) return;
+        if (sender !== config.senderEmail || !body) return;
+
+        matchingMessages++;
+        try {
+          const response = callBroadcastFunction(config, {
+            action: 'ingest',
+            gmailMessageId: message.getId(),
+            senderEmail: sender,
+            subject,
+            bodyText: body,
+          });
+          if (response.success !== true) everyMessageAccepted = false;
+        } catch (error) {
+          everyMessageAccepted = false;
+          console.error('Could not queue Gmail message:', error && error.message ? error.message : 'Unknown error');
+        }
+      });
+      if (matchingMessages > 0 && everyMessageAccepted) thread.addLabel(processedLabel);
+    });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function dispatchPendingMemberBroadcasts() {
+  const config = getBroadcastConfig();
+  const properties = PropertiesService.getScriptProperties();
+  const pauseUntil = Number(properties.getProperty('BROADCAST_PAUSE_UNTIL') || 0);
+  if (Date.now() < pauseUntil) return;
+
+  const response = callBroadcastFunction(config, { action: 'dispatch' });
+  if (response.paused === true) {
+    // Consumer Gmail quota resets 24 hours after the first send in its quota window.
+    properties.setProperty('BROADCAST_PAUSE_UNTIL', String(Date.now() + 24 * 60 * 60 * 1000));
+  } else if (pauseUntil) {
+    properties.deleteProperty('BROADCAST_PAUSE_UNTIL');
+  }
+}
+
+function getBroadcastConfig() {
+  const properties = PropertiesService.getScriptProperties();
+  const senderEmail = String(properties.getProperty('SENDER_EMAIL') || '').trim().toLowerCase();
+  const functionUrl = String(properties.getProperty('BROADCAST_FUNCTION_URL') || '').trim();
+  const publishableKey = String(properties.getProperty('SUPABASE_PUBLISHABLE_KEY') || '').trim();
+  const secret = String(properties.getProperty('RELAY_SECRET') || '');
+  if (senderEmail !== 'brushandbondgcect22@gmail.com') throw new Error('SENDER_EMAIL must be brushandbondgcect22@gmail.com.');
+  if (!/^https:\/\/[a-z0-9-]+\.supabase\.co\/functions\/v1\/member-email-broadcast$/i.test(functionUrl)) {
+    throw new Error('BROADCAST_FUNCTION_URL must be the HTTPS member-email-broadcast function URL.');
+  }
+  if (!publishableKey || !secret) throw new Error('Supabase publishable key and relay secret are required.');
+  return { senderEmail, functionUrl, publishableKey, secret };
+}
+
+function callBroadcastFunction(config, payload) {
+  const response = UrlFetchApp.fetch(config.functionUrl, {
+    method: 'post',
+    contentType: 'application/json',
+    headers: {
+      apikey: config.publishableKey,
+      Authorization: 'Bearer ' + config.publishableKey,
+      'x-broadcast-secret': config.secret,
+    },
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true,
+  });
+  const result = JSON.parse(response.getContentText() || '{}');
+  if (response.getResponseCode() < 200 || response.getResponseCode() >= 300 || result.success !== true) {
+    console.error('Member broadcast automation failed:', result.error || response.getResponseCode());
+    throw new Error(result.error || 'Member broadcast endpoint failed.');
+  }
+  return result;
+}
+
+function emailAddressFromHeader(value) {
+  const input = String(value || '').trim().toLowerCase();
+  const bracketed = input.match(/<([^<>]+)>/);
+  return (bracketed ? bracketed[1] : input).trim();
+}
+
 function isEmail(value) {
   return /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(value) && value.length <= 254;
 }

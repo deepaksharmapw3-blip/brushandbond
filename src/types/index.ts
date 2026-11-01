@@ -182,5 +182,6 @@ export interface MembershipPayload {
   experienceSummary: string;
   portfolioUrl?: string;
   motivation: string;
+  emailUpdatesOptIn: boolean;
 }
 

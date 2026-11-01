@@ -196,6 +196,7 @@ export const GalleryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         artInterests: payload.primaryWing,
         portfolioUrl: payload.portfolioUrl,
         whyJoin: payload.motivation || payload.experienceSummary || 'Passionate about Art at GCECT',
+        emailUpdatesOptIn: payload.emailUpdatesOptIn,
       });
     return { success: true, applicantId: result.application.id };
   };

@@ -32,3 +32,26 @@ The `admin-application-status` Edge Function uses this relay for approval and re
 Google currently lists **100 email recipients per day for consumer Gmail accounts** through Apps Script; the quota is per account, resets 24 hours after the first request, and can change. This is enough for normal approval/rejection volume but can be exhausted if 100 decisions are sent in one day. The relay checks the remaining daily quota before sending and returns a failure without changing the application status if none remains. See [Google Apps Script quotas](https://developers.google.com/apps-script/guides/services/quotas).
 
 The shared secret protects the publicly reachable Apps Script URL. Rotate it in Script Properties and Supabase secrets together if it is exposed. Do not use a Gmail password or app password in Supabase or source code.
+
+## Member broadcasts from Gmail
+
+The same relay project also scans the official account's Sent folder and sends approved, opted-in members event and club updates. It does not forward ordinary mail. A message is a broadcast only when its subject begins with one of these exact prefixes:
+
+- `[B&B EVENT]`
+- `[B&B ANNOUNCEMENT]`
+- `[B&B ACHIEVEMENT]`
+- `[B&B UPDATE]`
+
+After the database migration and Edge Functions are deployed:
+
+1. In the existing Apps Script project, replace `Code.gs` with the current repository version. Keep the existing `SENDER_EMAIL` and `RELAY_SECRET` Script Properties.
+2. Add Script Properties:
+   - `BROADCAST_FUNCTION_URL`: `https://<project-ref>.supabase.co/functions/v1/member-email-broadcast`
+   - `SUPABASE_PUBLISHABLE_KEY`: the project's publishable key (or legacy anon key)
+3. In Supabase Dashboard → **Edge Functions → Secrets**, set `GMAIL_AUTOMATION_URL` to this Apps Script Web App URL and `GMAIL_AUTOMATION_SECRET` to the exact same private value as the Apps Script `RELAY_SECRET` property. A deployment health check currently confirms the broadcast function is deployed, but it returns `Gmail automation is not configured.` until this secret is set.
+4. Run `authorizeMemberEmailAutomation` and approve Gmail read, mail send, and URL Fetch scopes while signed into `brushandbondgcect22@gmail.com`.
+5. Run `installMemberEmailAutomation` once. It installs a five-minute trigger that scans matching sent messages and drains queued deliveries.
+6. In **Deploy → Manage deployments → Edit → New version → Deploy**, publish the updated Web App code so Edge Functions can still call `doPost` for each private recipient delivery.
+7. When composing an update, start the subject with one prefix above and send it as a new email (not as a reply inside an earlier broadcast thread). The body is sent to each approved member who checked the optional email-updates box. Their addresses are never included in a shared To/CC list.
+
+The member list only includes approved applications with `email_updates_opt_in = true`. The checkbox is optional and unchecked by default. Existing approved members remain opted out until they explicitly opt in; the email footer provides an unsubscribe link. Delivery attempts and per-recipient status are stored in the private `member_email_campaigns` and `member_email_deliveries` tables. Gmail message IDs and per-recipient idempotency keys prevent duplicate sends when a trigger or network request retries.

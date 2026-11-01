@@ -20,6 +20,7 @@ export const JoinFlow: React.FC = () => {
     experienceSummary: '',
     portfolioUrl: '',
     motivation: '',
+    emailUpdatesOptIn: false,
   });
 
   const [submittedCandidateId, setSubmittedCandidateId] = useState<string | null>(null);
@@ -326,6 +327,18 @@ export const JoinFlow: React.FC = () => {
                     className="w-full bg-[var(--paper)] border border-[var(--line)] rounded-[6px] px-3.5 py-2.5 text-sm text-[var(--ink)] placeholder:text-[var(--muted)]/60 focus:outline-none focus:ring-2 focus:ring-[var(--accent)] leading-relaxed"
                   />
                 </div>
+
+                <label className="flex items-start gap-3 rounded-[6px] border border-[var(--line)] bg-[var(--surface)] p-4 text-sm leading-relaxed text-[var(--muted)]">
+                  <input
+                    type="checkbox"
+                    checked={form.emailUpdatesOptIn}
+                    onChange={(e) => setForm({ ...form, emailUpdatesOptIn: e.target.checked })}
+                    className="mt-1 h-4 w-4 shrink-0 accent-[var(--accent)]"
+                  />
+                  <span>
+                    Email me Brush &amp; Bond event notices, announcements, achievement news, and club updates. I can unsubscribe at any time.
+                  </span>
+                </label>
 
                 <div className="pt-2">
                   <button

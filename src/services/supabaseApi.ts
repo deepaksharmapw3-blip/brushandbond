@@ -523,6 +523,17 @@ export const applicationApi = {
     return data;
   },
 
+  updateEmailUpdatesPreference: async (id: number | string, enabled: boolean) => {
+    const { data, error } = await supabase
+      .from('membership_applications')
+      .update({ email_updates_opt_in: enabled, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select('id, email_updates_opt_in')
+      .single();
+    if (error) throw new Error(error.message);
+    return { success: true, emailUpdatesOptIn: data.email_updates_opt_in };
+  },
+
   delete: async (id: number | string) => {
     const { error } = await supabase.from('membership_applications').delete().eq('id', id);
     if (error) throw new Error(error.message);

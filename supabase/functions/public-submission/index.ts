@@ -361,6 +361,7 @@ Deno.serve(async (request) => {
       const interest = text(data.interest ?? data.areaOfInterest ?? data.primaryWing ?? data.artInterests, 120);
       const portfolio = portfolioValue(data.portfolio ?? data.portfolioUrl);
       const reason = text(data.reason ?? data.reasonToJoin ?? data.motivation ?? data.whyJoin, 2000);
+      const emailUpdatesOptIn = data.emailUpdatesOptIn === true;
       if (portfolio === null) {
         return json({ error: 'Please enter a valid portfolio link (https://…) or an Instagram handle.' }, 400, origin);
       }
@@ -369,7 +370,7 @@ Deno.serve(async (request) => {
       }
       const { data: application, error } = await admin
         .from('membership_applications')
-        .insert({ name, email, department, year, interest, portfolio: portfolio || null, reason, status: 'pending' })
+        .insert({ name, email, department, year, interest, portfolio: portfolio || null, reason, email_updates_opt_in: emailUpdatesOptIn, status: 'pending' })
         .select('id, created_at')
         .single();
       if (error) throw error;

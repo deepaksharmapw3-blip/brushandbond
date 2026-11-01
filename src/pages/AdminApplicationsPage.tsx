@@ -27,6 +27,7 @@ export const AdminApplicationsPage: React.FC = () => {
   const [selectedApp, setSelectedApp] = useState<any | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
+  const [preferenceLoadingId, setPreferenceLoadingId] = useState<string | null>(null);
 
   const fetchApplications = async () => {
     setIsLoading(true);
@@ -64,6 +65,27 @@ export const AdminApplicationsPage: React.FC = () => {
       setToast({ message: err.message || 'Failed to update application status', type: 'error' });
     } finally {
       setActionLoadingId(null);
+    }
+  };
+
+  const handleEmailPreference = async (application: any) => {
+    const nextValue = application.email_updates_opt_in !== true;
+    if (nextValue && !window.confirm('Only enable email updates after this member has explicitly agreed to receive them. Has the member opted in?')) return;
+
+    setPreferenceLoadingId(String(application.id));
+    try {
+      await applicationApi.updateEmailUpdatesPreference(application.id, nextValue);
+      setApplications((current) => current.map((item) => (
+        item.id === application.id ? { ...item, email_updates_opt_in: nextValue } : item
+      )));
+      setToast({
+        message: nextValue ? 'Member opted in to email updates.' : 'Member unsubscribed from email updates.',
+        type: 'success',
+      });
+    } catch (err: any) {
+      setToast({ message: err.message || 'Could not update the member email preference.', type: 'error' });
+    } finally {
+      setPreferenceLoadingId(null);
     }
   };
 
@@ -199,6 +221,24 @@ export const AdminApplicationsPage: React.FC = () => {
                         </span>
                       )}
                     </div>
+
+                    {app.status === 'APPROVED' && (
+                      <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
+                        <span className="text-[var(--muted)]">
+                          Email updates: {app.email_updates_opt_in ? 'opted in' : 'not opted in'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => void handleEmailPreference(app)}
+                          disabled={preferenceLoadingId === String(app.id)}
+                          className="font-semibold text-[var(--accent)] hover:underline disabled:opacity-50"
+                        >
+                          {preferenceLoadingId === String(app.id)
+                            ? 'Saving…'
+                            : app.email_updates_opt_in ? 'Opt out' : 'Record opt-in'}
+                        </button>
+                      </div>
+                    )}
 
                     {/* Art Interests & Statement */}
                     <div className="mt-3 p-3 bg-[var(--paper)] rounded-lg text-xs space-y-1.5 border border-[var(--line)]">
