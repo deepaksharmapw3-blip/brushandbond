@@ -24,6 +24,7 @@ export interface MembershipApplicationData {
   areaOfInterest: AreaOfInterest | string;
   portfolioUrl?: string;
   reasonToJoin: string; // "Why do you want to join?"
+  emailUpdatesOptIn?: boolean;
 }
 
 export interface StoredMembershipApplication extends MembershipApplicationData {
@@ -76,6 +77,7 @@ export async function submitMembershipApplication(
     artInterests: data.areaOfInterest,
     portfolioUrl: data.portfolioUrl?.trim(),
     whyJoin: data.reasonToJoin.trim(),
+    emailUpdatesOptIn: data.emailUpdatesOptIn === true,
   });
   const saved = result.application as {
     fullName: string; department: string; academicYear: string; email: string;

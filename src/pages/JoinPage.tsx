@@ -33,9 +33,11 @@ interface FormValues {
   areaOfInterest: AreaOfInterest | '';
   portfolioUrl: string;
   reasonToJoin: string;
+  emailUpdatesOptIn: boolean;
 }
 
-type FormErrors = Partial<Record<keyof FormValues, string>>;
+type TextFormField = Exclude<keyof FormValues, 'emailUpdatesOptIn'>;
+type FormErrors = Partial<Record<TextFormField, string>>;
 
 export const JoinPage: React.FC = () => {
   const { showSuccess } = useToast();
@@ -48,9 +50,10 @@ export const JoinPage: React.FC = () => {
     areaOfInterest: '',
     portfolioUrl: '',
     reasonToJoin: '',
+    emailUpdatesOptIn: false,
   });
 
-  const [touched, setTouched] = useState<Partial<Record<keyof FormValues, boolean>>>({});
+  const [touched, setTouched] = useState<Partial<Record<TextFormField, boolean>>>({});
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedApp, setSubmittedApp] = useState<StoredMembershipApplication | null>(null);
@@ -127,7 +130,7 @@ export const JoinPage: React.FC = () => {
     },
   ];
 
-  const validateField = (field: keyof FormValues, value: string): string => {
+  const validateField = (field: TextFormField, value: string): string => {
     switch (field) {
       case 'name':
         if (!value.trim()) return 'Please enter your full name.';
@@ -175,13 +178,13 @@ export const JoinPage: React.FC = () => {
     }
   };
 
-  const handleBlur = (field: keyof FormValues) => {
+  const handleBlur = (field: TextFormField) => {
     setTouched((prev) => ({ ...prev, [field]: true }));
     const errorMsg = validateField(field, form[field]);
     setErrors((prev) => ({ ...prev, [field]: errorMsg }));
   };
 
-  const handleChange = (field: keyof FormValues, value: string) => {
+  const handleChange = (field: TextFormField, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     if (touched[field]) {
       const errorMsg = validateField(field, value);
@@ -193,7 +196,7 @@ export const JoinPage: React.FC = () => {
     const newErrors: FormErrors = {};
     let isValid = true;
 
-    (Object.keys(form) as Array<keyof FormValues>).forEach((key) => {
+    (['name', 'department', 'year', 'email', 'areaOfInterest', 'portfolioUrl', 'reasonToJoin'] as TextFormField[]).forEach((key) => {
       const err = validateField(key, form[key]);
       if (err) {
         newErrors[key] = err;
@@ -238,6 +241,7 @@ export const JoinPage: React.FC = () => {
         areaOfInterest: form.areaOfInterest as AreaOfInterest,
         portfolioUrl: form.portfolioUrl || undefined,
         reasonToJoin: form.reasonToJoin,
+        emailUpdatesOptIn: form.emailUpdatesOptIn,
       });
 
       if (result.success) {
@@ -274,6 +278,7 @@ export const JoinPage: React.FC = () => {
       areaOfInterest: '',
       portfolioUrl: '',
       reasonToJoin: '',
+      emailUpdatesOptIn: false,
     });
     setTouched({});
     setErrors({});
@@ -691,6 +696,18 @@ export const JoinPage: React.FC = () => {
                       </p>
                     )}
                   </div>
+
+                  <label className="flex items-start gap-3 rounded-[6px] border border-[var(--line)] bg-[var(--surface)] p-4 text-sm leading-relaxed text-[var(--muted)]">
+                    <input
+                      type="checkbox"
+                      checked={form.emailUpdatesOptIn}
+                      onChange={(e) => setForm((current) => ({ ...current, emailUpdatesOptIn: e.target.checked }))}
+                      className="mt-1 h-4 w-4 shrink-0 accent-[var(--accent)]"
+                    />
+                    <span>
+                      Email me Brush &amp; Bond event notices, announcements, achievement news, and club updates. I can unsubscribe at any time.
+                    </span>
+                  </label>
 
                   {/* Submit Button with Loading State */}
                   <div className="pt-3">
