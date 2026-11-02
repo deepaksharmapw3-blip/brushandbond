@@ -152,10 +152,7 @@ export const CampusArtPage: React.FC = () => {
             </h1>
 
             <p className="text-base sm:text-lg text-[var(--muted)] leading-relaxed max-w-[68ch] font-sans">
-              Art at the Government College of Engineering and Ceramic Technology is not confined to galleries.
-              It lives across forty-foot courtyard frescos, student canteen walls, sacred festival pavilions,
-              inter-disciplinary code-and-clay collaborations, and monumental kiln totems.
-              This archive serves as a permanent, living digital record of our college’s artistic history.
+              A community archive for original artwork created at GCECT. Upload photographs and details of campus artworks, installations, and creative projects. Submissions appear publicly after administrator approval.
             </p>
           </div>
 
@@ -583,13 +580,13 @@ export const CampusArtPage: React.FC = () => {
             <div className="space-y-2 border-b border-[var(--line)] pb-5">
               <div className="flex items-center gap-2 text-xs font-mono text-[var(--accent)] font-semibold uppercase tracking-wider">
                 <History className="w-4 h-4" />
-                <span>EIGHT DECADES OF ARTISTIC HERITAGE</span>
+                <span>COMMUNITY ART TIMELINE</span>
               </div>
               <h3 className="font-display text-3xl sm:text-4xl font-extrabold text-[var(--ink)]">
-                The Historical Evolution of Art at GCECT (1941 - 2026)
+                Campus Art Timeline
               </h3>
               <p className="text-sm sm:text-base text-[var(--muted)] font-sans max-w-[65ch]">
-                Chronological record documenting how artistic expression evolved from early Bengal ceramic kiln craftsmanship into contemporary creative projects and digital archives.
+                Approved community-submitted milestones will appear here as the archive grows.
               </p>
             </div>
 
